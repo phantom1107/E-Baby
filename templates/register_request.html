@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Requests</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/seller_requests.css') }}">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Menu</h2>
+        <button onclick="location.href='/admin_main'">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </button>
+        <button onclick="location.href='/admin_user_management'">
+            <i class="fas fa-users"></i>
+            <span>User Accounts</span>
+        </button>
+        <button onclick="location.href='/register_requests'" class="active">
+            <i class="fas fa-user-check"></i>
+            <span>Register Requests</span>
+        </button>
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button onclick="logout()" style="margin-top: auto;">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    <div class="dashboard">
+        <h1>Registration Requests</h1>
+
+        <div class="container">
+            <div class="table-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <h2>All Accounts</h2>
+                    <div>
+                        <label>Sort:
+                            <select id="orderSelect" onchange="applyOrder()">
+                                <option value="desc" {% if request.args.get('order','desc')!='asc' %}selected{% endif %}>Newest first</option>
+                                <option value="asc" {% if request.args.get('order','desc')=='asc' %}selected{% endif %}>Oldest first</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <table id="requestsTable">
+                    <thead>
+                        <tr>
+                            <th data-key="user_type">Type</th>
+                            <th data-key="first_name">First Name</th>
+                            <th data-key="last_name">Last Name</th>
+                            <th data-key="email">Email</th>
+                            <th data-key="phone_number">Phone Number</th>
+                            <th data-key="address">Address</th>
+                            <th>Documents</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for it in items %}
+                        <tr>
+                            <td>{{ it.user_type }}</td>
+                            <td>{{ it.first_name }}</td>
+                            <td>{{ it.last_name }}</td>
+                            <td>{{ it.email }}</td>
+                            <td>{{ it.phone_number }}</td>
+                            <td>{{ it.address }}</td>
+                            <td class="actions">
+                                <div class="action-buttons">
+                                    {% if it.document_id %}
+                                        {% if it.source == 'rider' %}
+                                            <a href="{{ url_for('view_rider_document', filename=it.document_id) }}" class="view-id">
+                                                <i class="fas fa-id-card"></i> View ID
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('view_document', filename=it.document_id) }}" class="view-id">
+                                                <i class="fas fa-id-card"></i> View ID
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if it.bir %}
+                                        <a href="{{ url_for('view_bir', filename=it.bir) }}" class="view-bir">
+                                            <i class="fas fa-file-alt"></i> View BIR
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="actions">
+                                <div class="action-buttons">
+                                    {% if it.source == 'seller' %}
+                                        <form action="/approve/{{ it.id }}" method="post" style="display:inline;">
+                                            <button type="submit" class="approve-btn"><i class="fas fa-check"></i> Approve</button>
+                                        </form>
+                                        <form id="reject-form-s{{ it.id }}" action="/reject_seller/{{ it.id }}" method="post" style="display:inline;">
+                                            <input type="hidden" name="reason" id="reason-input-s{{ it.id }}">
+                                            <button type="button" class="reject-btn" data-target="s{{ it.id }}" onclick="showRejectionModal(this)"><i class="fas fa-times"></i> Reject</button>
+                                        </form>
+                                    {% elif it.source == 'rider' %}
+                                        <form action="/approve_rider/{{ it.id }}" method="post" style="display:inline;">
+                                            <button type="submit" class="approve-btn"><i class="fas fa-check"></i> Approve</button>
+                                        </form>
+                                        <form id="reject-form-r{{ it.id }}" action="/reject_rider/{{ it.id }}" method="post" style="display:inline;">
+                                            <input type="hidden" name="reason" id="reason-input-r{{ it.id }}">
+                                            <button type="button" class="reject-btn" data-target="r{{ it.id }}" onclick="showRejectionModal(this)"><i class="fas fa-times"></i> Reject</button>
+                                        </form>
+                                    {% else %}
+                                        <span style="color:#555;">Approved</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal (reused for both types) -->
+    <div id="rejectionModal" class="modal">
+        <div class="modal-content">
+            <h3>Reason for Rejection</h3>
+            <form id="rejectionForm">
+                <select id="reasonSelect" onchange="toggleCustomReason(this)">
+                    <option value="">Select a reason</option>
+                    <option value="Incomplete Documents">Incomplete Documents</option>
+                    <option value="Invalid Information">Invalid Information</option>
+                    <option value="Duplicate Application">Duplicate Application</option>
+                    <option value="Others">Others</option>
+                </select>
+                <textarea id="customReason" style="display: none;" placeholder="Type the reason here..."></textarea>
+                <div class="modal-actions">
+                    <button type="button" class="submit" onclick="submitRejection()">Submit</button>
+                    <button type="button" class="close" onclick="closeRejectionModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/seller_requests.js') }}"></script>
+    <script>
+        function applyOrder(){
+            const order = document.getElementById('orderSelect').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('order', order);
+            window.location.href = url.toString();
+        }
+
+        // Simple client-side sort when clicking headers
+        (function(){
+            const table = document.getElementById('requestsTable');
+            if(!table) return;
+            const getText = el => (el?.innerText || '').toLowerCase();
+            table.querySelectorAll('th[data-key]').forEach((th, idx)=>{ 
+                let asc = true;
+                th.style.cursor = 'pointer';
+                th.addEventListener('click', ()=>{
+                    const rows = Array.from(table.tBodies[0].rows);
+                    rows.sort((a,b)=>{
+                        const ta = getText(a.cells[idx]);
+                        const tb = getText(b.cells[idx]);
+                        return asc ? ta.localeCompare(tb) : tb.localeCompare(ta);
+                    });
+                    asc = !asc;
+                    rows.forEach(r=>table.tBodies[0].appendChild(r));
+                });
+            });
+        })();
+    </script>
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</body>
+
+</html>
+

@@ -1,0 +1,488 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f5f5f5;
+    display: flex;
+    margin: 0;
+    height: 100vh;
+}
+
+/* Updated Sidebar Styles */
+.sidebar {
+    width: 350px;
+    background: linear-gradient(180deg, #2C3E50 0%, #3498DB 100%);
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: fixed;
+    height: 100vh;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    padding-top: 70px;
+}
+
+.sidebar.collapsed {
+    width: 150px;
+    padding: 25px 15px;
+}
+
+.sidebar h2 {
+    color: white;
+    font-size: 28px;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    padding: 0 10px;
+    margin-bottom: 30px;
+    transition: opacity 0.3s;
+    font-weight: 600;
+    position: absolute;
+    top: 25px;
+    left: 20px;
+}
+
+.sidebar.collapsed h2 {
+    opacity: 0;
+    height: 0;
+    margin: 0;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: none;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    padding: 0 !important;
+    min-width: unset !important;
+    border-radius: 12px;
+}
+
+.sidebar-toggle i {
+    color: white;
+    font-size: 24px;
+    transition: transform 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-toggle {
+    right: 12px;
+}
+
+.sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+.sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.sidebar button {
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 18px;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-weight: 500;
+    text-align: left;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 3px 0;
+    margin-top: 45px;
+}
+
+.sidebar button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(5px);
+}
+
+.sidebar button i {
+    font-size: 24px;
+    min-width: 32px;
+    text-align: center;
+}
+
+.sidebar button span {
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.sidebar.collapsed button {
+    padding: 16px;
+    justify-content: center;
+    width: 70px;
+    margin: 3px auto;
+}
+
+.sidebar.collapsed button i {
+    margin: 0;
+    font-size: 26px;
+}
+
+.sidebar.collapsed button span {
+    opacity: 0;
+    width: 0;
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-toggle {
+    right: 12px;
+}
+
+/* Dashboard Container Updates */
+.dashboard-container {
+    margin-left: 500px;
+    padding: 30px 40px;
+    width: calc(100% - 500px);
+    background: #f8f9fa;
+    min-height: 100vh;
+    transition: all 0.3s ease;
+}
+
+.dashboard-container.expanded {
+    margin-left: 150px;
+    width: calc(100% - 150px);
+}
+
+/* Card Updates */
+.count-card {
+    background: white;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+.platform-sales {
+    background: white;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Chart Container Update */
+.chart-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 25px;
+    margin-bottom: 30px;
+    height: 400px;
+}
+
+.dashboard-container h1 {
+    color: #2C3E50;
+    font-size: 32px;
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+/* Stats Cards */
+.user-counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.count-card {
+    flex: 1;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    padding: 25px;
+    text-align: center;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.count-card:hover {
+    transform: translateY(-5px);
+}
+
+.count-card h2 {
+    color: #2C3E50;
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+.count-card p {
+    font-size: 36px;
+    font-weight: 600;
+    color: #3498DB;
+    margin: 0;
+}
+
+/* Platform Sales Section */
+.platform-sales {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    padding: 25px;
+    margin-bottom: 40px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.stat-box {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.stat-box p {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+}
+
+.stat-box strong {
+    color: #333;
+}
+
+/* Buttons */
+.logout, .view-sellers-button {
+    padding: 10px 20px;
+    background-color: #4a4a4a;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.logout:hover, .view-sellers-button:hover {
+    background-color: #666666;
+}
+
+/* Modal Styles */
+.modal-content {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    padding: 30px;
+}
+
+/* Table Styles */
+table {
+    border: 1px solid #cccccc;
+    width: 100%;
+}
+
+th {
+    background-color: #4a4a4a;
+    color: #ffffff;
+    padding: 12px;
+}
+
+td {
+    padding: 12px;
+    color: #333333;
+}
+
+tr:nth-child(even) {
+    background-color: #f0f0f0;
+}
+
+tr:hover {
+    background-color: #e6e6e6;
+}
+
+/* Search Input */
+#searchInput {
+    padding: 8px;
+    border: 1px solid #cccccc;
+    margin-bottom: 15px;
+    width: 100%;
+    background-color: #ffffff;
+}
+
+/* Sort Button */
+.sort-button {
+    background-color: #4a4a4a;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.sort-button:hover {
+    background-color: #666666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+    }
+
+    .user-counts {
+        flex-direction: column;
+    }
+}
+
+.view-sellers-button {
+    margin-top: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #9796f0 0%, #8e7bf7 100%);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.view-sellers-button:hover {
+    background: linear-gradient(135deg, #8e7bf7 0%, #9796f0 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.logout-container {
+    margin-top: auto;
+    width: 100%;
+}
+
+.sidebar.collapsed .logout-container {
+    display: flex;
+    justify-content: center;
+}
+
+.logout {
+    width: 100%;
+    padding: 12px 15px;
+}
+
+.sidebar.collapsed .logout {
+    width: 45px;
+    padding: 12px !important;
+}
+
+.platform-sales h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+/* Active state for buttons */
+.sidebar button.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid #ffffff;
+}
+
+/* Add Poppins font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+/* Logout Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+}
+
+.logout-confirm {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logout-confirm h2 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.logout-confirm p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 16px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.confirm-btn {
+    padding: 10px 25px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.confirm-btn:hover {
+    background: #d32f2f;
+}
+
+.cancel-btn {
+    padding: 10px 25px;
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #d5d5d5;
+}
+
+/* Ensure modal appears above everything */
+.modal {
+    z-index: 9999;
+}
+
+/* Prevent background scrolling when modal is open */
+body.modal-open {
+    overflow: hidden;
+}

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results for "{{ query }}" - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .search-page-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        }
+
+        .search-header {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
+        }
+
+        .search-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 20px;
+        }
+
+        .search-bar-header {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-bar-header input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: rgba(255,255,255,0.95);
+        }
+
+        .search-bar-header button {
+            padding: 12px 25px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .search-bar-header button:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .search-controls {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px solid #7c3aed;
+            background: white;
+            color: #7c3aed;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+        }
+
+        .results-info {
+            color: #64748b;
+            font-size: 1rem;
+            margin-left: auto;
+        }
+
+        .products-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 60px 20px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(124, 58, 237, 0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 220px;
+            background: #f1f5f9;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f59e0b;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .product-info {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            min-height: 2.6em;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-price {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #7c3aed;
+            margin-bottom: 10px;
+        }
+
+        .product-seller {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .seller-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+            margin-top: auto;
+        }
+
+        .action-btn {
+            padding: 11px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .view-details-btn {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .view-details-btn:hover:not(:disabled) {
+            background: #6d28d9;
+            transform: translateY(-2px);
+        }
+
+        .view-details-btn:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .visit-store-btn {
+            background: white;
+            color: #7c3aed;
+            border: 2px solid #7c3aed;
+        }
+
+        .visit-store-btn:hover {
+            background: #f0f1ff;
+            transform: translateY(-2px);
+        }
+
+        .sellers-section {
+            margin-top: 60px;
+        }
+
+        .sellers-section h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .sellers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .seller-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+        }
+
+        .seller-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(124, 58, 237, 0.15);
+        }
+
+        .seller-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            overflow: hidden;
+        }
+
+        .seller-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .seller-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .seller-email {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+
+        .seller-action-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: #7c3aed;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .seller-action-btn:hover {
+            background: #6d28d9;
+            transform: translateY(-2px);
+        }
+
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 80px 20px;
+            color: #64748b;
+        }
+
+        .no-results i {
+            font-size: 5rem;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+        }
+
+        .no-results h3 {
+            font-size: 1.5rem;
+            margin: 0 0 10px 0;
+            color: #1e293b;
+        }
+
+        .no-results p {
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        .back-home-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #7c3aed;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .back-home-btn:hover {
+            background: #6d28d9;
+            transform: translateY(-2px);
+        }
+
+        .guest-login-prompt {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+            color: #92400e;
+        }
+
+        .guest-login-prompt a {
+            color: #7c3aed;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .guest-login-prompt a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .search-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .search-controls {
+                flex-direction: column;
+            }
+
+            .results-info {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .products-grid,
+            .sellers-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="search-page-container">
+        <!-- Header with Logo & Search -->
+        <header style="background: white; padding: 15px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                <a href="/homepage" style="text-decoration: none;">
+                    <img src="/static/images/logo/E-Baby Logo.png" alt="E-Baby" style="height: 40px; width: auto;">
+                </a>
+                <div style="flex: 1; max-width: 400px;">
+                    <input type="text" id="search-input" placeholder="Search products..." class="search-input" style="width: 100%; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                </div>
+                <button onclick="performSearch()" style="padding: 10px 20px; background: #7c3aed; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    <i class="fas fa-search"></i>
+                </button>
+                <a href="/homepage" style="padding: 10px 20px; background: #10b981; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    <i class="fas fa-home"></i> Home
+                </a>
+            </div>
+        </header>
+
+        <!-- Search Results Header -->
+        <div class="search-header">
+            <h1><i class="fas fa-search"></i> Search Results</h1>
+            <p>Results for: <strong>"{{ query }}"</strong></p>
+        </div>
+
+        <!-- Search Controls -->
+        <div class="search-controls">
+            <button class="filter-btn active" onclick="filterResults('all')">
+                <i class="fas fa-list"></i> All
+            </button>
+            <button class="filter-btn" onclick="filterResults('products')">
+                <i class="fas fa-box"></i> Products
+            </button>
+            <button class="filter-btn" onclick="filterResults('sellers')">
+                <i class="fas fa-store"></i> Sellers
+            </button>
+            <span class="results-info" id="resultsInfo"></span>
+        </div>
+
+        <!-- Guest Login Prompt -->
+        {% if not session.get('email') %}
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div class="guest-login-prompt">
+                <i class="fas fa-info-circle"></i> You are viewing as a guest. 
+                <a href="/auth">Login or Register</a> to view product details and make purchases.
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Products Section -->
+        <div class="products-section" id="productsSection" style="display: block;">
+            <h2 style="font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 30px; text-align: center;">
+                <i class="fas fa-box"></i> Products
+            </h2>
+            <div class="products-grid" id="productsGrid">
+                {% if products %}
+                    {% for product in products %}
+                    <div class="product-card" data-type="product">
+                        <div class="product-image">
+                            <img src="{% if product.image and not product.image.startswith('/') %}/static/uploads/{{ product.image }}{% else %}{{ product.image or '/static/images/defaults/product-default.png' }}{% endif %}" 
+                                 alt="{{ product.name }}"
+                                 onerror="this.src='/static/images/defaults/product-default.png'">
+                            {% if product.quantity <= 5 and product.quantity > 0 %}
+                            <span class="product-badge"><i class="fas fa-exclamation"></i> Low Stock</span>
+                            {% elif product.quantity == 0 %}
+                            <span class="product-badge" style="background: #ef4444;"><i class="fas fa-times-circle"></i> Out of Stock</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">{{ product.name }}</div>
+                            <div class="product-price">₱{{ "%.2f"|format(product.price) }}</div>
+                            <div class="product-seller">
+                                <i class="fas fa-user-circle"></i>
+                                <span class="seller-name">{{ product.first_name }} {{ product.last_name }}</span>
+                            </div>
+                            <div class="product-actions">
+                                {% if session.get('email') %}
+                                    <a href="{{ url_for('product_details', product_id=product.id) }}" class="action-btn view-details-btn">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                {% else %}
+                                    <button class="action-btn view-details-btn" disabled title="Login to view details">
+                                        <i class="fas fa-lock"></i> Login to View
+                                    </button>
+                                {% endif %}
+                                <a href="{{ url_for('view_seller', seller_email=product.seller_email) }}" class="action-btn visit-store-btn">
+                                    <i class="fas fa-store"></i> Visit Store
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-results">
+                        <i class="fas fa-box-open"></i>
+                        <h3>No Products Found</h3>
+                        <p>No products match your search for "{{ query }}"</p>
+                        <a href="/homepage" class="back-home-btn">
+                            <i class="fas fa-home"></i> Back to Home
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sellers Section -->
+        <div class="sellers-section" id="sellersSection" style="display: none; max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <h2><i class="fas fa-store"></i> Sellers</h2>
+            <div class="sellers-grid" id="sellersGrid">
+                <!-- Sellers will be populated via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allProducts = {{ products|tojson if products else 'null' }};
+        let uniqueSellers = {};
+
+        // Extract unique sellers from products
+        if (allProducts) {
+            allProducts.forEach(product => {
+                const sellerId = product.seller_email;
+                if (!uniqueSellers[sellerId]) {
+                    uniqueSellers[sellerId] = {
+                        email: product.seller_email,
+                        name: product.first_name + ' ' + product.last_name,
+                        profile_pic: product.profile_pic || null
+                    };
+                }
+            });
+        }
+
+        // Update results info
+        function updateResultsInfo() {
+            const productCount = allProducts ? allProducts.length : 0;
+            const sellerCount = Object.keys(uniqueSellers).length;
+            document.getElementById('resultsInfo').textContent = 
+                `${productCount} product${productCount !== 1 ? 's' : ''} • ${sellerCount} seller${sellerCount !== 1 ? 's' : ''}`;
+        }
+
+        updateResultsInfo();
+
+        function filterResults(type) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.filter-btn').classList.add('active');
+
+            // Show/hide sections
+            document.getElementById('productsSection').style.display = type === 'all' || type === 'products' ? 'block' : 'none';
+            document.getElementById('sellersSection').style.display = type === 'all' || type === 'sellers' ? 'block' : 'none';
+
+            // Populate sellers section if needed
+            if ((type === 'all' || type === 'sellers') && document.getElementById('sellersGrid').innerHTML === '') {
+                populateSellers();
+            }
+        }
+
+        function populateSellers() {
+            const sellersGrid = document.getElementById('sellersGrid');
+            if (Object.keys(uniqueSellers).length === 0) {
+                sellersGrid.innerHTML = '<div class="no-results" style="grid-column: 1 / -1;"><i class="fas fa-store"></i><h3>No Sellers Found</h3><p>No sellers matched your search</p></div>';
+                return;
+            }
+
+            sellersGrid.innerHTML = Object.values(uniqueSellers).map(seller => `
+                <div class="seller-card">
+                    <div class="seller-avatar">
+                        ${seller.profile_pic ? `<img src="/static/${seller.profile_pic}" alt="${seller.name}">` : `<i class="fas fa-user"></i>`}
+                    </div>
+                    <div class="seller-name">${seller.name}</div>
+                    <div class="seller-email">${seller.email}</div>
+                    <a href="/view_seller?email=${encodeURIComponent(seller.email)}" class="seller-action-btn">
+                        <i class="fas fa-store"></i> View Store
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        function performSearch() {
+            const query = document.getElementById('search-input').value;
+            if (query.trim()) {
+                window.location.href = `/search?query=${encodeURIComponent(query)}`;
+            }
+        }
+
+        // Allow Enter key to search
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>

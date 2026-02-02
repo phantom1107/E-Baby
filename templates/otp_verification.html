@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTP Verification - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard-common.css') }}"
+    />
+    <style>
+      :root {
+        --primary-black: #000000;
+        --secondary-black: #1a1a1a;
+        --dark-gray: #333333;
+        --medium-gray: #666666;
+        --light-gray: #f5f5f5;
+        --white: #ffffff;
+        --accent-color: #6b46c1;
+        --success-color: #10b981;
+        --error-color: #ef4444;
+        --warning-color: #f59e0b;
+        --info-color: #3b82f6;
+        --border-color: rgba(255, 255, 255, 0.1);
+        --glass-bg: rgba(255, 255, 255, 0.1);
+        --glass-border: rgba(255, 255, 255, 0.2);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background: var(--primary-black);
+        color: var(--white);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      /* Video Background */
+      .video-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: -1;
+        opacity: 0.1;
+      }
+
+      .main-container {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 500px;
+        padding: 20px;
+      }
+
+      .container {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 50px 40px;
+        text-align: center;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      }
+
+      .logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 30px;
+        background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5em;
+        color: var(--white);
+      }
+
+      h2 {
+        color: var(--accent-color);
+        font-size: 2em;
+        margin-bottom: 15px;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 1.1em;
+        margin-bottom: 40px;
+        line-height: 1.5;
+      }
+
+      /* OTP Input Container */
+      .otp-input-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 40px;
+      }
+
+      .otp-input {
+        width: 60px;
+        height: 60px;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--white);
+        font-size: 1.5em;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.3s ease;
+        outline: none;
+      }
+
+      .otp-input:focus {
+        border-color: var(--accent-color);
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.2);
+        transform: scale(1.05);
+      }
+
+      .otp-input:valid {
+        border-color: var(--success-color);
+        background: rgba(16, 185, 129, 0.1);
+      }
+
+      /* Submit Button */
+      .submit-btn {
+        width: 100%;
+        padding: 18px 30px;
+        background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+        border: none;
+        border-radius: 12px;
+        color: var(--white);
+        font-size: 1.1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px rgba(107, 70, 193, 0.4);
+      }
+
+      .submit-btn:active {
+        transform: translateY(0);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* Loading Spinner */
+      .loading-spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--white);
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Resend Section */
+      .resend-section {
+        margin-top: 30px;
+        padding-top: 30px;
+        border-top: 1px solid var(--border-color);
+      }
+
+      .resend-text {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9em;
+        margin-bottom: 15px;
+      }
+
+      .resend-btn {
+        background: transparent;
+        border: 1px solid var(--accent-color);
+        color: var(--accent-color);
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95em;
+      }
+
+      .resend-btn:hover {
+        background: var(--accent-color);
+        color: var(--white);
+      }
+
+      .resend-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Modal Styles */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        backdrop-filter: blur(5px);
+      }
+
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-content {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content h3 {
+        color: var(--accent-color);
+        margin-bottom: 20px;
+        font-size: 1.5em;
+      }
+
+      .modal-content p {
+        color: var(--white);
+        margin-bottom: 25px;
+        line-height: 1.5;
+      }
+
+      .modal-content .submit-btn {
+        width: auto;
+        padding: 12px 30px;
+      }
+
+      /* Success/Error States */
+      .success {
+        color: var(--success-color);
+      }
+
+      .error {
+        color: var(--error-color);
+      }
+
+      .info {
+        color: var(--info-color);
+      }
+
+      .pending {
+        color: var(--warning-color);
+      }
+
+      /* Responsive */
+      @media (max-width: 600px) {
+        .container {
+          padding: 40px 25px;
+        }
+
+        .otp-input-container {
+          gap: 10px;
+        }
+
+        .otp-input {
+          width: 50px;
+          height: 50px;
+          font-size: 1.3em;
+        }
+
+        h2 {
+          font-size: 1.7em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Video background -->
+    <video autoplay muted loop class="video-background">
+      <source
+        src="https://via.placeholder.com/1920x1080/000000/FFFFFF?text=Background"
+        type="video/mp4"
+      />
+    </video>
+
+    <div class="main-container">
+      <div class="container">
+        <div class="logo">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+
+        <h2>Enter Verification Code</h2>
+        <p class="subtitle">
+          We sent a 6‑digit code to your email. Enter it below to complete your
+          registration.
+        </p>
+
+        <!-- Display flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %}
+        <div id="flashModal" class="modal show">
+          <div class="modal-content">
+            {% for category, message in messages %}
+            <div class="{{ category }}">
+              <i
+                class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' if category == 'error' else 'info-circle' }}"
+              ></i>
+              <p>{{ message }}</p>
+            </div>
+            {% endfor %}
+            <button id="flashOk" class="submit-btn">
+              <i class="fas fa-check"></i> OK
+            </button>
+          </div>
+        </div>
+        {% endif %} {% endwith %}
+
+        <form onsubmit="handleFormSubmit(event)">
+          <div class="otp-input-container" id="otpContainer">
+            <input
+              type="text"
+              class="otp-input"
+              maxlength="1"
+              pattern="[0-9]"
+              required
+            />
+            <input
+              type="text"
+              class="otp-input"
+              maxlength="1"
+              pattern="[0-9]"
+              required
+            />
+            <input
+              type="text"
+              class="otp-input"
+              maxlength="1"
+              pattern="[0-9]"
+              required
+            />
+            <input
+              type="text"
+              class="otp-input"
+              maxlength="1"
+              pattern="[0-9]"
+              required
+            />
+            <input
+              type="text"
+              class="otp-input"
+              maxlength="1"
+              pattern="[0-9]"
+              required
+            />
+            <input
+              type="text"
+              class="otp-input"
+              maxlength="1"
+              pattern="[0-9]"
+              required
+            />
+            <input type="hidden" name="otp" id="finalOtp" />
+          </div>
+
+          <button type="submit" class="submit-btn" id="verifyBtn">
+            <span class="btn-text">
+              <i class="fas fa-check-circle"></i> Verify Code
+            </span>
+            <div class="loading-spinner"></div>
+          </button>
+        </form>
+
+        <div class="resend-section">
+          <p class="resend-text">Didn't receive the code?</p>
+          <button type="button" class="resend-btn" onclick="resendOTP()">
+            <i class="fas fa-redo"></i> Resend Code
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="modal">
+      <div class="modal-content">
+        <h3><i class="fas fa-info-circle"></i> Registration Update</h3>
+        <p id="infoMessage"></p>
+        <button id="infoOk" class="submit-btn">
+          <i class="fas fa-check"></i> OK
+        </button>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/otp_verification.js') }}"></script>
+    <script>
+      // Enhanced OTP input handling
+      document.addEventListener("DOMContentLoaded", function () {
+        const otpInputs = document.querySelectorAll(".otp-input");
+
+        otpInputs.forEach((input, index) => {
+          input.addEventListener("input", function (e) {
+            if (e.target.value.length === 1) {
+              if (index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+              }
+            }
+          });
+
+          input.addEventListener("keydown", function (e) {
+            if (e.key === "Backspace" && e.target.value === "") {
+              if (index > 0) {
+                otpInputs[index - 1].focus();
+              }
+            }
+          });
+
+          input.addEventListener("paste", function (e) {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData(
+              "text"
+            );
+            const pasteArray = paste.split("");
+
+            pasteArray.forEach((char, i) => {
+              if (index + i < otpInputs.length && /[0-9]/.test(char)) {
+                otpInputs[index + i].value = char;
+              }
+            });
+
+            // Focus on the next empty input or last input
+            const nextEmptyIndex = Math.min(
+              index + pasteArray.length,
+              otpInputs.length - 1
+            );
+            otpInputs[nextEmptyIndex].focus();
+          });
+        });
+
+        // Close flash modal
+        const flashOk = document.getElementById("flashOk");
+        if (flashOk) {
+          flashOk.addEventListener("click", function () {
+            document.getElementById("flashModal").style.display = "none";
+          });
+        }
+
+        // Close info modal
+        const infoOk = document.getElementById("infoOk");
+        const infoModal = document.getElementById("infoModal");
+
+        if (infoOk) {
+          infoOk.addEventListener("click", function () {
+            const title = infoModal.querySelector("h3");
+            const isError =
+              title &&
+              (title.innerHTML.includes("Error") ||
+                title.innerHTML.includes("exclamation-triangle"));
+            const isInfo =
+              title &&
+              (title.innerHTML.includes("Information") ||
+                title.innerHTML.includes("info-circle"));
+
+            infoModal.classList.remove("show");
+
+            // Only redirect on success (registration complete), not on error or info
+            if (!isError && !isInfo) {
+              window.location.href = "/auth";
+            }
+          });
+        }
+
+        // Close modal when clicking outside
+        if (infoModal) {
+          infoModal.addEventListener("click", function (e) {
+            if (e.target === infoModal) {
+              const title = infoModal.querySelector("h3");
+              const isError =
+                title &&
+                (title.innerHTML.includes("Error") ||
+                  title.innerHTML.includes("exclamation-triangle"));
+              const isInfo =
+                title &&
+                (title.innerHTML.includes("Information") ||
+                  title.innerHTML.includes("info-circle"));
+
+              infoModal.classList.remove("show");
+
+              // Only redirect on success (registration complete), not on error or info
+              if (!isError && !isInfo) {
+                window.location.href = "/auth";
+              }
+            }
+          });
+        }
+      });
+
+      function handleFormSubmit(event) {
+        event.preventDefault();
+
+        const otpInputs = document.querySelectorAll(".otp-input");
+        const verifyBtn = document.getElementById("verifyBtn");
+        const btnText = verifyBtn.querySelector(".btn-text");
+        const spinner = verifyBtn.querySelector(".loading-spinner");
+
+        let otp = "";
+        otpInputs.forEach((input) => {
+          otp += input.value;
+        });
+
+        if (otp.length !== 6) {
+          showError("Please enter all 6 digits");
+          return;
+        }
+
+        // Show loading state
+        verifyBtn.disabled = true;
+        btnText.style.display = "none";
+        spinner.style.display = "block";
+
+        fetch("/otp_verification", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ otp: otp }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showSuccess(data.message);
+              // Redirect will happen when user clicks OK on success modal
+            } else {
+              showError(data.error || "Invalid OTP. Please try again.");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showError("Network error. Please try again.");
+          })
+          .finally(() => {
+            // Reset button state
+            verifyBtn.disabled = false;
+            btnText.style.display = "flex";
+            spinner.style.display = "none";
+          });
+      }
+
+      function resendOTP() {
+        const resendBtn = document.querySelector(".resend-btn");
+        const originalHTML = resendBtn.innerHTML;
+        resendBtn.disabled = true;
+        resendBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+        // Call backend to resend OTP
+        fetch("/resend_otp", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              showInfo(data.message);
+              // Clear OTP inputs
+              const otpInputs = document.querySelectorAll(".otp-input");
+              otpInputs.forEach((input) => (input.value = ""));
+              // Focus on first input
+              setTimeout(() => {
+                if (otpInputs[0]) {
+                  otpInputs[0].focus();
+                }
+              }, 100);
+            } else {
+              showError(
+                data.error || "Failed to resend OTP. Please try again."
+              );
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showError("Network error. Please try again.");
+          })
+          .finally(() => {
+            // Reset button state
+            resendBtn.disabled = false;
+            resendBtn.innerHTML = originalHTML;
+          });
+      }
+
+      function showSuccess(message) {
+        const modal = document.getElementById("infoModal");
+        const title = modal.querySelector("h3");
+        const messageEl = document.getElementById("infoMessage");
+
+        // Reset title to success state
+        title.innerHTML = '<i class="fas fa-check-circle"></i> Success';
+        title.style.color = "var(--success-color)";
+        messageEl.textContent = message;
+        modal.classList.add("show");
+      }
+
+      function showError(message) {
+        const modal = document.getElementById("infoModal");
+        const title = modal.querySelector("h3");
+        const messageEl = document.getElementById("infoMessage");
+
+        title.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+        title.style.color = "var(--error-color)";
+        messageEl.textContent = message;
+        modal.classList.add("show");
+
+        // Reset form when error is shown
+        const otpInputs = document.querySelectorAll(".otp-input");
+        otpInputs.forEach((input) => (input.value = ""));
+        setTimeout(() => {
+          if (otpInputs[0]) {
+            otpInputs[0].focus();
+          }
+        }, 100);
+      }
+
+      function showInfo(message) {
+        const modal = document.getElementById("infoModal");
+        const title = modal.querySelector("h3");
+        const messageEl = document.getElementById("infoMessage");
+
+        // Set title to info state (no redirect on close)
+        title.innerHTML = '<i class="fas fa-info-circle"></i> Information';
+        title.style.color = "var(--info-color)";
+        messageEl.textContent = message;
+        modal.classList.add("show");
+      }
+    </script>
+  </body>
+</html>

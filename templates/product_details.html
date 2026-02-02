@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/product_details_new.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</head>
+<body class="product-page">
+    <header>
+        <div class="top-header">
+            <div class="header-left">
+                <a href="/homepage" class="logo-link">
+                    <img src="/static/images/logo/E-Baby Logo.png" alt="E-Baby Logo" class="logo">
+                </a>
+            </div>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search products..." class="search-bar" id="searchInput">
+                </div>
+            </div>
+            <div class="header-right">
+                <!-- Cart Dropdown -->
+                <div class="dropdown cart-container">
+                    <button class="header-icon" onclick="toggleCartDropdown(event)" title="Shopping Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-badge" id="cartCount">0</span>
+                    </button>
+                    <div class="dropdown-content" id="cartDropdown">
+                        <div class="dropdown-header">
+                            <h3>Shopping Cart</h3>
+                        </div>
+                        <div class="dropdown-items" id="cartItems"></div>
+                        <div class="dropdown-footer">
+                            <div class="cart-total">
+                                <span>Total:</span>
+                                <span id="cartTotal">₱0.00</span>
+                            </div>
+                            <a href="/cart" class="checkout-btn">Go to Cart</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wishlist Dropdown -->
+                <div class="dropdown wishlist-container">
+                    <button class="header-icon" onclick="toggleWishlistDropdown(event)" title="Wishlist">
+                        <i class="fas fa-heart"></i>
+                        <span class="cart-badge" id="wishlistCount">0</span>
+                    </button>
+                    <div class="dropdown-content" id="wishlistDropdown">
+                        <div class="dropdown-header">
+                            <h3>Wishlist</h3>
+                        </div>
+                        <div class="dropdown-items" id="wishlistItems"></div>
+                        <div class="dropdown-footer">
+                            <a href="/wishlist" class="view-all-btn">View Wishlist</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown">
+                    <button class="header-icon dropdown-btn" title="User Menu">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="/profile"><i class="fas fa-user-circle"></i> My Profile</a>
+                        <a href="/orders"><i class="fas fa-box"></i> My Orders</a>
+                        <a href="/wishlist"><i class="fas fa-heart"></i> Wishlist</a>
+                        <hr>
+                        <a href="#" onclick="confirmLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="breadcrumb-section">
+            <div class="breadcrumb container">
+                <a href="/homepage"><i class="fas fa-home"></i> Home</a>
+                <span class="separator">/</span>
+                <a href="/{{ product.category.lower() }}">{{ product.category }}</a>
+                <span class="separator">/</span>
+                <span class="current">{{ product.name }}</span>
+            </div>
+        </div>
+
+        <div class="product-container">
+            <div class="container">
+                <div class="product-grid">
+                    <!-- Product Gallery Section -->
+                    <div class="product-gallery-section">
+                        <div class="product-gallery">
+                            <div class="main-image-wrapper">
+                                {% if (product.price|float * 0.2)|int > 0 %}
+                                    <div class="sale-badge">-20%</div>
+                                {% endif %}
+                                <img id="productImage" src="{{ url_for('static', filename='uploads/' ~ product.image) }}" alt="{{ product.name }}" class="main-image">
+                            </div>
+                            <div class="image-thumbnails">
+                                <div class="thumbnail active" onclick="changeImage(this)">
+                                    <img src="{{ url_for('static', filename='uploads/' ~ product.image) }}" alt="Thumbnail 1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="product-social-share">
+                            <button class="share-btn" title="Add to Wishlist" onclick="handleWishlistClick()">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                            <button class="share-btn" title="Share" onclick="shareProduct()">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Product Info Section -->
+                    <div class="product-info">
+                        <div class="product-header">
+                            <h1 class="product-title">{{ product.name }}</h1>
+                            <div class="product-rating">
+                                <div class="stars">
+                                    <i class="fas fa-star filled"></i>
+                                    <i class="fas fa-star filled"></i>
+                                    <i class="fas fa-star filled"></i>
+                                    <i class="fas fa-star filled"></i>
+                                    <i class="fas fa-star-half-alt filled"></i>
+                                </div>
+                                <span class="rating-value">(4.5 / 5)</span>
+                                <span class="review-count">285 reviews</span>
+                            </div>
+                        </div>
+
+                        <div class="product-pricing">
+                            <div class="price-section">
+                                <span class="current-price">₱{{ "%.2f"|format(product.price) }}</span>
+                                <span class="original-price">₱{{ "%.2f"|format(product.price|float * 1.2) }}</span>
+                                <span class="discount-badge">-20%</span>
+                            </div>
+                            <div class="stock-status {% if product.quantity > 10 %}in-stock{% elif product.quantity > 0 %}low-stock{% else %}out-stock{% endif %}">
+                                {% if product.quantity > 10 %}
+                                    <i class="fas fa-check-circle"></i> In Stock ({{ product.quantity }} available)
+                                {% elif product.quantity > 0 %}
+                                    <i class="fas fa-exclamation-circle"></i> Low Stock ({{ product.quantity }} left)
+                                {% else %}
+                                    <i class="fas fa-times-circle"></i> Out of Stock
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="product-highlights">
+                            <div class="highlight">
+                                <i class="fas fa-shipping-fast"></i>
+                                <div>
+                                    <strong>Free Shipping</strong>
+                                    <p>Over ₱500</p>
+                                </div>
+                            </div>
+                            <div class="highlight">
+                                <i class="fas fa-shield-alt"></i>
+                                <div>
+                                    <strong>Secure Payment</strong>
+                                    <p>100% protected</p>
+                                </div>
+                            </div>
+                            <div class="highlight">
+                                <i class="fas fa-undo"></i>
+                                <div>
+                                    <strong>Easy Returns</strong>
+                                    <p>30-day guarantee</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form id="addToCartForm" class="product-form">
+                            <div class="form-group">
+                                <label for="color"><strong>Color</strong></label>
+                                <div class="color-options" id="colorOptions">
+                                    <p>Loading colors...</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="size"><strong>Size</strong></label>
+                                <div class="size-options" id="sizeOptions">
+                                    <p>Loading sizes...</p>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="quantity"><strong>Quantity</strong></label>
+                                <div class="quantity-section">
+                                    <div class="quantity-selector">
+                                        <button type="button" class="qty-btn" onclick="updateQuantity(-1)">−</button>
+                                        <input type="number" id="quantity" name="quantity" value="1" min="1" required>
+                                        <button type="button" class="qty-btn" onclick="updateQuantity(1)">+</button>
+                                    </div>
+                                    <div class="quantity-info">
+                                        <span class="stock-info" id="stockInfo"><i class="fas fa-box"></i> Select a variant to see stock</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs -->
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+                            <input type="hidden" name="product_name" value="{{ product.name }}">
+                            <input type="hidden" name="product_price" value="{{ product.price }}">
+                            <input type="hidden" name="product_image" value="{{ product.image }}">
+                            <input type="hidden" name="seller_email" value="{{ seller.email if seller else '' }}">
+
+                            <div class="action-buttons">
+                                <button type="button" class="btn-add-cart" id="addCartBtn" disabled onclick="handleAddToCart()">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button type="button" class="btn-buy-now" id="buyNowBtn" disabled onclick="handleBuyNow()">
+                                    <i class="fas fa-bolt"></i> Buy Now
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="seller-card">
+                            <div class="seller-header">
+                                <div class="seller-info-main">
+                                    <div class="seller-avatar">
+                                        <img src="https://via.placeholder.com/60x60/7c3aed/FFFFFF?text=Seller" alt="Seller Avatar">
+                                    </div>
+                                    <div class="seller-meta">
+                                        <h3 class="seller-name">{{ seller.first_name if seller else 'Unknown' }} {{ seller.last_name if seller else '' }}</h3>
+                                        <div class="seller-stats">
+                                            <span><i class="fas fa-check-circle"></i> Verified Seller</span>
+                                            <span><i class="fas fa-star"></i> 4.8 Rating</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn-follow" onclick="visitSellerStore()"><i class="fas fa-store"></i> Visit Store</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description Section -->
+                <div class="description-section">
+                    <div class="product-description">
+                        <h3><i class="fas fa-info-circle"></i> Product Description</h3>
+                        <p>{{ product.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Simple Footer -->
+    <footer class="site-footer">
+      <div class="footer-wrapper">
+        <div class="footer-content">
+          <!-- Brand Section -->
+          <div class="footer-column footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-baby-carriage"></i>
+              <span>E-Baby</span>
+            </div>
+            <p class="footer-description">
+              Your premier destination for quality baby products.
+            </p>
+            <div class="footer-socials">
+              <a href="#" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a href="#" class="social-link" title="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-column">
+            <h4 class="footer-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="/about">About Us</a></li>
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/shipping">Shipping Info</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="footer-column">
+            <h4 class="footer-title">Get In Touch</h4>
+            <ul class="footer-contact">
+              <li>
+                <i class="fas fa-envelope"></i>
+                <a href="mailto:e-baby0@gmail.com">e-baby0@gmail.com</a>
+              </li>
+              <li>
+                <i class="fas fa-phone"></i>
+                <a href="tel:+639268713656">+63 926 871 3656</a>
+              </li>
+              <li>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Philippines</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="footer-divider"></div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-bottom-content">
+            <p class="copyright">&copy; 2024 E-Baby. All rights reserved.</p>
+            <div class="footer-bottom-links">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms & Conditions</a>
+              <a href="#">Cookie Policy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Modals -->
+    <div id="itemAddedModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h2 class="modal-title">Item Added to Cart!</h2>
+            <p class="modal-message">Your item has been successfully added to your cart.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal()">Continue Shopping</button>
+                <button class="modal-btn modal-btn-primary" onclick="window.location.href='/cart'">View Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cartFullModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Oops! Your Cart is Full</h2>
+            <p>You've reached the limit of 20 items in your cart. Please remove some items to add more.</p>
+            <div class="modal-buttons">
+                <button onclick="closeModal()">Close</button>
+                <button onclick="window.location.href='/cart'">View Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/product_details_new.js') }}"></script>
+
+</body>
+</html>

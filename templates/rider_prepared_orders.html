@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Prepared Orders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/seller_orders.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .prepared-orders { max-width: 1200px; margin: 24px auto; padding: 12px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .order-card { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+        .order-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .order-info { display: grid; grid-template-columns: 84px 1fr; gap: 12px; align-items: center; }
+        .order-info img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; }
+        .order-meta { color: #6b7280; font-size: 14px; }
+        .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+        .btn-primary { background: #4F46E5; border-color: #4F46E5; }
+    </style>
+</head>
+<body>
+    <div class="prepared-orders">
+        <h2>Prepared Orders</h2>
+        {% if orders %}
+            <div class="cards">
+                {% for order in orders %}
+                <div class="order-card">
+                    <div class="order-header">
+                        <div><strong>#{{ order.id }}</strong></div>
+                        <span class="badge badge-info">Prepared</span>
+                    </div>
+                    <div class="order-info">
+                        {% if order.image %}
+                        <img src="{{ url_for('static', filename='uploads/' + order.image) }}" alt="{{ order.name }}">
+                        {% endif %}
+                        <div>
+                            <div><strong>{{ order.name }}</strong></div>
+                            <div class="order-meta">Buyer: {{ order.email }}</div>
+                            <div class="order-meta">Seller: {{ order.seller_email }}</div>
+                            <div class="order-meta">Qty: {{ order.quantity }} • Total: ₱{{ '%.2f'|format(order.total_price|float) }}</div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#orderDetailsModal{{ order.id }}">View Details</button>
+                        <form action="{{ url_for('rider_deliver_order', order_id=order.id) }}" method="POST">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-truck"></i> Deliver</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Details Modal -->
+                <div class="modal fade" id="orderDetailsModal{{ order.id }}">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Order #{{ order.id }} — {{ order.name }}</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        {% if order.image %}
+                                        <img src="{{ url_for('static', filename='uploads/' + order.image) }}" class="img-fluid" alt="{{ order.name }}">
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-8">
+                                        <p><strong>Buyer:</strong> {{ order.email }}</p>
+                                        <p><strong>Seller:</strong> {{ order.seller_email }}</p>
+                                        <p><strong>Quantity:</strong> {{ order.quantity }}</p>
+                                        <p><strong>Total Price:</strong> ₱{{ '%.2f'|format(order.total_price|float) }}</p>
+                                        {% if order.delivery_address %}
+                                        <p><strong>Delivery Address:</strong> {{ order.delivery_address }}</p>
+                                        {% endif %}
+                                        {% if order.payment_method %}
+                                        <p><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No prepared orders available.</p>
+        {% endif %}
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+

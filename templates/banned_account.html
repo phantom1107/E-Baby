@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Suspended - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #DC2626, #EF4444);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+            opacity: 0.9;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .info-box {
+            background: #FEE2E2;
+            border: 1px solid #FCA5A5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            color: #7F1D1D;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .info-box p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .message-section {
+            margin-bottom: 30px;
+        }
+
+        .message-section h3 {
+            color: #111;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .message-section p {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #E5E7EB;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #D1D5DB;
+            transform: translateY(-2px);
+        }
+
+        .email-input-section {
+            margin-bottom: 25px;
+            display: none;
+        }
+
+        .email-input-section.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .email-input-section label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 8px;
+        }
+
+        .username-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .username-input-wrapper input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .username-input-wrapper input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .username-input-wrapper button {
+            padding: 10px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .username-input-wrapper button:hover {
+            background: #5568d3;
+        }
+
+        .hint-text {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 6px;
+        }
+
+        .footer {
+            background: #F9FAFB;
+            padding: 20px 30px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            color: #6B7280;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <i class="fas fa-ban"></i>
+            <h1>Account Suspended</h1>
+            <p>Your E-Baby account has been temporarily suspended</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Banned Reason -->
+            <div class="info-box">
+                <strong><i class="fas fa-info-circle"></i> Suspension Reason</strong>
+                <p>{{ banned_reason if banned_reason else 'No specific reason was provided.' }}</p>
+            </div>
+
+            <!-- Message Section -->
+            <div class="message-section">
+                <h3>What Happened?</h3>
+                <p>Your account ({{ banned_email }}) has been suspended by our admin team due to a violation of our terms and conditions or community guidelines.</p>
+                <p>While suspended, you will not be able to access your account, place orders, or use seller features.</p>
+            </div>
+
+            <!-- Contact Support -->
+            <div class="message-section">
+                <h3>Can I Appeal?</h3>
+                <p>Yes! If you believe this is a mistake or would like to discuss your suspension, you can contact our support team directly using the chat feature below.</p>
+                <p>To chat with support, please provide a temporary username so our team knows how to address you.</p>
+            </div>
+
+            <!-- Temporary Username Input -->
+            <div class="email-input-section" id="emailInputSection">
+                <label for="tempUsername">
+                    <i class="fas fa-user"></i> Your Temporary Username (for support chat)
+                </label>
+                <div class="username-input-wrapper">
+                    <input type="text" id="tempUsername" placeholder="Enter a name (e.g., John, Jane, etc.)" maxlength="50">
+                    <button onclick="startChat()">
+                        <i class="fas fa-comments"></i> Chat
+                    </button>
+                </div>
+                <div class="hint-text">
+                    <i class="fas fa-lightbulb"></i> This is just a temporary name for the admin to identify you during chat
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions">
+                <button class="btn btn-primary" onclick="toggleEmailInput()">
+                    <i class="fas fa-comments"></i> Contact Support
+                </button>
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Need help? Contact us at <a href="mailto:e-baby0@gmail.com">e-baby0@gmail.com</a></p>
+            <p>© 2025 E-Baby • All rights reserved</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleEmailInput() {
+            const section = document.getElementById('emailInputSection');
+            section.classList.toggle('active');
+            if (section.classList.contains('active')) {
+                document.getElementById('tempUsername').focus();
+            }
+        }
+
+        function startChat() {
+            const tempUsername = document.getElementById('tempUsername').value.trim();
+            
+            if (!tempUsername) {
+                alert('Please enter a temporary username');
+                return;
+            }
+
+            // Store the temporary username in session/local storage
+            sessionStorage.setItem('tempUsername', tempUsername);
+            sessionStorage.setItem('bannedEmail', '{{ banned_email }}');
+            
+            // Open the chat modal or redirect to chat page
+            // For now, we'll open a new window or use the existing chat system
+            window.open('/chat_banned?username=' + encodeURIComponent(tempUsername), 'chat', 'width=800,height=600');
+        }
+
+        // Allow Enter key to start chat
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('tempUsername').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    startChat();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

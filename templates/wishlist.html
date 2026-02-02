@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Wishlist - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/cart.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <style>
+      /* Wishlist-specific overrides */
+      .cart-title i:first-child {
+        color: #ec4899;
+      }
+      .stat-box i {
+        color: #f478b6;
+      }
+      .stat-box.highlight {
+        background: linear-gradient(135deg, #7c3aed, #f472b6);
+      }
+      .btn-add-to-cart {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--primary-dark)
+        );
+      }
+      .btn-remove-item {
+        border: 2px solid #ef4444;
+        color: white;
+        background: #ef4444;
+        padding: 0.65rem 1.25rem;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+      .btn-remove-item:hover {
+        background: #dc2626;
+        border-color: #dc2626;
+        color: white;
+      }
+      .btn-add-selected {
+        background: linear-gradient(135deg, #10b981, #34d399);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+      .btn-add-selected:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Header -->
+    <header class="navbar">
+      <div class="navbar-content">
+        <!-- Logo -->
+        <div class="logo-section">
+          <a href="/homepage" class="logo-link">
+            <img
+              src="/static/images/logo/E-Baby Logo.png"
+              alt="E-Baby"
+              class="logo-image"
+            />
+          </a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-section">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search products..."
+            class="search-input"
+          />
+          <button class="search-button" onclick="performSearch()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+
+        <!-- User Menu -->
+        <div class="user-menu">
+          <!-- Cart Button (outside dropdown) -->
+          <a href="/cart" class="nav-button" title="My Cart">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Cart</span>
+          </a>
+
+          <div class="profile-menu-container">
+            <button class="profile-btn">
+              {% if session.get('profile_pic') %}
+              <img
+                src="/static/{{ session['profile_pic'] }}"
+                alt="Profile"
+                class="profile-avatar"
+                onerror="this.src='/static/images/defaults/product-default.png'"
+              />
+              {% else %}
+              <i class="fas fa-user-circle"></i>
+              {% endif %}
+              <span
+                >{{ session['email'] if session['email'] else 'Guest' }}</span
+              >
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu" id="profileDropdown">
+              {% if session['email'] %}
+              <a href="/profile" class="dropdown-item">
+                <i class="fas fa-user"></i> My Profile
+              </a>
+              <a href="/orders" class="dropdown-item">
+                <i class="fas fa-shopping-box"></i> My Orders
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="#" onclick="logout()" class="dropdown-item logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+              {% else %}
+              <a href="/login" class="dropdown-item">
+                <i class="fas fa-sign-in-alt"></i> Login
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Wishlist Section -->
+    <main class="cart-main">
+      <div class="cart-wrapper">
+        <!-- Hero Section with Stats -->
+        {% if wishlist_items %}
+        <div class="cart-hero">
+          <div class="hero-content">
+            <h1 class="cart-title"><i class="fas fa-heart"></i> My Wishlist</h1>
+            <p class="hero-subtitle">Your saved items for later</p>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-box">
+              <div class="stat-icon">
+                <i class="fas fa-heart"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Total Items</span>
+                <span class="stat-value" id="item-count"
+                  >{{ wishlist_items|length }}</span
+                >
+              </div>
+            </div>
+            <div class="stat-box highlight">
+              <div class="stat-icon">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Total Value</span>
+                <span class="stat-value total-amount"
+                  >₱{{ total if total else '0.00' }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Main Grid Layout -->
+        <div class="cart-grid">
+          <!-- Items Section -->
+          <div class="cart-items-section wishlist-layout">
+            {% if wishlist_items %}
+            <!-- Section Header -->
+            <div class="section-header">
+              <h2>Your Wishlist</h2>
+              <div class="header-controls">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    id="select-all"
+                    class="select-checkbox"
+                  />
+                  Select All
+                </label>
+                <button class="btn-delete" onclick="deleteSelectedItems()">
+                  <i class="fas fa-trash-alt"></i> Delete Selected
+                </button>
+                <button class="btn-add-selected" onclick="addSelectedToCart()" id="addSelectedBtn" style="display: none;">
+                  <i class="fas fa-shopping-cart"></i> Add Selected to Cart
+                </button>
+              </div>
+            </div>
+
+            <!-- Items List -->
+            <div class="items-list-wrapper">
+              {% for item in wishlist_items %}
+              <div
+                class="item-card-modern"
+                data-item-id="{{ item['id'] }}"
+                data-product-id="{{ item['product_id'] }}"
+              >
+                <!-- Checkbox -->
+                <div class="item-card-select">
+                  <input type="checkbox" class="item-checkbox" />
+                </div>
+
+                <!-- Image -->
+                <div class="item-card-image">
+                  <img
+                    src="{% if item['image'] %}{% if item['image'].startswith('/') %}{{ item['image'] }}{% else %}/static/uploads/{{ item['image'] }}{% endif %}{% else %}/static/images/defaults/product-default.png{% endif %}"
+                    alt="{{ item['name'] }}"
+                    class="product-img"
+                    onerror="this.src='/static/images/defaults/product-default.png'"
+                  />
+                </div>
+
+                <!-- Info -->
+                <div class="item-card-info">
+                  <h3 class="item-title">{{ item['name'] }}</h3>
+                  <p class="item-detail">
+                    Added:
+                    <strong>
+                      {% if item['date_added'] %}
+                        {% if item['date_added'].strftime %}
+                          {{ item['date_added'].strftime('%b %d, %Y') }}
+                        {% else %}
+                          {{ item['date_added'] }}
+                        {% endif %}
+                      {% else %}
+                        N/A
+                      {% endif %}
+                    </strong>
+                  </p>
+                  <p class="item-detail">
+                    Price: <span class="item-price">₱{{ item['price'] }}</span>
+                  </p>
+                </div>
+
+                <!-- Actions (4th column) -->
+                <div class="wishlist-actions">
+                  <button
+                    class="btn-primary btn-add-to-cart"
+                    onclick="handleAddToCart(this, {{ item['product_id'] }}, {{ item['id'] }})"
+                    data-product-id="{{ item['product_id'] }}"
+                    data-wishlist-id="{{ item['id'] }}"
+                    data-seller-email="{{ item['seller_email'] }}">
+                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                  </button>
+                  <button
+                    class="btn-remove-item"
+                    onclick="removeFromWishlist({{ item['id'] }})">
+                    <i class="fas fa-trash-alt"></i> Remove
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <!-- Empty Wishlist State -->
+            <div class="empty-state">
+              <i class="fas fa-heart"></i>
+              <h3>Your Wishlist is Empty</h3>
+              <p>Start adding products to your wishlist</p>
+              <a href="/homepage" class="btn-primary">
+                <i class="fas fa-arrow-left"></i> Continue Shopping
+              </a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Summary Sidebar -->
+          {% if wishlist_items %}
+          <aside class="checkout-sidebar">
+            <div class="sidebar-card sticky-top">
+              <h3 class="sidebar-title">Wishlist Summary</h3>
+
+              <div class="summary-details">
+                <div class="summary-line">
+                  <span>Total Items:</span>
+                  <span>{{ wishlist_items|length }}</span>
+                </div>
+                <div class="summary-line">
+                  <span>Total Value:</span>
+                  <span>₱{{ total if total else '0.00' }}</span>
+                </div>
+              </div>
+
+              <div class="summary-divider"></div>
+
+              <div class="summary-total">
+                <span>Wishlist Value:</span>
+                <span class="total-price"
+                  >₱{{ total if total else '0.00' }}</span
+                >
+              </div>
+
+              <button class="btn-checkout-primary" onclick="addAllToCartWithModals()">
+                <i class="fas fa-shopping-cart"></i> Add All to Cart
+              </button>
+              <button
+                class="btn-continue-shopping"
+                onclick="window.location.href='/homepage'"
+              >
+                <i class="fas fa-arrow-left"></i> Continue Shopping
+              </button>
+            </div>
+          </aside>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== ADD TO CART MODAL ===== -->
+    <div id="addToCartModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+      <div class="modal-content" style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease;">
+        <button class="modal-close" onclick="closeAddToCartModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">
+          <i class="fas fa-times"></i>
+        </button>
+        <h2 style="margin-top: 0;">Add to Cart</h2>
+        <div class="modal-product-image" id="modalProductImageContainer" style="text-align: center; margin-bottom: 1.5rem;">
+          <img
+            id="modalProductImage"
+            src=""
+            alt="Product Image"
+            style="
+              max-width: 100%;
+              max-height: 250px;
+              width: auto;
+              height: auto;
+              object-fit: contain;
+              border-radius: 8px;
+            "
+          />
+        </div>
+        <div class="modal-product-info" id="modalProductInfo" style="margin-bottom: 1.5rem;"></div>
+        <div class="modal-options">
+          <div class="option-group" style="margin-bottom: 1rem;">
+            <label for="colorSelect"
+              >Color <span class="required" style="color: red;">*</span></label
+            >
+            <select id="colorSelect" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+              <option value="">Select a color</option>
+            </select>
+          </div>
+          <div
+            class="option-group"
+            id="sizeGroupContainer"
+            style="display: none; margin-bottom: 1rem;"
+          >
+            <label for="sizeSelect">Size</label>
+            <select id="sizeSelect" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+              <option value="">Select a size</option>
+            </select>
+          </div>
+          <div class="option-group">
+            <label for="quantityInput"
+              >Quantity <span class="required" style="color: red;">*</span>
+              <small id="stockWarning"></small
+            ></label>
+            <input
+              type="number"
+              id="quantityInput"
+              value="1"
+              min="1"
+              max="20"
+              required
+              style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+            />
+          </div>
+        </div>
+        <button onclick="handleConfirmAddToCart()" class="modal-confirm-btn" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 1rem; transition: all 0.3s ease;">
+          <i class="fas fa-shopping-cart"></i> Add to Cart
+        </button>
+      </div>
+    </div>
+    <style>
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+    <footer class="site-footer">
+      <div class="footer-wrapper">
+        <div class="footer-content">
+          <!-- Brand Section -->
+          <div class="footer-column footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-baby-carriage"></i>
+              <span>E-Baby</span>
+            </div>
+            <p class="footer-description">
+              Your premier destination for quality baby products and accessories.
+            </p>
+            <div class="footer-socials">
+              <a href="#" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a href="#" class="social-link" title="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-column">
+            <h4 class="footer-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="/about">About Us</a></li>
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/shipping">Shipping Info</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="footer-column">
+            <h4 class="footer-title">Get In Touch</h4>
+            <ul class="footer-contact">
+              <li>
+                <i class="fas fa-envelope"></i>
+                <a href="mailto:e-baby0@gmail.com">e-baby0@gmail.com</a>
+              </li>
+              <li>
+                <i class="fas fa-phone"></i>
+                <a href="tel:+639268713656">+63 926 871 3656</a>
+              </li>
+              <li>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Philippines</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="footer-divider"></div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-bottom-content">
+            <p class="copyright">&copy; 2024 E-Baby. All rights reserved.</p>
+            <div class="footer-bottom-links">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms & Conditions</a>
+              <a href="#">Cookie Policy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/wishlist.js') }}"></script>
+    <script>
+      // Initialize dropdown functionality
+      document.addEventListener("DOMContentLoaded", function () {
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (event) {
+          const dropdown = document.getElementById("profileDropdown");
+          const profileBtn = document.querySelector(".profile-btn");
+
+          if (
+            dropdown &&
+            profileBtn &&
+            !profileBtn.contains(event.target) &&
+            !dropdown.contains(event.target)
+          ) {
+            dropdown.classList.remove("active");
+          }
+        });
+
+        // Profile button click handler
+        const profileBtn = document.querySelector(".profile-btn");
+        if (profileBtn) {
+          profileBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            toggleProfileDropdown();
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

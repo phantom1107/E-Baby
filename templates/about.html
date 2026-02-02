@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About E-Baby - Premium Baby Products</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ============================================================
+           THEME VARIABLES - MATCHING HOMEPAGE
+           ============================================================ */
+        :root {
+            --primary-color: #7c3aed;
+            --primary-dark: #6d28d9;
+            --primary-light: #a78bfa;
+            --accent-color: #f59e0b;
+            --accent-light: #fcd34d;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f97316;
+            --dark-bg: #0f172a;
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--light-bg) 0%, #eef2ff 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* ============================================================
+           HEADER - MATCHING HOMEPAGE
+           ============================================================ */
+        header {
+            background: white;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .top-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            padding: 1.5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: var(--transition);
+        }
+
+        .logo-link:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-image {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .nav-placeholder {
+            flex-grow: 1;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ============================================================
+           HERO SECTION
+           ============================================================ */
+        .hero {
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            padding: 3rem 2rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            opacity: 0.95;
+            margin-bottom: 2rem;
+        }
+
+        /* ============================================================
+           MAIN CONTENT
+           ============================================================ */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            margin: 4rem 0;
+            padding: 3rem 0;
+        }
+
+        /* ============================================================
+           SECTION STYLES
+           ============================================================ */
+        .section-title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 800;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+            padding-bottom: 1rem;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 2px;
+        }
+
+        /* ============================================================
+           STORY SECTION
+           ============================================================ */
+        .story-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .story-text h3 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .story-text p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        .story-image {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(245, 158, 11, 0.1));
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ============================================================
+           VALUES GRID
+           ============================================================ */
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .value-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            border: 2px solid transparent;
+        }
+
+        .value-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-color);
+        }
+
+        .value-card i {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .value-card h3 {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .value-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ============================================================
+           TEAM SECTION
+           ============================================================ */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .team-member {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+        }
+
+        .team-member:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .member-avatar {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(245, 158, 11, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: var(--primary-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .member-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .member-info {
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+        .member-info h4 {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .member-role {
+            color: var(--accent-color);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .member-info p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ============================================================
+           STATS SECTION
+           ============================================================ */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           CTA SECTION
+           ============================================================ */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 4rem 2rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            margin: 4rem 0;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        footer {
+            background: var(--dark-bg);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        footer p {
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ============================================================
+           RESPONSIVE DESIGN
+           ============================================================ */
+        @media (max-width: 768px) {
+            .top-header {
+                flex-wrap: wrap;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .story-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .story-image {
+                height: 300px;
+            }
+
+            .values-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .team-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+
+            .hero {
+                min-height: 400px;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            section {
+                margin: 2rem 0;
+                padding: 2rem 0;
+            }
+
+            .cta-section {
+                padding: 2.5rem 1.5rem;
+            }
+
+            .cta-section h2 {
+                font-size: 1.8rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .stat-number {
+                font-size: 2.5rem;
+            }
+
+            .hero-content {
+                padding: 2rem 1rem;
+            }
+
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .value-card {
+                padding: 1.5rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================================
+         HEADER
+         ============================================================ -->
+    <header>
+        <div class="top-header">
+            <a href="/homepage" class="logo-link">
+                <img src="/static/images/logo/E-Baby Logo.png" alt="E-Baby" class="logo-image">
+            </a>
+            <div class="nav-placeholder"></div>
+            <a href="/homepage" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Home
+            </a>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         HERO SECTION
+         ============================================================ -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>About E-Baby</h1>
+            <p>A 3rd Year College IT - 1st Semester Final Project</p>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         MAIN CONTENT
+         ============================================================ -->
+    <div class="container">
+        <!-- ============================================================
+             OUR STORY SECTION
+             ============================================================ -->
+        <section>
+            <h2 class="section-title">Project Overview</h2>
+            <div class="story-grid">
+                <div class="story-text">
+                    <h3>What is E-Baby?</h3>
+                    <p>E-Baby is a full-stack e-commerce platform built as a final project for the 3rd Year IT program (1st Semester). This project demonstrates the implementation of a complete web application featuring user authentication, role-based dashboards, product management, order processing, and real-time chat functionality.</p>
+                    <p>The platform includes multiple user roles including customers, sellers, riders/delivery personnel, and administrators. It showcases modern web development practices including responsive design, database management, API integration, and server-side logic with Flask/Python.</p>
+                </div>
+                <div class="story-image">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             KEY FEATURES SECTION
+             ============================================================ -->
+        <section>
+            <h2 class="section-title">Key Features</h2>
+            <div class="values-grid">
+                <div class="value-card">
+                    <i class="fas fa-lock"></i>
+                    <h3>Authentication System</h3>
+                    <p>Secure user registration and login with OTP verification, role-based access control for customers, sellers, riders, and admins.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-shop"></i>
+                    <h3>Product Management</h3>
+                    <p>Complete CRUD functionality for products. Sellers can manage inventory, set prices, and track sales performance through their dashboard.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Admin Dashboard</h3>
+                    <p>Comprehensive admin panel with user management, sales analytics, tax tracking, seller approval system, and real-time reporting.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>E-Commerce Features</h3>
+                    <p>Full shopping cart, wishlist functionality, product search, category filtering, and secure checkout with order tracking.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-comments"></i>
+                    <h3>Real-Time Chat</h3>
+                    <p>Integrated messaging system allowing customers to communicate with sellers and support team in real-time.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-truck"></i>
+                    <h3>Delivery Management</h3>
+                    <p>Rider dashboard for order assignment, delivery tracking, and earnings management with order status updates.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             TECH STACK SECTION
+             ============================================================ -->
+        <section>
+            <h2 class="section-title">Technology Stack</h2>
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-number">
+                        <i class="fab fa-python" style="font-size: 2.5rem; color: #3776ab;"></i>
+                    </div>
+                    <div class="stat-label">Backend: Flask/Python</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">
+                        <i class="fas fa-database" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <div class="stat-label">Database: MySQL</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">
+                        <i class="fab fa-html5" style="font-size: 2.5rem; color: #e34c26;"></i>
+                    </div>
+                    <div class="stat-label">Frontend: HTML/CSS/JS</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">
+                        <i class="fas fa-mobile-alt" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <div class="stat-label">Responsive Design</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             OUR TEAM SECTION
+             ============================================================ -->
+        <section>
+            <h2 class="section-title">Meet Our Team</h2>
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="member-avatar">
+                        <img src="/static/images/team/justine.jpg" alt="Justine Sandoval" onerror="this.parentElement.innerHTML='<i class=&quot;fas fa-user-circle&quot;></i>'">
+                    </div>
+                    <div class="member-info">
+                        <h4>Justine Sandoval</h4>
+                        <div class="member-role">Frontend Developer</div>
+                        <p>Passionate about creating beautiful and responsive user interfaces.</p>
+                    </div>
+                </div>
+                <div class="team-member">
+                    <div class="member-avatar">
+                        <img src="/static/images/team/roberto.jpg" alt="Roberto Tamayo" onerror="this.parentElement.innerHTML='<i class=&quot;fas fa-user-circle&quot;></i>'">
+                    </div>
+                    <div class="member-info">
+                        <h4>Roberto Tamayo</h4>
+                        <div class="member-role">Backend Developer</div>
+                        <p>Dedicated to building robust and scalable server solutions.</p>
+                    </div>
+                </div>
+                <div class="team-member">
+                    <div class="member-avatar">
+                        <img src="/static/images/team/axel.jpg" alt="Axel Ross Mendoza" onerror="this.parentElement.innerHTML='<i class=&quot;fas fa-user-circle&quot;></i>'">
+                    </div>
+                    <div class="member-info">
+                        <h4>Axel Ross Mendoza</h4>
+                        <div class="member-role">Backend Developer</div>
+                        <p>Committed to developing efficient and reliable backend systems.</p>
+                    </div>
+                </div>
+                <div class="team-member">
+                    <div class="member-avatar">
+                        <img src="/static/images/team/vonn.jpg" alt="Vonn Kirby Zotomayor" onerror="this.parentElement.innerHTML='<i class=&quot;fas fa-user-circle&quot;></i>'">
+                    </div>
+                    <div class="member-info">
+                        <h4>Vonn Kirby Zotomayor</h4>
+                        <div class="member-role">Frontend Developer</div>
+                        <p>Focused on delivering exceptional user experiences and modern interfaces.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             CALL TO ACTION SECTION
+             ============================================================ -->
+        <section class="cta-section">
+            <h2>Ready to Test E-Baby?</h2>
+            <p>Explore the platform and check out all the features built for this academic project. Feel free to test all functionalities!</p>
+            <div class="cta-buttons">
+                <a href="/homepage" class="btn btn-primary">
+                    <i class="fas fa-shopping-bag"></i>
+                    Explore Platform
+                </a>
+                <a href="/chat/threads" class="btn btn-secondary">
+                    <i class="fas fa-comments"></i>
+                    Test Chat
+                </a>
+            </div>
+        </section>
+    </div>
+
+    <!-- ============================================================
+         FOOTER
+         ============================================================ -->
+    <footer class="site-footer">
+      <div class="footer-wrapper">
+        <div class="footer-content">
+          <!-- Brand Section -->
+          <div class="footer-column footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-baby-carriage"></i>
+              <span>E-Baby</span>
+            </div>
+            <p class="footer-description">
+              Bringing quality and innovation to families everywhere.
+            </p>
+            <div class="footer-socials">
+              <a href="#" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a href="#" class="social-link" title="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-column">
+            <h4 class="footer-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="/homepage">Home</a></li>
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/shipping">Shipping Info</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="footer-column">
+            <h4 class="footer-title">Get In Touch</h4>
+            <ul class="footer-contact">
+              <li>
+                <i class="fas fa-envelope"></i>
+                <a href="mailto:ebabyservices@gmail.com">ebabyservices@gmail.com</a>
+              </li>
+              <li>
+                <i class="fas fa-phone"></i>
+                <a href="tel:+639651337681">+63 965 133 7681</a>
+              </li>
+              <li>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Philippines</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="footer-divider"></div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-bottom-content">
+            <p class="copyright">&copy; 2024 E-Baby. All rights reserved.</p>
+            <div class="footer-bottom-links">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms & Conditions</a>
+              <a href="#">Cookie Policy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</body>
+</html> 

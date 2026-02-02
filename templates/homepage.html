@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-Baby - Premium Baby Products</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/homepage.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+  </head>
+  <body>
+    <!-- ===== HEADER & NAVIGATION ===== -->
+    <header>
+      <div class="top-header">
+        <!-- Logo -->
+        <div class="logo-container">
+          <a href="/homepage" class="logo-link">
+            <img
+              src="/static/images/logo/E-Baby Logo.png"
+              alt="E-Baby"
+              class="logo-image"
+            />
+          </a>
+        </div>
+
+        <!-- Search with Dropdown -->
+        <div class="search-container" style="position: relative;">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search for baby products..."
+            class="search-bar"
+            oninput="handleSearchInput(event)"
+            onkeypress="handleSearchKeypress(event)"
+          />
+          <button onclick="performSearch()" class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+          
+          <!-- Search Dropdown Results -->
+          <div id="searchDropdown" class="search-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 500px; overflow-y: auto; z-index: 1000; margin-top: 8px;">
+            <div id="dropdownContent" style="padding: 10px 0;"></div>
+          </div>
+        </div>
+
+        <!-- User Actions -->
+        <div class="user-actions">
+          <!-- Wishlist -->
+          <div class="wishlist-container dropdown">
+            <button class="icon-btn" onclick="toggleWishlistDropdown(event)">
+              <i class="fas fa-heart"></i>
+              <span class="badge" id="wishlistCount">0</span>
+            </button>
+            <div class="dropdown-content" id="wishlistDropdown">
+              <div class="dropdown-header">
+                <h3>Wishlist</h3>
+              </div>
+              <div class="wishlist-items" id="wishlistItems">
+                <!-- Loaded dynamically -->
+              </div>
+              <div class="dropdown-footer">
+                <a href="/wishlist" class="view-all-btn">View Wishlist</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cart -->
+          <div class="cart-container dropdown">
+            <button class="icon-btn" onclick="toggleCartDropdown(event)">
+              <i class="fas fa-shopping-cart"></i>
+              <span class="badge" id="cartCount">0</span>
+            </button>
+            <div class="dropdown-content" id="cartDropdown">
+              <div class="dropdown-header">
+                <h3>Shopping Cart</h3>
+              </div>
+              <div class="cart-items" id="cartItems">
+                <!-- Loaded dynamically -->
+              </div>
+              <div class="dropdown-footer">
+                <div class="cart-total">
+                  <span>Total:</span>
+                  <span id="cartTotal">₱0.00</span>
+                </div>
+                <a href="/cart" class="checkout-btn">Go to Cart</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile -->
+          <div class="profile-dropdown-container dropdown">
+            <button class="user-email" onclick="toggleProfileDropdown(event)">
+              {% if session.get('profile_pic') %}
+              <img
+                src="/static/{{ session['profile_pic'] }}"
+                alt="Profile"
+                class="profile-pic"
+              />
+              {% else %}
+              <i class="fas fa-user"></i>
+              {% endif %}
+              <span>{{ session.get('email', 'Guest') }}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-content" id="profileDropdown">
+              {% if session.get('email') %}
+              <!-- Logged in user menu -->
+              <a href="/profile" class="dropdown-item"
+                ><i class="fas fa-user"></i> Profile</a
+              >
+              <a href="/orders" class="dropdown-item"
+                ><i class="fas fa-box"></i> Orders</a
+              >
+              <a href="/wishlist" class="dropdown-item"
+                ><i class="fas fa-heart"></i> Wishlist</a
+              >
+              <div class="dropdown-divider"></div>
+              <a href="#" onclick="logout()" class="dropdown-item logout"
+                ><i class="fas fa-sign-out-alt"></i> Logout</a
+              >
+              {% else %}
+              <!-- Guest menu -->
+              <a href="/login" class="dropdown-item"
+                ><i class="fas fa-sign-in-alt"></i> Login</a
+              >
+              <a href="/auth" class="dropdown-item"
+                ><i class="fas fa-user-plus"></i> Register</a
+              >
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Bar -->
+      <nav class="main-nav">
+        <ul class="nav-links">
+          <li>
+            <a href="/homepage" class="active">
+              <i class="fas fa-home"></i> HOME
+            </a>
+          </li>
+          <li>
+            <a href="#featured-section">
+              <i class="fas fa-star"></i> FEATURED
+            </a>
+          </li>
+          <li>
+            <a href="#new-arrivals-section">
+              <i class="fas fa-tag"></i> NEW ARRIVALS
+            </a>
+          </li>
+          <li class="dropdown-nav">
+            <a href="#" onclick="return false">
+              <i class="fas fa-th-list"></i> CATEGORIES
+              <i class="fas fa-chevron-down"></i>
+            </a>
+            <div class="nav-dropdown-content" id="categoriesDropdown">
+              <a
+                href="#"
+                onclick="filterByCategory('Baby Clothes & Accessories')"
+              >
+                <i class="fas fa-baby"></i> Baby Clothes & Accessories
+              </a>
+              <a href="#" onclick="filterByCategory('Toys & Games')">
+                <i class="fas fa-puzzle-piece"></i> Toys & Games
+              </a>
+              <a href="#" onclick="filterByCategory('Educational Materials')">
+                <i class="fas fa-book"></i> Educational Materials
+              </a>
+              <a href="#" onclick="filterByCategory('Strollers & Gear')">
+                <i class="fas fa-baby-carriage"></i> Strollers & Gear
+              </a>
+              <a href="#" onclick="filterByCategory('Nursery Furniture')">
+                <i class="fas fa-bed"></i> Nursery Furniture
+              </a>
+              <a href="#" onclick="filterByCategory('Safety and Health')">
+                <i class="fas fa-first-aid"></i> Safety and Health
+              </a>
+            </div>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- ===== HERO CAROUSEL ===== -->
+    <section class="hero-carousel">
+      <div class="carousel-wrapper">
+        <div class="carousel-track" id="carouselTrack">
+          <!-- Slide 1: Premium Baby Clothes -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel1.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Premium Baby Clothes</h1>
+              <p>Soft, comfortable, and stylish apparel for your little one</p>
+              <a href="#featured-section" class="cta-button">EXPLORE</a>
+            </div>
+          </div>
+          <!-- Slide 2: Educational Toys -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel2.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Educational Toys</h1>
+              <p>Fun and learning combined for your baby's development</p>
+              <a href="#featured-section" class="cta-button">DISCOVER</a>
+            </div>
+          </div>
+          <!-- Slide 3: Nursery Furniture -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel3.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Nursery Furniture</h1>
+              <p>Safe and beautiful furniture for your baby's room</p>
+              <a href="#featured-section" class="cta-button">VIEW NOW</a>
+            </div>
+          </div>
+          <!-- Slide 4: Safety Essentials -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel4.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Safety Essentials</h1>
+              <p>Keep your baby safe with our certified products</p>
+              <a href="#featured-section" class="cta-button">BROWSE</a>
+            </div>
+          </div>
+          <!-- Slide 5: Strollers & Gear -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel5.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Strollers & Gear</h1>
+              <p>Lightweight and durable gear for on-the-go parents</p>
+              <a href="#featured-section" class="cta-button">SHOP</a>
+            </div>
+          </div>
+          <!-- Slide 6: Feeding Essentials -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel6.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Feeding Essentials</h1>
+              <p>Everything you need for comfortable feeding time</p>
+              <a href="#featured-section" class="cta-button">SEE MORE</a>
+            </div>
+          </div>
+          <!-- Slide 7: Bath Time Essentials -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel7.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Bath Time Essentials</h1>
+              <p>Gentle and safe products for your baby's bath</p>
+              <a href="#featured-section" class="cta-button">EXPLORE</a>
+            </div>
+          </div>
+          <!-- Slide 8: Sleep Solutions -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel8.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Sleep Solutions</h1>
+              <p>Comfortable bedding and sleepwear for peaceful nights</p>
+              <a href="#featured-section" class="cta-button">DISCOVER</a>
+            </div>
+          </div>
+          <!-- Slide 9: Accessories Collection -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel9.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Accessories Collection</h1>
+              <p>Complete your baby's wardrobe with stylish accessories</p>
+              <a href="#featured-section" class="cta-button">VIEW ALL</a>
+            </div>
+          </div>
+          <!-- Slide 10: Welcome to E-Baby -->
+          <div
+            class="carousel-slide"
+            style="
+              background-image: url('/static/images/for carousel/carousel10.jpg');
+            "
+          >
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <h1>Welcome to E-Baby</h1>
+              <p>Discover premium baby products from trusted sellers</p>
+              <a href="#featured-section" class="cta-button">SHOP NOW</a>
+            </div>
+          </div>
+        </div>
+        <button class="carousel-btn prev" onclick="prevSlide()">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="carousel-btn next" onclick="nextSlide()">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <div class="carousel-dots" id="carouselDots"></div>
+      </div>
+    </section>
+
+    <!-- ===== FEATURED PRODUCTS SECTION ===== -->
+    <section class="featured-section" id="featured-section">
+      <div class="section-header">
+        <h2>Featured Products</h2>
+        <p>Handpicked selections from our best sellers</p>
+      </div>
+
+      <div class="products-wrapper">
+        {% if featured_products %}
+        <div class="sellers-container" id="featuredContainer">
+          {% set featured_by_seller = {} %} {% for product in featured_products
+          %} {% set seller_name = product.first_name + ' ' + product.last_name
+          %} {% if seller_name not in featured_by_seller %} {% set _ =
+          featured_by_seller.update({seller_name: []}) %} {% endif %} {% set _ =
+          featured_by_seller[seller_name].append(product) %} {% endfor %} {% for
+          seller_name, seller_products in featured_by_seller.items() %}
+          <div class="seller-group">
+            <div class="seller-header">
+              <h3>{{ seller_name }}</h3>
+              <a
+                href="{{ url_for('view_seller', seller_email=seller_products[0].seller_email) }}"
+                class="store-btn"
+                ><i class="fas fa-store"></i> Visit Store</a
+              >
+            </div>
+            <div class="products-grid">
+              {% for product in seller_products %}
+              <div class="product-card">
+                <div class="product-image">
+                  <img
+                    src="/static/uploads/{{ product.image }}"
+                    alt="{{ product.name }}"
+                  />
+                  <div class="product-actions">
+                    <button
+                      type="button"
+                      class="action-btn add-to-cart"
+                      data-product-id="{{ product.id }}"
+                      data-product-name="{{ product.name }}"
+                      data-product-price="{{ product.price }}"
+                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-product-colors="{{ product.color }}"
+                      data-product-sizes="{{ product.size }}"
+                      data-product-stock="{{ product.quantity }}"
+                      data-seller-email="{{ product.seller_email }}"
+                      onclick="handleAddToCart(this)"
+                    >
+                      <i class="fas fa-shopping-cart"></i> Add to Cart
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn wishlist"
+                      data-product-id="{{ product.id }}"
+                      data-product-name="{{ product.name }}"
+                      data-product-price="{{ product.price }}"
+                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-seller-email="{{ product.seller_email }}"
+                      onclick="handleAddToWishlist(this)"
+                    >
+                      <i class="fas fa-heart"></i> Wishlist
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn view-details"
+                      onclick="viewProductDetails({{ product.id }})"
+                    >
+                      <i class="fas fa-eye"></i> View Details
+                    </button>
+                  </div>
+                </div>
+                <div class="product-info">
+                  <h4 class="product-name">{{ product.name }}</h4>
+                  <p class="product-price">
+                    ₱{{ "%.2f"|format(product.price) }}
+                  </p>
+                  <p class="product-stock">
+                    <i class="fas fa-box"></i> Stock: {{ product.quantity }}
+                  </p>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-products">
+          <i class="fas fa-box-open"></i>
+          <h3>No Featured Products</h3>
+          <p>Check back soon for exciting new products!</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ===== NEW ARRIVALS SECTION ===== -->
+    <section class="new-arrivals-section" id="new-arrivals-section">
+      <div class="section-header">
+        <h2>New Arrivals</h2>
+        <p>Latest products added in the last 1-2 days</p>
+      </div>
+
+      <div class="products-wrapper">
+        {% if new_arrivals %}
+        <div class="sellers-container" id="newArrivalsContainer">
+          {% set arrivals_by_seller = {} %} {% for product in new_arrivals %} {%
+          set seller_name = product.first_name + ' ' + product.last_name %} {%
+          if seller_name not in arrivals_by_seller %} {% set _ =
+          arrivals_by_seller.update({seller_name: []}) %} {% endif %} {% set _ =
+          arrivals_by_seller[seller_name].append(product) %} {% endfor %} {% for
+          seller_name, seller_products in arrivals_by_seller.items() %}
+          <div class="seller-group">
+            <div class="seller-header">
+              <h3>{{ seller_name }}</h3>
+              <a
+                href="{{ url_for('view_seller', seller_email=seller_products[0].seller_email) }}"
+                class="store-btn"
+                ><i class="fas fa-store"></i> Visit Store</a
+              >
+            </div>
+            <div class="products-grid">
+              {% for product in seller_products %}
+              <div class="product-card">
+                <div class="product-image">
+                  {% set days_old = (now - product.created_at).days %} {% if
+                  days_old <= 2 %}
+                  <div class="product-badge">NEW</div>
+                  {% endif %}
+                  <img
+                    src="/static/uploads/{{ product.image }}"
+                    alt="{{ product.name }}"
+                  />
+                  <div class="product-actions">
+                    <button
+                      type="button"
+                      class="action-btn add-to-cart"
+                      data-product-id="{{ product.id }}"
+                      data-product-name="{{ product.name }}"
+                      data-product-price="{{ product.price }}"
+                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-product-colors="{{ product.color }}"
+                      data-product-sizes="{{ product.size }}"
+                      data-product-stock="{{ product.quantity }}"
+                      data-seller-email="{{ product.seller_email }}"
+                      onclick="handleAddToCart(this)"
+                    >
+                      <i class="fas fa-shopping-cart"></i> Add to Cart
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn wishlist"
+                      data-product-id="{{ product.id }}"
+                      data-product-name="{{ product.name }}"
+                      data-product-price="{{ product.price }}"
+                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-seller-email="{{ product.seller_email }}"
+                      onclick="handleAddToWishlist(this)"
+                    >
+                      <i class="fas fa-heart"></i> Wishlist
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn view-details"
+                      onclick="viewProductDetails({{ product.id }})"
+                    >
+                      <i class="fas fa-eye"></i> View Details
+                    </button>
+                  </div>
+                </div>
+                <div class="product-info">
+                  <h4 class="product-name">{{ product.name }}</h4>
+                  <p class="product-price">
+                    ₱{{ "%.2f"|format(product.price) }}
+                  </p>
+                  <p class="product-stock">
+                    <i class="fas fa-box"></i> Stock: {{ product.quantity }}
+                  </p>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-products">
+          <i class="fas fa-box-open"></i>
+          <h3>No New Arrivals</h3>
+          <p>Check back soon for new products!</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ===== CATEGORIES SECTION ===== -->
+    <section class="categories-section">
+      <div class="section-header">
+        <h2>Shop by Category</h2>
+        <p>Browse products by category</p>
+      </div>
+
+      <div class="categories-grid">
+        <div
+          class="category-card"
+          onclick="filterByCategory('Baby Clothes & Accessories')"
+        >
+          <div class="category-icon">
+            <i class="fas fa-baby"></i>
+          </div>
+          <h3>Baby Clothes & Accessories</h3>
+        </div>
+        <div class="category-card" onclick="filterByCategory('Toys & Games')">
+          <div class="category-icon">
+            <i class="fas fa-puzzle-piece"></i>
+          </div>
+          <h3>Toys & Games</h3>
+        </div>
+        <div
+          class="category-card"
+          onclick="filterByCategory('Educational Materials')"
+        >
+          <div class="category-icon">
+            <i class="fas fa-book"></i>
+          </div>
+          <h3>Educational Materials</h3>
+        </div>
+        <div
+          class="category-card"
+          onclick="filterByCategory('Strollers & Gear')"
+        >
+          <div class="category-icon">
+            <i class="fas fa-baby-carriage"></i>
+          </div>
+          <h3>Strollers & Gear</h3>
+        </div>
+        <div
+          class="category-card"
+          onclick="filterByCategory('Nursery Furniture')"
+        >
+          <div class="category-icon">
+            <i class="fas fa-bed"></i>
+          </div>
+          <h3>Nursery Furniture</h3>
+        </div>
+        <div
+          class="category-card"
+          onclick="filterByCategory('Safety and Health')"
+        >
+          <div class="category-icon">
+            <i class="fas fa-first-aid"></i>
+          </div>
+          <h3>Safety and Health</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CATEGORY FILTERED PRODUCTS ===== -->
+    <section
+      class="category-products-section"
+      id="categoryProductsSection"
+      style="display: none"
+    >
+      <div class="section-header">
+        <h2 id="categoryTitle">Category Products</h2>
+        <button onclick="closeCategoryFilter()" class="close-filter-btn">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+
+      <div class="products-wrapper">
+        <div class="sellers-container" id="categoryProductsContainer">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ADD TO CART MODAL ===== -->
+    <div id="addToCartModal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeAddToCartModal()">
+          <i class="fas fa-times"></i>
+        </button>
+        <h2>Add to Cart</h2>
+        <div class="modal-product-image" id="modalProductImageContainer">
+          <img
+            id="modalProductImage"
+            src=""
+            alt="Product Image"
+            style="
+              max-width: 100%;
+              max-height: 250px;
+              width: auto;
+              height: auto;
+              object-fit: contain;
+              border-radius: 8px;
+            "
+          />
+        </div>
+        <div class="modal-product-info" id="modalProductInfo"></div>
+        <div class="modal-options">
+          <div class="option-group">
+            <label for="colorSelect"
+              >Color <span class="required">*</span></label
+            >
+            <select id="colorSelect" required>
+              <option value="">Select a color</option>
+            </select>
+          </div>
+          <div
+            class="option-group"
+            id="sizeGroupContainer"
+            style="display: none"
+          >
+            <label for="sizeSelect">Size</label>
+            <select id="sizeSelect">
+              <option value="">Select a size</option>
+            </select>
+          </div>
+          <div class="option-group">
+            <label for="quantityInput"
+              >Quantity <span class="required">*</span>
+              <small id="stockWarning"></small
+            ></label>
+            <input
+              type="number"
+              id="quantityInput"
+              value="1"
+              min="1"
+              max="20"
+              required
+            />
+          </div>
+        </div>
+        <button onclick="confirmAddToCart()" class="modal-confirm-btn">
+          <i class="fas fa-shopping-cart"></i> Add to Cart
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== LOGIN/REGISTER PROMPT MODAL ===== -->
+    <div id="authPromptModal" class="modal" style="display: none">
+      <div class="modal-content auth-modal">
+        <button class="modal-close" onclick="closeAuthPromptModal()">
+          <i class="fas fa-times"></i>
+        </button>
+        <h2>Sign In Required</h2>
+        <p>You need to be logged in to perform this action.</p>
+        <div class="auth-buttons">
+          <button
+            onclick="window.location.href='/auth?tab=login'"
+            class="modal-confirm-btn"
+          >
+            <i class="fas fa-sign-in-alt"></i> Sign In
+          </button>
+          <button
+            onclick="window.location.href='/auth?tab=register'"
+            class="modal-btn secondary"
+          >
+            <i class="fas fa-user-plus"></i> Register
+          </button>
+        </div>
+        <button onclick="closeAuthPromptModal()" class="modal-btn">
+          <i class="fas fa-times"></i> Continue Browsing
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== GUEST WELCOME MODAL ===== -->
+    <div id="guestWelcomeModal" class="modal" style="display: none">
+      <div
+        class="modal-content auth-modal"
+        style="max-width: 500px; padding: 3rem 2rem"
+      >
+        <button class="modal-close" onclick="closeGuestWelcomeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+        <div
+          style="
+            text-align: center;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          "
+        >
+          <img
+            src="/static/images/logo/E-Baby Logo.png"
+            alt="E-Baby Logo"
+            style="
+              height: 80px;
+              width: auto;
+              object-fit: contain;
+              margin-bottom: 1rem;
+            "
+          />
+          <h2 style="margin: 0 0 0.5rem 0; color: var(--primary-color)">
+            Welcome to E-Baby!
+          </h2>
+          <p style="color: #666; margin: 0">
+            Discover premium baby products from trusted sellers
+          </p>
+        </div>
+
+        <div
+          style="
+            background: linear-gradient(
+              135deg,
+              rgba(124, 58, 237, 0.1),
+              rgba(139, 92, 246, 0.1)
+            );
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-color);
+          "
+        >
+          <h4 style="margin: 0 0 0.5rem 0; color: var(--primary-color)">
+            Member Benefits:
+          </h4>
+          <ul
+            style="
+              margin: 0;
+              padding-left: 1.5rem;
+              color: #555;
+              font-size: 0.95rem;
+            "
+          >
+            <li>Save your favorite products to a wishlist</li>
+            <li>Manage your shopping cart seamlessly</li>
+            <li>Track your orders in real-time</li>
+            <li>Exclusive deals for registered members</li>
+          </ul>
+        </div>
+
+        <div
+          class="auth-buttons"
+          style="display: flex; gap: 1rem; margin-bottom: 1rem"
+        >
+          <button
+            onclick="window.location.href='/auth?tab=login'"
+            class="modal-confirm-btn"
+            style="flex: 1"
+          >
+            <i class="fas fa-sign-in-alt"></i> Sign In
+          </button>
+          <button
+            onclick="window.location.href='/auth?tab=register'"
+            class="modal-btn secondary"
+            style="
+              flex: 1;
+              background: linear-gradient(135deg, #10b981, #34d399);
+              color: white;
+              border: none;
+            "
+          >
+            <i class="fas fa-user-plus"></i> Register
+          </button>
+        </div>
+
+        <button
+          onclick="closeGuestWelcomeModal()"
+          class="modal-btn"
+          style="
+            width: 100%;
+            background: transparent;
+            border: 2px solid #ddd;
+            color: #333;
+          "
+        >
+          <i class="fas fa-times"></i> Continue as Guest
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== GUEST SUPPORT MODAL ===== -->
+    <div id="guestSupportModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeGuestSupportModal()">
+          <i class="fas fa-times"></i>
+        </button>
+        <h2><i class="fas fa-headset"></i> Guest Support Chat</h2>
+        <p>
+          We're here to help! Enter your name to start chatting with our support
+          team.
+        </p>
+        <div class="modal-options">
+          <div class="option-group">
+            <label for="guestName"
+              >Your Name <span class="required">*</span></label
+            >
+            <input
+              type="text"
+              id="guestName"
+              placeholder="Enter your name"
+              required
+            />
+          </div>
+        </div>
+        <button onclick="startGuestChat()" class="modal-confirm-btn">
+          <i class="fas fa-comments"></i> Start Chat
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="site-footer">
+      <div class="footer-wrapper">
+        <div class="footer-content">
+          <!-- Brand Section -->
+          <div class="footer-column footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-baby-carriage"></i>
+              <span>E-Baby</span>
+            </div>
+            <p class="footer-description">
+              Your premier destination for quality baby products from trusted sellers.
+            </p>
+            <div class="footer-socials">
+              <a href="#" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a href="#" class="social-link" title="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-column">
+            <h4 class="footer-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="/about">About Us</a></li>
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/shipping">Shipping Info</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="footer-column">
+            <h4 class="footer-title">Get In Touch</h4>
+            <ul class="footer-contact">
+              <li>
+                <i class="fas fa-envelope"></i>
+                <a href="mailto:ebabyservices@gmail.com">ebabyservices@gmail.com</a>
+              </li>
+              <li>
+                <i class="fas fa-phone"></i>
+                <a href="tel:+639651337681">+63 965 133 7681</a>
+              </li>
+              <li>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Philippines</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Newsletter -->
+          <div class="footer-column">
+            <h4 class="footer-title">Newsletter</h4>
+            <p class="footer-description-small">Subscribe for updates and exclusive offers</p>
+            <form class="newsletter-form" onsubmit="return false;">
+              <input type="email" placeholder="Your email" class="newsletter-input" required />
+              <button type="submit" class="newsletter-btn">Subscribe</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="footer-divider"></div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-bottom-content">
+            <p class="copyright">&copy; 2025 E-Baby. All rights reserved.</p>
+            <div class="footer-bottom-links">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms & Conditions</a>
+              <a href="#">Cookie Policy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/homepage.js') }}"></script>
+  </body>
+</html>
+
+

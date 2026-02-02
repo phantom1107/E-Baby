@@ -1,0 +1,89 @@
+/* Include the same sidebar and basic styles as other admin pages */
+
+.filter-container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#actionFilter {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.date-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-filter input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.log-container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #333;
+    color: white;
+    padding: 12px;
+    text-align: left;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.action-badge {
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.action-badge.edit {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.action-badge.delete {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.action-badge.approve {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.action-badge.reject {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.log-entry:hover {
+    background: #f5f5f5;
+} 

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Edit Product</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+
+      .edit-product-container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 600px;
+        margin: 20px auto;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        font-size: 14px;
+        color: #555;
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      input, textarea, select {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+
+      textarea {
+        height: 150px;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 10px;
+      }
+
+      button {
+        background-color: #B0878F;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        width: 40%;
+        margin-top: 10px;
+        text-align: center;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      button:hover {
+        background-color: #A07580;
+      }
+
+      .back-button {
+        background-color: #B0878F;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        width: 40%;
+        text-align: center;
+        margin-bottom: 10px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .back-button:hover {
+        background-color: #A07580;
+      }
+
+      /* Remove underline from anchor tags */
+      a {
+        text-decoration: none;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .edit-product-container {
+          padding: 15px;
+          width: 95%;
+        }
+
+        h1 {
+          font-size: 24px;
+        }
+
+        .form-group label {
+          font-size: 12px;
+        }
+
+        input, textarea, select {
+          font-size: 12px;
+          padding: 8px;
+        }
+
+        button, .back-button {
+          font-size: 14px;
+          padding: 12px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        h1 {
+          font-size: 20px;
+        }
+
+        .form-group label {
+          font-size: 11px;
+        }
+
+        input, textarea, select {
+          font-size: 11px;
+          padding: 6px;
+        }
+
+        button, .back-button {
+          font-size: 14px;
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="edit-product-container">
+      <h1>Edit Product</h1>
+      
+      <!-- Back Button -->
+
+      <form action="{{ url_for('edit_product', product_id=product['id']) }}" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="name">Product Name:</label>
+          <input type="text" id="name" name="name" value="{{ product['name'] }}" required />
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category:</label>
+          <select id="category" name="category" required>
+            <option value="DRESSES & SKIRTS" {% if product['category'] == 'DRESSES & SKIRTS' %}selected{% endif %}>DRESSES & SKIRTS</option>
+            <option value="TOPS & BLOUSES" {% if product['category'] == 'TOPS & BLOUSES' %}selected{% endif %}>TOPS & BLOUSES</option>
+            <option value="ACTIVEWEAR & YOGA PANTS" {% if product['category'] == 'ACTIVEWEAR & YOGA PANTS' %}selected{% endif %}>ACTIVEWEAR & YOGA PANTS</option>
+            <option value="LINGERIE & SLEEPWEAR" {% if product['category'] == 'LINGERIE & SLEEPWEAR' %}selected{% endif %}>LINGERIE & SLEEPWEAR</option>
+            <option value="JACKETS & COATS" {% if product['category'] == 'JACKETS & COATS' %}selected{% endif %}>JACKETS & COATS</option>
+            <option value="BABY SHOES & ACCESSORIES" {% if product['category'] == 'BABY SHOES & ACCESSORIES' %}selected{% endif %}>BABY SHOES & ACCESSORIES</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description:</label>
+          <textarea id="description" name="description" required>{{ product['description'] }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="variations">Variations:</label>
+          <input type="text" id="variations" name="variations" value="{{ product['variations'] }}" required />
+        </div>
+
+        <div class="form-group">
+          <label for="price">Price:</label>
+          <input type="text" id="price" name="price" value="{{ product['price'] }}" required />
+        </div>
+
+        <div class="form-group">
+          <label for="quantity">Quantity:</label>
+          <input type="text" id="quantity" name="quantity" value="{{ product['quantity'] }}" required />
+        </div>
+
+        <div class="form-group">
+          <label for="image">Product Image:</label>
+          <img src="{{ product['image'] }}" alt="Product Image" />
+          <input type="file" id="image" name="image" />
+        </div>
+
+        <button type="submit">Update Product</button>
+      </form>
+      <a href="{{ url_for('seller_products') }}">
+        <button class="back-button">Back to All Products</button>
+      </a>
+    </div>
+  </body>
+</html>

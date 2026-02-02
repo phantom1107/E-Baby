@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_user_management.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Menu</h2>   
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button onclick="location.href='/admin_main'">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </button>
+        <button onclick="location.href='/admin_user_management'">
+            <i class="fas fa-users"></i>
+            <span>User Accounts</span>
+        </button>
+        <button onclick="location.href='/register_requests'">
+            <i class="fas fa-store"></i>
+            <span>Seller Requests</span>
+        </button>
+        <button onclick="logout()" style="margin-top: auto;">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    <div class="dashboard-container">
+        <h1>User Accounts</h1>
+        
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                            <span class="close-btn" onclick="this.parentElement.style.display='none'">&times;</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="search-filter-container">
+            <form action="/admin_user_management" method="get" class="search-form">
+                <input type="text" name="search_email" placeholder="Search by email">
+                <button type="submit" class="search">Search</button>
+            </form>
+            
+            <form action="/admin_user_management" method="get" class="filter-form">
+                <button type="submit" name="sort" value="seller" class="filter-btn">Sellers</button>
+                <button type="submit" name="sort" value="buyer" class="filter-btn">Buyers</button>
+            </form>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Phone Number</th>
+                        <th>Address</th>
+                        <th>User Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.first_name }}</td>
+                        <td>{{ user.last_name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.phone_number }}</td>
+                        <td>{{ user.address }}</td>
+                        <td>{{ user.user_type }}</td>
+                        <td class="actions">
+                            <button onclick='openEditModal({
+                                "id": "{{ user.id }}",
+                                "first_name": "{{ user.first_name }}",
+                                "last_name": "{{ user.last_name }}",
+                                "email": "{{ user.email }}",
+                                "phone_number": "{{ user.phone_number }}",
+                                "address": "{{ user.address }}",
+                                "user_type": "{{ user.user_type }}"
+                            })' class="edit-btn">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <form action="/delete/{{ user.id }}" method="POST" style="display: inline;" onsubmit="return confirmDelete()">
+                                <button type="submit" class="delete-btn">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </form>
+                            {% if user.user_type == "Seller" %}
+                            <form action="/view_document/{{ user.document_id }}" method="get">
+                                <button type="submit" class="view-document-btn">
+                                    <i class="fas fa-id-card"></i> View Document ID
+                                </button>
+                            </form>
+                            <form action="/view_bir/{{ user.bir }}" method="get">
+                                <button type="submit" class="view-bir-btn">
+                                    <i class="fas fa-file-alt"></i> View BIR
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit User</h2>
+            <div class="current-info">
+                <h3>Current Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">First Name:</span>
+                        <span id="currentFirstName" class="info-value"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Last Name:</span>
+                        <span id="currentLastName" class="info-value"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email:</span>
+                        <span id="currentEmail" class="info-value"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Phone:</span>
+                        <span id="currentPhone" class="info-value"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Address:</span>
+                        <span id="currentAddress" class="info-value"></span>
+                    </div>
+                    <div class="info-item user-type">
+                        <span class="info-label">User Type:</span>
+                        <span id="currentUserType" class="info-value"></span>
+                    </div>
+                </div>  
+            </div>
+            <form id="editForm" method="POST" class="edit-form">
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" id="first_name" name="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" name="last_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone_number">Phone Number:</label>
+                    <input type="text" id="phone_number" name="phone_number" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address:</label>
+                    <input type="text" id="address" name="address" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_type">User Type:</label>
+                    <select id="user_type" name="user_type" required>
+                        <option value="Buyer">Buyer</option>
+                        <option value="Seller">Seller</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="save-btn">Save Changes</button>
+                    <button type="button" class="cancel-btn" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin_user_management.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</body>
+</html>

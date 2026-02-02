@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Secure authentication for E-Baby marketplace" />
+    <title>E-Baby - Authentication</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/auth.css') }}"
+    />
+  </head>
+  <body>
+    <!-- Video background container: JS will populate two <video> layers for smooth crossfade -->
+    <div
+      id="video-background"
+      class="video-background"
+      aria-hidden="true"
+    ></div>
+    <script>
+      // Playlist now points to files inside `static/videos/`.
+      // Add your files named `clip1.mp4` .. `clip5.mp4` under static/videos,
+      // or replace these names with your own filenames.
+      window.AUTH_VIDEO_PLAYLIST = [
+        '{{ url_for("static", filename="videos/clip1.mp4") }}',
+        '{{ url_for("static", filename="videos/clip2.mp4") }}',
+        '{{ url_for("static", filename="videos/clip3.mp4") }}',
+        '{{ url_for("static", filename="videos/clip4.mp4") }}',
+        '{{ url_for("static", filename="videos/clip5.mp4") }}',
+        '{{ url_for("static", filename="videos/clip6.mp4") }}',
+        '{{ url_for("static", filename="videos/clip7.mp4") }}',
+        '{{ url_for("static", filename="videos/clip8.mp4") }}',
+        '{{ url_for("static", filename="videos/clip9.mp4") }}',
+        '{{ url_for("static", filename="videos/clip10.mp4") }}',
+      ];
+      // Options: set random:true to play in randomized order
+      window.AUTH_VIDEO_OPTIONS = { random: true, fadeMs: 900, opacity: 0.35 };
+    </script>
+
+    <div class="auth-container">
+      <!-- Logo Section with Branding -->
+      <div class="logo-section">
+        <div class="logo-wrapper">
+          <img
+            src="static\images\logo\E-Baby Logo.png"
+            alt="E-Baby Logo"
+            class="logo"
+          />
+          <div class="logo-glow"></div>
+        </div>
+      </div>
+
+      <!-- Modern Tab Navigation -->
+      <div class="tab-navigation">
+        <button class="tab-btn active" data-tab="login">
+          <span class="tab-icon">
+            <i class="fas fa-sign-in-alt"></i>
+          </span>
+          <span class="tab-text">Login</span>
+          <span class="tab-indicator"></span>
+        </button>
+        <button class="tab-btn" data-tab="register">
+          <span class="tab-icon">
+            <i class="fas fa-user-plus"></i>
+          </span>
+          <span class="tab-text">Register</span>
+          <span class="tab-indicator"></span>
+        </button>
+      </div>
+
+      <!-- Forms Container -->
+      <div class="forms-container">
+        <!-- Login Form -->
+        <div class="form-wrapper active" id="login-form">
+          <div class="form-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to your account</p>
+          </div>
+
+          <!-- Display flash messages for login -->
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %}
+          <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash-message {{ category }}">
+              {% if category == 'pending' %}
+              <i class="fas fa-clock"></i>
+              {% elif category == 'error' %}
+              <i class="fas fa-exclamation-circle"></i>
+              {% elif category == 'success' %}
+              <i class="fas fa-check-circle"></i>
+              {% endif %} {{ message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% endwith %}
+
+          <form action="/login" method="POST" class="auth-form" id="loginForm">
+            <div class="input-group">
+              <i class="fas fa-envelope input-icon"></i>
+              <input
+                type="email"
+                id="login_email"
+                name="email"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+
+            <div class="input-group">
+              <i class="fas fa-lock input-icon"></i>
+              <input
+                type="password"
+                id="login_password"
+                name="password"
+                placeholder="Enter your password"
+                required
+              />
+              <span
+                class="password-toggle"
+                onclick="togglePasswordVisibility('login_password')"
+              >
+                <i class="fas fa-eye"></i>
+              </span>
+            </div>
+
+            <button type="submit" class="submit-btn">
+              <i class="fas fa-sign-in-alt"></i>
+              Sign In
+            </button>
+          </form>
+
+          <!-- Forgot Password -->
+          <div class="forgot-password">
+            <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+            <span class="separator">|</span>
+            <a href="{{ url_for('customer_service') }}" target="_blank"
+              >Customer Service</a
+            >
+          </div>
+        </div>
+
+        <!-- Register Form -->
+        <div class="form-wrapper" id="register-form">
+          <div class="form-header">
+            <h2>Create Account</h2>
+            <p>Join E-Baby today</p>
+          </div>
+
+          <form
+            action="/register"
+            method="POST"
+            enctype="multipart/form-data"
+            class="auth-form"
+            id="registerForm"
+            autocomplete="off"
+            novalidate
+          >
+            <!-- Basic Info Section -->
+            <div class="form-section active" id="basic-info">
+              <div class="compact-row">
+                <div class="input-group">
+                  <i class="fas fa-user input-icon"></i>
+                  <input
+                    type="text"
+                    id="first_name"
+                    name="first_name"
+                    placeholder="First Name"
+                    required
+                    autocomplete="given-name"
+                    value="{{ request.form['first_name'] if request.form.get('first_name') else '' }}"
+                  />
+                </div>
+                <div class="input-group">
+                  <i class="fas fa-user input-icon"></i>
+                  <input
+                    type="text"
+                    id="last_name"
+                    name="last_name"
+                    placeholder="Last Name"
+                    required
+                    autocomplete="family-name"
+                    value="{{ request.form['last_name'] if request.form.get('last_name') else '' }}"
+                  />
+                </div>
+              </div>
+
+              <div class="input-group" id="email-group">
+                <i class="fas fa-envelope input-icon"></i>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Email Address"
+                  required
+                  spellcheck="false"
+                  autocapitalize="off"
+                  autocomplete="email"
+                  value="{{ request.form['email'] if request.form.get('email') else '' }}"
+                />
+                <div class="email-hint">
+                  <i class="fas fa-info-circle"></i>
+                  Please use a valid Gmail account for OTP verification
+                </div>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-phone input-icon"></i>
+                <div class="phone-container">
+                  <span class="phone-prefix">+63</span>
+                  <input
+                    type="text"
+                    id="phone_number"
+                    name="phone_number"
+                    placeholder="Phone Number"
+                    required
+                    pattern="\d{10}"
+                    maxlength="10"
+                    inputmode="numeric"
+                    autocomplete="tel-national"
+                    value="{{ request.form['phone_number'] if request.form.get('phone_number') else '' }}"
+                  />
+                </div>
+              </div>
+
+              <!-- Address Selection with Leaflet Map -->
+              <div class="address-section-compact">
+                <div class="address-label">Address <i class="fas fa-map-marker-alt"></i></div>
+                
+                <!-- Map Container -->
+                <div id="leaflet-map-container" class="leaflet-map-container">
+                  <div id="map" class="leaflet-map"></div>
+                  <button type="button" class="expand-map-btn" id="expandMapBtn" title="Expand Map">
+                    <i class="fas fa-expand"></i>
+                  </button>
+                  <div class="map-instructions">
+                    <i class="fas fa-mouse"></i>
+                    Click on map to select location
+                  </div>
+                  <button type="button" class="select-location-btn" id="selectLocationBtn" style="display: none;">
+                    <i class="fas fa-check"></i>
+                    Select This Location
+                  </button>
+                </div>
+
+                <!-- Fullscreen Map Modal -->
+                <div class="fullscreen-map-modal" id="fullscreenMapModal">
+                  <div class="fullscreen-map-content">
+                    <div class="fullscreen-map-header">
+                      <h3>Select Location</h3>
+                      <button type="button" class="close-fullscreen-map" id="closeFullscreenMapBtn">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                    <div id="fullscreenMapContent"></div>
+                  </div>
+                </div>
+
+                <!-- Address Fields Grid -->
+                <div class="address-grid-wide">
+                  <input
+                    type="text"
+                    id="country"
+                    name="country"
+                    placeholder="Country"
+                    required
+                    class="address-input"
+                    value="Philippines"
+                  />
+
+                  <input
+                    type="text"
+                    id="region"
+                    name="region"
+                    placeholder="Region"
+                    required
+                    class="address-input"
+                    value="{{ request.form['region'] if request.form.get('region') else '' }}"
+                  />
+
+                  <input
+                    type="text"
+                    id="province"
+                    name="province"
+                    placeholder="Province"
+                    required
+                    class="address-input"
+                    value="{{ request.form['province'] if request.form.get('province') else '' }}"
+                  />
+
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    placeholder="City/Municipality"
+                    required
+                    class="address-input"
+                    value="{{ request.form['city'] if request.form.get('city') else '' }}"
+                  />
+                </div>
+
+                <input
+                  type="text"
+                  id="street_address"
+                  name="street_address"
+                  placeholder="Street Address, Barangay (click map or type)"
+                  required
+                  value="{{ request.form['street_address'] if request.form.get('street_address') else '' }}"
+                  class="street-address-input"
+                />
+
+                <!-- Hidden fields to store coordinates and address data -->
+                <input type="hidden" id="address" name="address" value="" />
+                <input type="hidden" id="latitude" name="latitude" value="" />
+                <input type="hidden" id="longitude" name="longitude" value="" />
+              </div>
+
+              <div class="compact-row">
+                <div class="input-group">
+                  <i class="fas fa-lock input-icon"></i>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Password"
+                    required
+                  />
+                  <span
+                    class="password-toggle"
+                    onclick="togglePasswordVisibility('password')"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </span>
+                </div>
+
+                <div class="input-group">
+                  <i class="fas fa-lock input-icon"></i>
+                  <input
+                    type="password"
+                    id="confirm_password"
+                    name="confirm_password"
+                    placeholder="Confirm"
+                    required
+                  />
+                  <span
+                    class="password-toggle"
+                    onclick="togglePasswordVisibility('confirm_password')"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </span>
+                </div>
+              </div>
+              <span id="password-match-message" class="match-message"></span>
+
+              <div class="input-group">
+                <i class="fas fa-users input-icon"></i>
+                <select id="user_type" name="user_type" required>
+                  <option value="" disabled selected>User Type</option>
+                  <option value="Buyer">Buyer</option>
+                  <option value="Seller">Seller</option>
+                  <option value="Rider">Rider</option>
+                </select>
+              </div>
+
+              <div class="terms-section">
+                <label class="checkbox-container" for="terms_checkbox">
+                  <input
+                    type="checkbox"
+                    id="terms_checkbox"
+                    name="terms"
+                    required
+                  />
+                  <span class="checkmark"></span>
+                  I agree to <a href="#" id="open_terms">Terms and Conditions</a>
+                </label>
+                <div
+                  class="terms-hint"
+                  id="terms-hint"
+                  style="
+                    display: none;
+                    color: #ef4444;
+                    margin-top: 4px;
+                    font-size: 0.85em;
+                  "
+                >
+                  Please agree to continue.
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="button"
+                  class="next-btn"
+                  onclick="showDocumentUpload()"
+                >
+                  <i class="fas fa-arrow-right"></i>
+                  Upload Documents
+                </button>
+              </div>
+            </div>
+
+            <!-- Document Upload Section -->
+            <div class="form-section" id="document-upload">
+              <h3 id="document-title">Required Documents</h3>
+
+              <div class="document-upload">
+                <label for="document_id">Valid ID</label>
+                <input
+                  type="file"
+                  id="document_id"
+                  name="document_id"
+                  accept="image/*,application/pdf"
+                />
+              </div>
+
+              <div
+                class="document-upload"
+                id="bir-section"
+                style="display: none"
+              >
+                <label for="bir">BIR Document</label>
+                <input
+                  type="file"
+                  id="bir"
+                  name="bir"
+                  accept="image/*,application/pdf"
+                />
+              </div>
+
+              <div class="form-buttons">
+                <button
+                  type="button"
+                  class="back-btn"
+                  onclick="hideDocumentUpload()"
+                >
+                  <i class="fas fa-arrow-left"></i>
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  class="submit-btn"
+                  id="complete-registration-btn">
+                  <i class="fas fa-check"></i>
+                  Complete Registration
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terms and Conditions Modal -->
+    <div id="termsModal" class="modal">
+      <div class="modal-content">
+        <span class="close" id="close_terms">&times;</span>
+        <h3>Terms and Conditions</h3>
+        <p>By creating an account with E-Baby, you agree to the following:</p>
+        <ul>
+          <li>Provide accurate information and keep your account secure.</li>
+          <li>Comply with all applicable laws and marketplace rules.</li>
+          <li>
+            Allow us to contact you for verification and order communications.
+          </li>
+          <li>
+            Sellers are responsible for product authenticity; Riders for safe
+            delivery.
+          </li>
+          <li>Violations of policies may lead to suspension or removal.</li>
+        </ul>
+        <p>If you have questions, contact support at e-baby0@gmail.com.</p>
+        <button id="accept_terms" class="submit-btn">I Understand</button>
+      </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="modal" data-error="{{ error|default('') }}">
+      <div class="modal-content">
+        <span class="close" onclick="closeErrorModal()">&times;</span>
+        <p id="errorMessage">{{ error }}</p>
+        <button onclick="closeErrorModal()">OK</button>
+      </div>
+    </div>
+
+    <!-- Guest Support Modal -->
+    <!-- Replaced with AI-powered customer service at /customer_service -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-geocoder/0.9.0/control-geocoder.min.js"></script>
+    <script src="{{ url_for('static', filename='js/video_playlist.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/location_api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/leaflet_map.js') }}"></script>
+
+    <script>
+      // Map Expansion Functionality
+      let fullscreenMap = null;
+      let originalMap = null;
+
+      document.getElementById("expandMapBtn").addEventListener("click", function () {
+        const modal = document.getElementById("fullscreenMapModal");
+        const fullscreenContainer = document.getElementById("fullscreenMapContent");
+        const originalContainer = document.getElementById("map").parentElement;
+
+        // Show modal
+        modal.classList.add("active");
+
+        // Clone the original map container
+        const mapClone = document.getElementById("map").cloneNode(true);
+        mapClone.id = "fullscreenMapContent";
+        fullscreenContainer.innerHTML = "";
+        fullscreenContainer.appendChild(mapClone);
+
+        // Initialize new map in fullscreen
+        if (originalMap) {
+          fullscreenMap = L.map("fullscreenMapContent").setView(originalMap.getCenter(), originalMap.getZoom());
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19,
+          }).addTo(fullscreenMap);
+
+          // Add click listener to fullscreen map
+          fullscreenMap.on("click", function (e) {
+            handleMapClick(e, fullscreenMap);
+          });
+
+          // Trigger resize to ensure map renders correctly
+          setTimeout(() => {
+            fullscreenMap.invalidateSize();
+          }, 100);
+        }
+      });
+
+      document.getElementById("closeFullscreenMapBtn").addEventListener("click", function () {
+        const modal = document.getElementById("fullscreenMapModal");
+        modal.classList.remove("active");
+
+        // Clean up fullscreen map
+        if (fullscreenMap) {
+          fullscreenMap.off();
+          fullscreenMap.remove();
+          fullscreenMap = null;
+        }
+      });
+
+      // Close modal when clicking on the background
+      document.getElementById("fullscreenMapModal").addEventListener("click", function (e) {
+        if (e.target === this) {
+          this.classList.remove("active");
+
+          // Clean up fullscreen map
+          if (fullscreenMap) {
+            fullscreenMap.off();
+            fullscreenMap.remove();
+            fullscreenMap = null;
+          }
+        }
+      });
+
+      // Store reference to original map for later use
+      document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(() => {
+          if (window.map) {
+            originalMap = window.map;
+          }
+        }, 100);
+      });
+    </script>
+  </body>
+</html>

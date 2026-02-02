@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Orders - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/orders.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- Navigation Header -->
+    <header class="navbar">
+      <div class="navbar-content">
+        <!-- Logo -->
+        <div class="logo-section">
+          <a href="/homepage" class="logo-link">
+            <img
+              src="/static/images/logo/E-Baby Logo.png"
+              alt="E-Baby"
+              class="logo-image"
+            />
+          </a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-section">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search products..."
+            class="search-input"
+          />
+          <button class="search-button" onclick="performSearch()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+
+        <!-- User Menu -->
+        <div class="user-menu">
+          <div class="profile-menu-container">
+            <button class="profile-btn" onclick="toggleProfileDropdown()">
+              {% if session.get('profile_pic') %}
+              <img
+                src="/static/{{ session['profile_pic'] }}"
+                alt="Profile"
+                class="profile-avatar"
+                onerror="this.src='/static/images/defaults/product-default.png'"
+              />
+              {% else %}
+              <i class="fas fa-user-circle"></i>
+              {% endif %}
+              <span
+                >{{ session['email'] if session['email'] else 'Guest' }}</span
+              >
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu" id="profileDropdown">
+              <a href="/profile" class="dropdown-item">
+                <i class="fas fa-user"></i> My Profile
+              </a>
+              <a href="/cart" class="dropdown-item">
+                <i class="fas fa-shopping-cart"></i> My Cart
+              </a>
+              <a href="/orders" class="dropdown-item active">
+                <i class="fas fa-shopping-box"></i> My Orders
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="#" onclick="logout()" class="dropdown-item logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="orders-main">
+      <div class="orders-container">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="header-content">
+            <h1><i class="fas fa-shopping-box"></i> My Orders</h1>
+            <p class="header-subtitle">Track and manage all your purchases</p>
+          </div>
+          <div class="header-actions">
+            <a href="/cart" class="btn-secondary">
+              <i class="fas fa-shopping-cart"></i> Continue Shopping
+            </a>
+          </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=True) %} {% if
+        messages %}
+        <div class="alert-container">
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <i class="fas fa-check-circle"></i>
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %} {% endwith %}
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+          <div class="filter-controls">
+            <!-- Date Filter -->
+            <div class="filter-group">
+              <label for="dateFilter" class="filter-label">
+                <i class="fas fa-calendar"></i> Filter by Date
+              </label>
+              <input
+                type="date"
+                id="dateFilter"
+                class="date-input"
+                onchange="filterOrdersByDateAndStatus()"
+              />
+            </div>
+
+            <!-- Status Filter -->
+            <div class="filter-group">
+              <label for="statusFilter" class="filter-label">
+                <i class="fas fa-tag"></i> Filter by Status
+              </label>
+              <select
+                id="statusFilter"
+                class="status-select"
+                onchange="filterOrdersByDateAndStatus()"
+              >
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Preparing">Preparing</option>
+                <option value="Prepared">Prepared</option>
+                <option value="Shipping">Shipping</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Received">Received</option>
+              </select>
+            </div>
+
+            <!-- Clear All Filters -->
+            <button class="btn-filter-clear" onclick="clearAllFilters()">
+              <i class="fas fa-times"></i> Clear All Filters
+            </button>
+
+            <!-- Filter Stats -->
+            <div class="filter-stats">
+              <span class="stat-item">
+                <strong id="filteredCount">{{ orders|length }}</strong> order(s)
+                shown
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orders Grid -->
+        <div class="orders-grid">
+          {% if orders|length > 0 %} {% for order in orders|reverse %}
+          <div
+            class="order-card"
+            id="order-{{ order.id }}"
+            data-order-date="{% if order.date is string %}{{ order.date }}{% else %}{{ order.date.strftime('%Y-%m-%d') }}{% endif %}"
+            data-order-status="{{ order.status }}"
+          >
+            <!-- Card Header with Status -->
+            <div class="order-card-header">
+              <div class="order-header-left">
+                <h3 class="order-title">{{ order.name }}</h3>
+                <p class="order-id">Order ID: {{ order.id }}</p>
+              </div>
+              <span
+                class="status-badge status-{{ order.status.lower()|replace(' ', '-') }}"
+              >
+                <i class="fas fa-circle"></i> {{ order.status }}
+              </span>
+            </div>
+
+            <!-- Card Body -->
+            <div class="order-card-body">
+              <!-- Product Image Section -->
+              <div class="order-product-image">
+                <img
+                  src="{% if order.image.startswith('/') %}{{ order.image }}{% else %}/static/uploads/{{ order.image }}{% endif %}"
+                  alt="{{ order.name }}"
+                  class="product-image"
+                  onerror="this.src='/static/images/defaults/product-default.png'"
+                />
+              </div>
+
+              <!-- Order Details Section -->
+              <div class="order-details-section">
+                <!-- Product Info -->
+                <div class="detail-group">
+                  <label>Category</label>
+                  <p>{{ order.category }}</p>
+                </div>
+
+                <div class="detail-group">
+                  <label>Specifications</label>
+                  <p>
+                    <span class="spec-item"
+                      ><strong>Size:</strong> {{ order.size }}</span
+                    >
+                    <span class="spec-item"
+                      ><strong>Color:</strong> {{ order.color }}</span
+                    >
+                  </p>
+                </div>
+
+                <!-- Pricing Info -->
+                <div class="detail-group">
+                  <label>Pricing</label>
+                  <p>
+                    <span class="price-item">
+                      <span class="price-label">Unit Price:</span>
+                      <span class="price-value"
+                        >₱{{ '%.2f'|format(order.price|float) }}</span
+                      >
+                    </span>
+                    <span class="price-item">
+                      <span class="price-label">Quantity:</span>
+                      <span class="price-value">{{ order.quantity }}</span>
+                    </span>
+                  </p>
+                </div>
+
+                <!-- Order Info -->
+                <div class="detail-group">
+                  <label>Order Information</label>
+                  <p>
+                    <span class="info-item">
+                      <strong>Payment:</strong> {{ order.payment_method }}
+                    </span>
+                    <span class="info-item">
+                      <strong>Date:</strong>
+                      {% if order.date is string %} {{ order.date }} {% else %}
+                      {{ order.date.strftime('%b %d, %Y') }} {% endif %}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Total Price Banner -->
+              <div class="order-total-banner">
+                <span>Total Amount</span>
+                <span class="total-price"
+                  >₱{{ '%.2f'|format(order.total_price|float) }}</span
+                >
+              </div>
+            </div>
+
+            <!-- Card Footer with Actions -->
+            <div class="order-card-footer">
+              <button
+                type="button"
+                class="btn-action"
+                onclick="viewOrderDetails('{{ order.id }}')"
+              >
+                <i class="fas fa-eye"></i> View Details
+              </button>
+              <a
+                href="{{ url_for('view_seller', seller_email=order.seller_email) }}"
+                class="btn-action btn-secondary"
+              >
+                <i class="fas fa-store"></i> Visit Seller
+              </a>
+              {% if order.status == 'Shipped' %}
+              <button
+                type="button"
+                class="btn-action btn-success"
+                onclick="openReceiveConfirmation('{{ order.id }}', '{{ order.name }}')"
+              >
+                <i class="fas fa-check"></i> Mark as Received
+              </button>
+              {% elif order.status == 'Shipping' %}
+              <button type="button" class="btn-action" disabled>
+                <i class="fas fa-truck"></i> Out for Delivery
+              </button>
+              {% if order.rider_email %}
+              <a
+                href="{{ url_for('view_rider', rider_email=order.rider_email) }}"
+                class="btn-action btn-info"
+              >
+                <i class="fas fa-motorcycle"></i> Visit Rider
+              </a>
+              {% endif %} {% elif order.status == 'Delivered' %}
+              <button
+                type="button"
+                class="btn-action btn-success"
+                onclick="openReceiveConfirmation('{{ order.id }}', '{{ order.name }}')"
+              >
+                <i class="fas fa-check"></i> Mark as Received
+              </button>
+              {% if order.rider_email %}
+              <a
+                href="{{ url_for('view_rider', rider_email=order.rider_email) }}"
+                class="btn-action btn-info"
+              >
+                <i class="fas fa-motorcycle"></i> View Rider
+              </a>
+              {% endif %} {% elif order.status == 'Received' %}
+              <button type="button" class="btn-action" disabled>
+                <i class="fas fa-check-circle"></i> Order Completed
+              </button>
+              {% if order.rider_email %}
+              <a
+                href="{{ url_for('view_rider', rider_email=order.rider_email) }}"
+                class="btn-action btn-info"
+              >
+                <i class="fas fa-motorcycle"></i> View Rider
+              </a>
+              {% endif %} {% elif order.status not in ['Received', 'Delivered', 'Shipping']
+              and order.status != 'Shipped' %}
+              <button
+                type="button"
+                class="btn-action btn-danger"
+                onclick="cancelOrder('{{ order.id }}', '{{ order.name }}')"
+              >
+                <i class="fas fa-times"></i> Cancel Order
+              </button>
+              {% else %}
+              <button type="button" class="btn-action" disabled>
+                <i class="fas fa-check-circle"></i> Order Completed
+              </button>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Order Details Modal -->
+          <div class="modal" id="orderDetailsModal{{ order.id }}">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h2>Order Details</h2>
+                <button
+                  class="modal-close"
+                  onclick="closeModal('orderDetailsModal{{ order.id }}')"
+                >
+                  &times;
+                </button>
+              </div>
+              <div class="modal-body">
+                <div class="details-grid">
+                  <div class="details-column">
+                    <img
+                      src="{% if order.image.startswith('/') %}{{ order.image }}{% else %}/static/uploads/{{ order.image }}{% endif %}"
+                      alt="{{ order.name }}"
+                      class="modal-product-image"
+                      onerror="this.src='/static/images/defaults/product-default.png'"
+                    />
+                  </div>
+                  <div class="details-column">
+                    <h3>{{ order.name }}</h3>
+                    <div class="detail-item">
+                      <strong>Category:</strong> {{ order.category }}
+                    </div>
+                    <div class="detail-item">
+                      <strong>Size:</strong> {{ order.size }}
+                    </div>
+                    <div class="detail-item">
+                      <strong>Color:</strong> {{ order.color }}
+                    </div>
+                    <div class="detail-item">
+                      <strong>Price per Item:</strong> ₱{{
+                      '%.2f'|format(order.price|float) }}
+                    </div>
+                    <div class="detail-item">
+                      <strong>Quantity:</strong> {{ order.quantity }}
+                    </div>
+                    <div class="detail-item">
+                      <strong>Total:</strong> ₱{{
+                      '%.2f'|format(order.total_price|float) }}
+                    </div>
+                    <div class="detail-item">
+                      <strong>Payment Method:</strong> {{ order.payment_method
+                      }}
+                    </div>
+                    <div class="detail-item">
+                      <strong>Status:</strong>
+                      <span
+                        class="status-badge status-{{ order.status.lower()|replace(' ', '-') }}"
+                        >{{ order.status }}</span
+                      >
+                    </div>
+                    {% if order.status == 'Cancelled' and order.cancellation_reason %}
+                    <div class="detail-item" style="background-color: #fff3cd; padding: 10px; border-radius: 4px; border-left: 4px solid #ffc107;">
+                      <strong style="color: #856404;"><i class="fas fa-info-circle"></i> Cancellation Reason:</strong>
+                      <p style="color: #856404; margin: 5px 0 0 0;">{{ order.cancellation_reason }}</p>
+                    </div>
+                    {% endif %}
+                    <div class="detail-item">
+                      <strong>Seller:</strong>
+                      <a
+                        href="{{ url_for('view_seller', seller_email=order.seller_email) }}"
+                        >{{ order.seller_email }}</a
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  class="btn-primary"
+                  onclick="closeModal('orderDetailsModal{{ order.id }}')"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+          {% endfor %} {% else %}
+          <!-- Empty State -->
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h2>No Orders Yet</h2>
+            <p>
+              You haven't placed any orders yet. Start shopping to see your
+              orders here!
+            </p>
+            <a href="/homepage" class="btn-primary">
+              <i class="fas fa-shopping-bag"></i> Start Shopping
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+
+    <!-- Modern Footer -->
+    <footer class="site-footer">
+      <div class="footer-wrapper">
+        <div class="footer-content">
+          <!-- Brand Section -->
+          <div class="footer-column footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-baby-carriage"></i>
+              <span>E-Baby</span>
+            </div>
+            <p class="footer-description">
+              Your premier destination for quality baby products from trusted sellers.
+            </p>
+            <div class="footer-socials">
+              <a href="#" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a href="#" class="social-link" title="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-column">
+            <h4 class="footer-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="/about">About Us</a></li>
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/shipping">Shipping Info</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="footer-column">
+            <h4 class="footer-title">Get In Touch</h4>
+            <ul class="footer-contact">
+              <li>
+                <i class="fas fa-envelope"></i>
+                <a href="mailto:ebabyservices@gmail.com">ebabyservices@gmail.com</a>
+              </li>
+              <li>
+                <i class="fas fa-phone"></i>
+                <a href="tel:+639651337681">+63 965 133 7681</a>
+              </li>
+              <li>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Philippines</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="footer-divider"></div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-bottom-content">
+            <p class="copyright">&copy; 2024 E-Baby. All rights reserved.</p>
+            <div class="footer-bottom-links">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms & Conditions</a>
+              <a href="#">Cookie Policy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Receive Order Confirmation Modal -->
+    <div class="modal" id="receiveConfirmationModal">
+      <div class="modal-content modal-confirmation">
+        <div class="modal-header">
+          <h2><i class="fas fa-inbox"></i> Confirm Receipt</h2>
+          <button
+            class="modal-close"
+            onclick="closeModal('receiveConfirmationModal')"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="confirmation-message">
+            <p>
+              Are you sure you want to mark this order as
+              <strong>Received</strong>?
+            </p>
+            <p class="order-item-name" id="confirmOrderName"></p>
+            <div class="confirmation-info">
+              <div class="info-item">
+                <i class="fas fa-check-circle"></i>
+                <span
+                  >This will update your order status and count as a completed
+                  purchase</span
+                >
+              </div>
+              <div class="info-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Product sales count will be increased</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn-action btn-secondary"
+            onclick="closeModal('receiveConfirmationModal')"
+          >
+            <i class="fas fa-times"></i> Cancel
+          </button>
+          <button
+            type="button"
+            class="btn-action btn-success"
+            onclick="confirmReceiveOrder()"
+          >
+            <i class="fas fa-check"></i> Yes, Confirm Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cancel Order Modal -->
+    <div class="modal" id="cancelOrderModal">
+      <div class="modal-content modal-confirmation">
+        <div class="modal-header">
+          <h2><i class="fas fa-times-circle"></i> Cancel Order</h2>
+          <button
+            class="modal-close"
+            onclick="closeModal('cancelOrderModal')"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="confirmation-message">
+            <p>
+              Are you sure you want to cancel this order?
+            </p>
+            <p class="order-item-name" id="cancelOrderName"></p>
+            <div class="confirmation-info">
+              <div class="info-item">
+                <strong>Quantity:</strong>
+                <span id="cancelOrderQuantity"></span>
+              </div>
+              <div class="info-item">
+                <strong>Amount:</strong>
+                <span id="cancelOrderAmount"></span>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+              <label for="cancellationReason" style="display: block; margin-bottom: 8px; font-weight: 600;">
+                <i class="fas fa-comment"></i> Reason for Cancellation
+              </label>
+              <textarea
+                id="cancellationReason"
+                placeholder="Please provide a reason for cancelling this order..."
+                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 100px;"
+                required
+              ></textarea>
+              <small style="color: #666; margin-top: 4px; display: block;">
+                The seller will be notified of this reason. Stock will be returned to inventory.
+              </small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn-action btn-secondary"
+            onclick="closeModal('cancelOrderModal')"
+          >
+            <i class="fas fa-times"></i> Keep Order
+          </button>
+          <button
+            type="button"
+            class="btn-action btn-danger"
+            onclick="confirmCancelOrder()"
+          >
+            <i class="fas fa-check"></i> Confirm Cancellation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" onclick="closeAllModals()"></div>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/orders.js') }}"></script>
+    <script>
+      // Initialize dropdown functionality
+      document.addEventListener("DOMContentLoaded", function () {
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function (event) {
+          const dropdown = document.getElementById("profileDropdown");
+          const profileBtn = document.querySelector(".profile-btn");
+
+          if (
+            dropdown &&
+            profileBtn &&
+            !profileBtn.contains(event.target) &&
+            !dropdown.contains(event.target)
+          ) {
+            dropdown.classList.remove("active");
+          }
+        });
+
+        // Profile button click handler
+        const profileBtn = document.querySelector(".profile-btn");
+        if (profileBtn) {
+          profileBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            toggleProfileDropdown();
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

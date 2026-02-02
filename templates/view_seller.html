@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ seller.first_name }}'s Shop - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/view_seller.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/chat.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <meta name="user-email" content="{{ session.get('email','') }}" />
+    <meta name="user-role" content="{{ session.get('user_type','') }}" />
+  </head>
+  <body>
+    <a href="javascript:history.back()" class="back-btn">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+
+    <div class="seller-profile" data-seller-email="{{ seller.email }}">
+      <!-- Banner and Profile Section -->
+      <div class="profile-header">
+        <div class="banner-container">
+          {% if seller.banner_image %}
+          <img
+            src="{{ seller.banner_image }}"
+            alt="Shop Banner"
+            class="shop-banner"
+            onerror="this.src='/static/images/defaults/default_banner.jpg'"
+          />
+          {% else %}
+          <img
+            src="/static/images/defaults/default_banner.jpg"
+            alt="Shop Banner"
+            class="shop-banner"
+          />
+          {% endif %}
+          <div class="banner-overlay"></div>
+        </div>
+        <div class="profile-info-container">
+          <div class="profile-pic-container">
+            {% if seller.profile_pic %}
+            <img
+              src="{{ seller.profile_pic }}"
+              alt="Profile Picture"
+              class="profile-pic"
+              onerror="this.src='/static/images/defaults/default_profile.jpg'"
+            />
+            {% else %}
+            <img
+              src="/static/images/defaults/default_profile.jpg"
+              alt="Profile Picture"
+              class="profile-pic"
+            />
+            {% endif %}
+            <div class="profile-badge">
+              <i class="fas fa-store"></i>
+            </div>
+          </div>
+          <div class="seller-details">
+            <h1>{{ seller.first_name }} {{ seller.last_name }}</h1>
+            <p class="shop-subtitle">Verified Seller</p>
+            <div class="contact-info">
+              <div class="contact-item">
+                <i class="fas fa-envelope"></i>
+                <span>{{ seller.email }}</span>
+              </div>
+              <div class="contact-item">
+                <i class="fas fa-phone"></i>
+                <span>{{ seller.phone_number }}</span>
+              </div>
+              <div class="contact-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ seller.address }}</span>
+              </div>
+            </div>
+            <div class="seller-actions">
+              {% if session.get('email') and session.get('email') !=
+              seller.email %}
+              <button
+                class="chat-btn"
+                onclick="startChatWithSeller('{{ seller.email }}')"
+              >
+                <i class="fas fa-comments"></i> Chat with Seller
+              </button>
+              {% endif %}
+              <button class="report-btn" onclick="openReportModal()">
+                <i class="fas fa-flag"></i> Report Seller
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Section -->
+      <div class="products-section">
+        <h2>Products by {{ seller.first_name }}</h2>
+        <div class="products-grid">
+          {% for product in products %}
+          <div class="product-card">
+            <div class="product-image">
+              {% if product.is_new %}
+              <div class="new-badge">New</div>
+              {% endif %}
+              <img
+                src="{{ url_for('static', filename='uploads/' ~ product.image) }}"
+                alt="{{ product.name }}"
+              />
+              <div class="quick-view">
+                <a
+                  href="{{ url_for('product_details', product_id=product.id) }}"
+                  class="view-btn"
+                >
+                  <i class="fas fa-eye"></i> Quick View
+                </a>
+              </div>
+            </div>
+            <div class="product-info">
+              <h3>{{ product.name }}</h3>
+              <p class="price">₱{{ "%.2f"|format(product.price|float) }}</p>
+              <div class="product-details">
+                <span
+                  ><i class="fas fa-ruler"></i> Size: {{ product.size }}</span
+                >
+                <span
+                  ><i class="fas fa-box"></i> Stock: {{ product.quantity
+                  }}</span
+                >
+              </div>
+            </div>
+            <div class="product-actions">
+              <button
+                onclick="addToCart('{{ product.id }}', '{{ product.name }}', '{{ product.price }}', '{{ product.image }}', '{{ product.color }}')"
+              >
+                <i class="fas fa-shopping-cart"></i> Add to Cart
+              </button>
+              <button
+                class="wishlist-btn"
+                onclick="addToWishlist('{{ product.id }}', '{{ product.name }}', '{{ product.price }}', '{{ product.image }}', '{{ product.seller_email }}')"
+              >
+                <i class="fas fa-heart"></i>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Report Seller Modal -->
+    <div id="reportModal" class="modal" style="display: none">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-flag"></i> Report Seller</h2>
+          <button class="modal-close" onclick="closeReportModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Help us maintain a safe marketplace. Please provide details about
+            your concern.
+          </p>
+          <form id="reportForm" onsubmit="submitReport(event)">
+            <div class="form-group">
+              <label for="reportReason"
+                >Reason for Report <span class="required">*</span></label
+              >
+              <select id="reportReason" name="report_reason" required>
+                <option value="">Select a reason</option>
+                <option value="Fraudulent Activity">Fraudulent Activity</option>
+                <option value="Poor Product Quality">
+                  Poor Product Quality
+                </option>
+                <option value="Unprofessional Behavior">
+                  Unprofessional Behavior
+                </option>
+                <option value="Spam or Scam">Spam or Scam</option>
+                <option value="Inappropriate Content">
+                  Inappropriate Content
+                </option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="reportDescription"
+                >Description <span class="required">*</span></label
+              >
+              <textarea
+                id="reportDescription"
+                name="report_description"
+                rows="5"
+                placeholder="Please provide detailed information about your report..."
+                required
+              ></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Submit Report
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                onclick="closeReportModal()"
+              >
+                <i class="fas fa-times"></i> Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div id="chatPanel" class="chat-panel" aria-hidden="true">
+      <div class="chat-panel-header" id="chatHeader">
+        <div class="chat-panel-title">Message Center</div>
+        <div class="chat-window-controls">
+          <button
+            id="chatThemeToggle"
+            class="chat-theme-toggle"
+            title="Change Theme"
+          >
+            <i class="fas fa-palette"></i>
+          </button>
+          <button
+            id="chatMinimizeBtn"
+            class="chat-control-btn minimize"
+            title="Minimize"
+          >
+            <i class="fas fa-minus"></i>
+          </button>
+          <button
+            id="chatMaximizeBtn"
+            class="chat-control-btn maximize"
+            title="Maximize"
+          >
+            <i class="fas fa-expand"></i>
+          </button>
+          <button
+            id="chatCloseBtn"
+            class="chat-control-btn close"
+            title="Close"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div class="chat-panel-inner">
+        <div class="chat-panel-content">
+          <div class="chat-panel-sidebar" id="chatThreads">
+            <div class="threads-header">Conversations</div>
+            <div id="threadsList" class="threads-list">Loading...</div>
+          </div>
+          <div class="chat-panel-main">
+            <div class="chat-panel-top">
+              <div id="chatWith" class="chat-with">Select a conversation</div>
+            </div>
+            <div id="chatMessages" class="chat-messages-large">
+              No thread selected
+            </div>
+            <div class="chat-input-area">
+              <input
+                id="chatInput"
+                type="text"
+                placeholder="Type a message..."
+              />
+              <button id="chatSendBtn" class="btn-send">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/view_seller.js') }}"></script>
+    <script>
+      // Function to start chat with seller
+      function startChatWithSeller(sellerEmail) {
+        const currentUser = document
+          .querySelector('meta[name="user-email"]')
+          ?.getAttribute("content");
+        if (!currentUser) {
+          alert("Please login to start a chat");
+          window.location.href = "/login";
+          return;
+        }
+
+        // Create thread_id by combining emails in sorted order
+        const emails = [currentUser, sellerEmail].sort();
+        const threadId = emails.join("_");
+
+        // Open chat panel
+        const chatPanel = document.getElementById("chatPanel");
+        if (chatPanel) {
+          chatPanel.style.display = "flex";
+          chatPanel.setAttribute("aria-hidden", "false");
+          chatPanel.classList.add("show");
+        }
+
+        // Select the thread
+        if (typeof selectThread === "function") {
+          selectThread(threadId);
+        } else {
+          // Wait for chat.js to load
+          setTimeout(() => {
+            if (typeof selectThread === "function") {
+              selectThread(threadId);
+            }
+          }, 500);
+        }
+      }
+    </script>
+  </body>
+</html>

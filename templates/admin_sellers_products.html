@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Baby - Sellers & Products</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_theme.css') }}">
+    <meta name="user-email" content="{{ session.get('email','') }}">
+    <meta name="user-role" content="{{ session.get('user_type','') }}">
+    <style>
+        body { display: flex; }
+        .sellers-main { flex: 1; padding: 30px; }
+        .seller-card { margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+    <div class="sellers-main">
+        <div class="section-header" style="margin-bottom: 30px;">
+            <h2><i class="fas fa-store"></i> Sellers &amp; Their Products</h2>
+        </div>
+        
+        {% if sellers %}
+            {% for seller in sellers %}
+                <div class="seller-card request-card">
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="margin: 0 0 5px 0;"><i class="fas fa-user-circle" style="color: #6a4cff; margin-right: 8px;"></i><a href="{{ url_for('view_seller', seller_email=seller.email) }}">{{ seller.first_name }} {{ seller.last_name }}</a></h3>
+                        <p style="margin: 0; font-size: 0.9em; opacity: 0.7;">{{ seller.email }}</p>
+                    </div>
+                    
+                    {% if seller.products %}
+                        <div class="table-container">
+                            <table class="users-table" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in seller.products %}
+                                    <tr>
+                                        <td>{{ p.id }}</td>
+                                        <td><strong>{{ p.name }}</strong></td>
+                                        <td>{{ p.category }}</td>
+                                        <td><strong>₱{{ p.price }}</strong></td>
+                                        <td><span style="display: inline-block; padding: 4px 8px; background: rgba(107, 70, 193, 0.1); border-radius: 6px; color: #6a4cff;">{{ p.quantity }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p style="text-align: center; padding: 20px; opacity: 0.6;"><i class="fas fa-inbox"></i> No products listed</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="fas fa-store" style="font-size: 3em; opacity: 0.3; margin-bottom: 20px; display: block;"></i>
+                <p style="opacity: 0.6;">No sellers found.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard_theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

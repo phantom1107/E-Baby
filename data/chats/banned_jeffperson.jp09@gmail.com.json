@@ -1,0 +1,36 @@
+{
+  "thread_id": "banned_jeffperson.jp09@gmail.com",
+  "email": "jeffperson.jp09@gmail.com",
+  "temp_username": "roberto",
+  "account_status": "banned",
+  "messages": [
+    {
+      "sender": "roberto",
+      "sender_email": "jeffperson.jp09@gmail.com",
+      "text": "hello can i appeal?",
+      "timestamp": "2025-11-19T20:34:46.562850",
+      "read": false
+    },
+    {
+      "sender": "jeffperson.jp09@gmail.com",
+      "sender_email": "jeffperson.jp09@gmail.com",
+      "text": "how can i appeal",
+      "timestamp": "2025-11-19T20:42:34.745993",
+      "read": false
+    },
+    {
+      "sender": "jeffperson.jp09@gmail.com",
+      "sender_email": "jeffperson.jp09@gmail.com",
+      "text": "how can i appeal",
+      "timestamp": "2025-11-19T20:42:37.576866",
+      "read": false
+    },
+    {
+      "sender": "Roberto",
+      "sender_email": "jeffperson.jp09@gmail.com",
+      "text": "how can i appeal indeed?",
+      "timestamp": "2025-11-20T08:54:08.773534",
+      "read": false
+    }
+  ]
+}

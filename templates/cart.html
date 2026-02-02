@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shopping Cart - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/cart.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+  </head>
+  <body>
+    <!-- Navigation Header -->
+    <header class="navbar">
+      <div class="navbar-content">
+        <!-- Logo -->
+        <div class="logo-section">
+          <a href="/homepage" class="logo-link">
+            <img
+              src="/static/images/logo/E-Baby Logo.png"
+              alt="E-Baby"
+              class="logo-image"
+            />
+          </a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-section">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search products..."
+            class="search-input"
+          />
+          <button class="search-button" onclick="performSearch()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+
+        <!-- User Menu -->
+        <div class="user-menu">
+          <!-- Wishlist Button (outside dropdown) -->
+          <a href="/wishlist" class="nav-button" title="My Wishlist">
+            <i class="fas fa-heart"></i>
+            <span>Wishlist</span>
+          </a>
+
+          <div class="profile-menu-container">
+            <button class="profile-btn" onclick="toggleProfileDropdown()">
+              <i class="fas fa-user-circle"></i>
+              <span
+                >{{ session['email'] if session['email'] else 'Guest' }}</span
+              >
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu" id="profileDropdown">
+              {% if session['email'] %}
+              <a href="/profile" class="dropdown-item">
+                <i class="fas fa-user"></i> My Profile
+              </a>
+              <a href="/orders" class="dropdown-item">
+                <i class="fas fa-shopping-box"></i> My Orders
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="#" onclick="logout()" class="dropdown-item logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+              {% else %}
+              <a href="/login" class="dropdown-item">
+                <i class="fas fa-sign-in-alt"></i> Login
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Cart Section -->
+    <main class="cart-main">
+      <div class="cart-wrapper">
+        <!-- Hero Section with Stats -->
+        {% if cart_items %}
+        <div class="cart-hero">
+          <div class="hero-content">
+            <h1 class="cart-title">
+              <i class="fas fa-shopping-cart"></i> Shopping Cart
+            </h1>
+            <p class="hero-subtitle">Review your items before checkout</p>
+          </div>
+          <div class="hero-stats">
+            <div class="stat-box">
+              <div class="stat-icon">
+                <i class="fas fa-box"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Total Items</span>
+                <span class="stat-value" id="item-count">0</span>
+              </div>
+            </div>
+            <div class="stat-box highlight">
+              <div class="stat-icon">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-label">Total Price</span>
+                <span class="stat-value total-amount"
+                  >₱{{ total if total else '0.00' }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Main Grid Layout -->
+        <div class="cart-grid">
+          <!-- Items Section -->
+          <div class="cart-items-section">
+            {% if cart_items %}
+            <!-- Section Header -->
+            <div class="section-header">
+              <h2>Your Items</h2>
+              <div class="header-controls">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    id="select-all"
+                    class="select-checkbox"
+                  />
+                  Select All
+                </label>
+                <button class="btn-delete" onclick="deleteSelectedItems()">
+                  <i class="fas fa-trash-alt"></i> Delete Selected
+                </button>
+              </div>
+            </div>
+
+            <!-- Items List -->
+            <div class="items-list-wrapper">
+              {% for item in cart_items %}
+              <div class="item-card-modern" data-item-id="{{ item['id'] }}" data-product-id="{{ item.get('product_id', '') }}">
+                <!-- Checkbox -->
+                <div class="item-card-select">
+                  <input type="checkbox" class="item-checkbox" />
+                </div>
+
+                <!-- Image -->
+                <div class="item-card-image">
+                  <img
+                    src="{% if item['image'].startswith('/') %}{{ item['image'] }}{% else %}/static/uploads/{{ item['image'] }}{% endif %}"
+                    alt="{{ item['name'] }}"
+                    class="product-img"
+                    onerror="this.src='/static/images/defaults/product-default.png'"
+                  />
+                </div>
+
+                <!-- Info -->
+                <div class="item-card-info">
+                  <h3 class="item-title">{{ item['name'] }}</h3>
+                  <p class="item-detail">
+                    {% if item['color'] %}Color: <strong>{{ item['color'] }}</strong><br>{% endif %}
+                    {% if item['size'] %}Size: <strong>{{ item['size'] }}</strong>{% endif %}
+                  </p>
+                  <p class="item-detail">
+                    Price: <span class="item-price">₱{{ item['price'] }}</span>
+                  </p>
+                </div>
+
+                <!-- Quantity -->
+                <div class="item-card-quantity">
+                  <button class="qty-control" data-action="decrease">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <span class="qty-display">{{ item['quantity'] }}</span>
+                  <button class="qty-control" data-action="increase">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+
+                <!-- Subtotal -->
+                <div class="item-card-subtotal">
+                  <div class="subtotal-label">Subtotal</div>
+                  <div class="subtotal-value item-total">
+                    ₱{{ item['price'] | float * item['quantity'] | float }}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <!-- Empty Cart State -->
+            <div class="empty-state">
+              <i class="fas fa-shopping-bag"></i>
+              <h3>Your Cart is Empty</h3>
+              <p>Start adding products to your cart</p>
+              <a href="/homepage" class="btn-primary">
+                <i class="fas fa-arrow-left"></i> Continue Shopping
+              </a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Checkout Sidebar -->
+          {% if cart_items %}
+          <aside class="checkout-sidebar">
+            <div class="sidebar-card sticky-top">
+              <h3 class="sidebar-title">Order Summary</h3>
+
+              <div class="summary-details">
+                <div class="summary-line">
+                  <span>Subtotal:</span>
+                  <span class="subtotal-display"
+                    >₱{{ '%.2f'|format(subtotal|float) if subtotal else '0.00'
+                    }}</span
+                  >
+                </div>
+                <div class="summary-line">
+                  <span>Shipping:</span>
+                  <span class="shipping-display"
+                    >₱{{ '%.2f'|format(shipping_fee|float) if shipping_fee else
+                    '38.00' }}</span
+                  >
+                </div>
+                <div class="summary-line">
+                  <span>Tax (2.5%):</span>
+                  <span class="tax-display"
+                    >₱{{ '%.2f'|format(tax|float) if tax else '0.00' }}</span
+                  >
+                </div>
+              </div>
+
+              <div class="summary-divider"></div>
+
+              <div class="summary-total">
+                <span>Total:</span>
+                <span class="total-price"
+                  >₱{{ '%.2f'|format(total|float) if total else '0.00' }}</span
+                >
+              </div>
+
+              <button class="btn-checkout-primary" onclick="processCheckout()">
+                <i class="fas fa-credit-card"></i> Proceed to Checkout
+              </button>
+              <button
+                class="btn-continue-shopping"
+                onclick="window.location.href='/homepage'"
+              >
+                <i class="fas fa-arrow-left"></i> Continue Shopping
+              </button>
+            </div>
+          </aside>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="footer-wrapper">
+        <div class="footer-content">
+          <!-- Brand Section -->
+          <div class="footer-column footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-baby-carriage"></i>
+              <span>E-Baby</span>
+            </div>
+            <p class="footer-description">
+              Your premier destination for quality baby products and accessories.
+            </p>
+            <div class="footer-socials">
+              <a href="#" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a href="#" class="social-link" title="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-column">
+            <h4 class="footer-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="/about">About Us</a></li>
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/shipping">Shipping Info</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="footer-column">
+            <h4 class="footer-title">Get In Touch</h4>
+            <ul class="footer-contact">
+              <li>
+                <i class="fas fa-envelope"></i>
+                <a href="mailto:e-baby0@gmail.com">e-baby0@gmail.com</a>
+              </li>
+              <li>
+                <i class="fas fa-phone"></i>
+                <a href="tel:+639268713656">+63 926 871 3656</a>
+              </li>
+              <li>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Philippines</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="footer-divider"></div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-bottom-content">
+            <p class="copyright">&copy; 2024 E-Baby. All rights reserved.</p>
+            <div class="footer-bottom-links">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms & Conditions</a>
+              <a href="#">Cookie Policy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+  </body>
+</html>

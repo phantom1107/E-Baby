@@ -1,0 +1,50 @@
+[
+  {
+    "sender": "slayerphantom7@gmail.com",
+    "role": "Seller",
+    "message": "hello",
+    "timestamp": "2025-11-17T01:18:01.479571"
+  },
+  {
+    "sender": "slayerphantom7@gmail.com",
+    "role": "Seller",
+    "message": "can i ask for help?",
+    "timestamp": "2025-11-17T01:18:08.371893"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "User",
+    "message": "yes ofc",
+    "timestamp": "2025-11-17T01:36:13.029972"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "User",
+    "message": "what help do u need",
+    "timestamp": "2025-11-17T01:36:19.493505"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "hello?",
+    "timestamp": "2025-11-17T02:52:18.999872"
+  },
+  {
+    "sender": "slayerphantom7@gmail.com",
+    "role": "Seller",
+    "message": "hello",
+    "timestamp": "2025-11-20T00:33:49.798542"
+  },
+  {
+    "sender": "slayerphantom7@gmail.com",
+    "role": "Seller",
+    "message": "hello?",
+    "timestamp": "2025-11-20T00:37:53.310581"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "yes hello",
+    "timestamp": "2025-11-20T00:45:43.085440"
+  }
+]

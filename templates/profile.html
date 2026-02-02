@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Profile - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary-color: #7c3aed;
+        --primary-dark: #6d28d9;
+        --primary-light: #a78bfa;
+        --accent-color: #f59e0b;
+        --accent-light: #fcd34d;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f97316;
+        --dark-bg: #0f172a;
+        --light-bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+        --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100vh;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, var(--light-bg) 0%, #eef2ff 100%);
+        color: var(--text-primary);
+        line-height: 1.6;
+      }
+
+      /* Navigation Header */
+      .navbar {
+        background: white;
+        box-shadow: var(--shadow-lg);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .navbar-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+      }
+
+      .logo-section {
+        flex-shrink: 0;
+      }
+
+      .logo-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        text-decoration: none;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        transition: var(--transition);
+      }
+
+      .logo-link:hover {
+        transform: scale(1.05);
+      }
+
+      .logo-image {
+        height: 50px;
+        width: auto;
+        object-fit: contain;
+      }
+
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .profile-menu-container {
+        position: relative;
+      }
+
+      .profile-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.25rem;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--primary-dark)
+        );
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: var(--transition);
+        box-shadow: var(--shadow-md);
+      }
+
+      .profile-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .profile-btn i {
+        font-size: 1.1rem;
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow-xl);
+        min-width: 220px;
+        padding: 0.5rem 0;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: var(--transition);
+        z-index: 1000;
+        border: 1px solid var(--border-color);
+      }
+
+      .dropdown-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.25rem;
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: var(--transition);
+        font-weight: 500;
+        font-size: 0.95rem;
+      }
+
+      .dropdown-item:hover {
+        background: var(--light-bg);
+        color: var(--primary-color);
+      }
+
+      .dropdown-item i {
+        width: 20px;
+        text-align: center;
+        color: var(--primary-color);
+      }
+
+      .dropdown-divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 0.5rem 0;
+      }
+
+      /* Main Container */
+      .profile-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      /* Profile Header Section */
+      .profile-header-section {
+        background: white;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        margin-bottom: 2rem;
+        position: relative;
+      }
+
+      .banner-container {
+        position: relative;
+        height: 250px;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--primary-dark) 100%
+        );
+        overflow: hidden;
+      }
+
+      .profile-banner {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .banner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(0, 0, 0, 0.3) 100%
+        );
+      }
+
+      .edit-banner-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        font-size: 1.1rem;
+      }
+
+      .edit-banner-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+
+      .profile-info-wrapper {
+        position: relative;
+        padding: 0 2rem 2rem;
+        margin-top: -80px;
+      }
+
+      .profile-pic-container {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 1.5rem;
+      }
+
+      .profile-pic {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        border: 6px solid white;
+        object-fit: cover;
+        background: var(--light-bg);
+        box-shadow: var(--shadow-xl);
+        display: block;
+      }
+
+      .profile-pic-placeholder {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        border: 6px solid white;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--primary-dark) 100%
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-xl);
+      }
+
+      .profile-pic-placeholder i {
+        font-size: 4rem;
+        color: white;
+      }
+
+      .edit-profile-pic-btn {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--primary-dark)
+        );
+        border: 4px solid white;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        box-shadow: var(--shadow-md);
+      }
+
+      .edit-profile-pic-btn:hover {
+        transform: scale(1.1);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .profile-name-section {
+        margin-top: 1rem;
+      }
+
+      .profile-name {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--accent-color)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .profile-email {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      /* Profile Content Card */
+      .profile-content-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: var(--shadow-lg);
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid var(--border-color);
+      }
+
+      .card-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .card-title i {
+        color: var(--primary-color);
+      }
+
+      /* Form Grid */
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group.full-width {
+        grid-column: 1 / -1;
+      }
+
+      .form-label {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .form-label i {
+        color: var(--primary-color);
+        font-size: 0.9rem;
+      }
+
+      .form-input {
+        padding: 0.875rem 1.25rem;
+        background: var(--light-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        transition: var(--transition);
+        font-family: inherit;
+      }
+
+      .form-input:disabled {
+        background: #f1f5f9;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      .form-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        background: white;
+      }
+
+      .form-input::placeholder {
+        color: var(--text-secondary);
+      }
+
+      /* Button Group */
+      .button-group {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 0.875rem 2rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color),
+          var(--primary-dark)
+        );
+        color: white;
+        box-shadow: var(--shadow-md);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, var(--success-color), #34d399);
+        color: white;
+        box-shadow: var(--shadow-md);
+      }
+
+      .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      /* Messages */
+      .message {
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.success {
+        background: rgba(16, 185, 129, 0.1);
+        border: 2px solid var(--success-color);
+        color: var(--success-color);
+      }
+
+      .message.error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 2px solid var(--danger-color);
+        color: var(--danger-color);
+      }
+
+      .message i {
+        font-size: 1.25rem;
+      }
+
+      /* Toast Notification */
+      .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow-xl);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        z-index: 1000;
+        animation: slideInRight 0.3s ease;
+        max-width: 400px;
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(100px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .toast.success {
+        background: white;
+        border-left: 4px solid var(--success-color);
+        color: var(--success-color);
+      }
+
+      .toast.error {
+        background: white;
+        border-left: 4px solid var(--danger-color);
+        color: var(--danger-color);
+      }
+
+      .toast.show {
+        display: flex;
+      }
+
+      /* Hidden file inputs */
+      .file-input {
+        display: none;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 1024px) {
+        .profile-container {
+          padding: 1.5rem;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .navbar-content {
+          padding: 1rem;
+        }
+
+        .nav-actions {
+          flex-shrink: 0;
+        }
+
+        .profile-btn {
+          padding: 0.625rem 1rem;
+          font-size: 0.875rem;
+        }
+
+        .profile-container {
+          padding: 1rem;
+        }
+
+        .profile-header-section {
+          border-radius: 15px;
+        }
+
+        .banner-container {
+          height: 200px;
+        }
+
+        .profile-info-wrapper {
+          padding: 0 1.5rem 1.5rem;
+          margin-top: -60px;
+        }
+
+        .profile-pic,
+        .profile-pic-placeholder {
+          width: 120px;
+          height: 120px;
+        }
+
+        .profile-name {
+          font-size: 1.5rem;
+        }
+
+        .profile-content-card {
+          padding: 1.5rem;
+        }
+
+        .card-title {
+          font-size: 1.5rem;
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .toast {
+          bottom: 1rem;
+          right: 1rem;
+          left: 1rem;
+          max-width: none;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .profile-info-wrapper {
+          padding: 0 1rem 1rem;
+        }
+
+        .profile-pic,
+        .profile-pic-placeholder {
+          width: 100px;
+          height: 100px;
+        }
+
+        .edit-profile-pic-btn,
+        .edit-banner-btn {
+          width: 35px;
+          height: 35px;
+          font-size: 0.9rem;
+        }
+
+        .profile-content-card {
+          padding: 1rem;
+        }
+
+        .form-grid {
+          gap: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Header -->
+    <nav class="navbar">
+      <div class="navbar-content">
+        <div class="logo-section">
+          <a href="/homepage" class="logo-link">
+            <img
+              src="/static/images/logo/E-Baby Logo.png"
+              alt="E-Baby"
+              class="logo-image"
+            />
+          </a>
+        </div>
+        <div class="nav-actions">
+          <div class="profile-menu-container">
+            <button class="profile-btn" onclick="toggleProfileDropdown()">
+              <i class="fas fa-bars"></i>
+              <span>Menu</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu" id="profileDropdown">
+              {% if session['user_type'] != 'Seller' and session['user_type'] !=
+              'Rider' %}
+              <a href="/cart" class="dropdown-item">
+                <i class="fas fa-shopping-cart"></i> Cart
+              </a>
+              <a href="/orders" class="dropdown-item">
+                <i class="fas fa-box"></i> Orders
+              </a>
+              <a href="/wishlist" class="dropdown-item">
+                <i class="fas fa-heart"></i> Wishlist
+              </a>
+              <div class="dropdown-divider"></div>
+              {% elif session['user_type'] == 'Seller' %}
+              <a href="/seller_dashboard" class="dropdown-item">
+                <i class="fas fa-chart-line"></i> Dashboard
+              </a>
+              <div class="dropdown-divider"></div>
+              {% elif session['user_type'] == 'Rider' %}
+              <a href="/rider_dashboard" class="dropdown-item">
+                <i class="fas fa-motorcycle"></i> Dashboard
+              </a>
+              <div class="dropdown-divider"></div>
+              {% endif %}
+              <a href="/change-password" class="dropdown-item">
+                <i class="fas fa-key"></i> Change Password
+              </a>
+              <a href="/homepage" class="dropdown-item">
+                <i class="fas fa-home"></i> Home
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="profile-container">
+      <!-- Profile Header Section -->
+      <div class="profile-header-section">
+        <div class="banner-container">
+          {% if user_data.banner_image %}
+          <img
+            src="{{ user_data.banner_image }}"
+            alt="Profile Banner"
+            class="profile-banner"
+          />
+          {% endif %}
+          <div class="banner-overlay"></div>
+          <button
+            class="edit-banner-btn"
+            onclick="document.getElementById('banner-upload').click()"
+            title="Edit Banner"
+          >
+            <i class="fas fa-camera"></i>
+          </button>
+          <input
+            type="file"
+            id="banner-upload"
+            class="file-input"
+            accept="image/*"
+            onchange="uploadBanner(this)"
+          />
+        </div>
+
+        <div class="profile-info-wrapper">
+          <div class="profile-pic-container">
+            {% if user_data.profile_pic %}
+            <img
+              src="{{ user_data.profile_pic }}"
+              alt="Profile Picture"
+              class="profile-pic"
+            />
+            {% else %}
+            <div class="profile-pic-placeholder">
+              <i class="fas fa-user"></i>
+            </div>
+            {% endif %}
+            <button
+              class="edit-profile-pic-btn"
+              onclick="document.getElementById('profile-pic-upload').click()"
+              title="Edit Profile Picture"
+            >
+              <i class="fas fa-camera"></i>
+            </button>
+            <input
+              type="file"
+              id="profile-pic-upload"
+              class="file-input"
+              accept="image/*"
+              onchange="uploadProfilePic(this)"
+            />
+          </div>
+
+          <div class="profile-name-section">
+            <h1 class="profile-name">
+              {{ user_data.first_name }} {{ user_data.last_name }}
+            </h1>
+            <div class="profile-email">
+              <i class="fas fa-envelope"></i>
+              <span>{{ user_data.email }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Content Card -->
+      <div class="profile-content-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <i class="fas fa-user-edit"></i>
+            Profile Information
+          </h2>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %} {% for category, message in messages %}
+        <div class="message {{ category }}">
+          <i
+            class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"
+          ></i>
+          <span>{{ message }}</span>
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+
+        <form method="POST" action="/profile" enctype="multipart/form-data">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="first_name" class="form-label">
+                <i class="fas fa-user"></i>
+                First Name
+              </label>
+              <input
+                type="text"
+                id="first_name"
+                name="first_name"
+                class="form-input editable"
+                value="{{ user_data.first_name if user_data else '' }}"
+                required
+                disabled
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="last_name" class="form-label">
+                <i class="fas fa-user"></i>
+                Last Name
+              </label>
+              <input
+                type="text"
+                id="last_name"
+                name="last_name"
+                class="form-input editable"
+                value="{{ user_data.last_name if user_data else '' }}"
+                required
+                disabled
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="email" class="form-label">
+                <i class="fas fa-envelope"></i>
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-input editable"
+                value="{{ user_data.email if user_data else '' }}"
+                required
+                disabled
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="phone_number" class="form-label">
+                <i class="fas fa-phone"></i>
+                Phone Number
+              </label>
+              <input
+                type="text"
+                id="phone_number"
+                name="phone_number"
+                class="form-input editable"
+                value="{{ user_data.phone_number if user_data else '' }}"
+                required
+                disabled
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="address" class="form-label">
+                <i class="fas fa-map-marker-alt"></i>
+                Address
+              </label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                class="form-input editable"
+                value="{{ user_data.address if user_data else '' }}"
+                required
+                disabled
+              />
+            </div>
+
+            {% if user_data and user_data.user_type == 'Seller' %}
+            <div class="form-group">
+              <label for="bir" class="form-label">
+                <i class="fas fa-file-alt"></i>
+                BIR Document
+              </label>
+              <input
+                type="text"
+                id="bir"
+                name="bir"
+                class="form-input editable"
+                value="{{ user_data.bir if user_data.bir else 'Not provided' }}"
+                disabled
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="document_id" class="form-label">
+                <i class="fas fa-id-card"></i>
+                Valid ID
+              </label>
+              <input
+                type="text"
+                id="document_id"
+                name="document_id"
+                class="form-input editable"
+                value="{{ user_data.document_id if user_data.document_id else 'Not provided' }}"
+                disabled
+              />
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="button-group">
+            <button
+              type="button"
+              id="editButton"
+              class="btn btn-primary"
+              onclick="enableEditing()"
+            >
+              <i class="fas fa-edit"></i> Edit Details
+            </button>
+            <button
+              type="submit"
+              id="updateButton"
+              class="btn btn-success"
+              style="display: none"
+            >
+              <i class="fas fa-save"></i> Update Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+    <script>
+      // Profile dropdown toggle
+      function toggleProfileDropdown() {
+        const dropdown = document.getElementById("profileDropdown");
+        dropdown.classList.toggle("active");
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", function (event) {
+        const dropdown = document.getElementById("profileDropdown");
+        const profileBtn = document.querySelector(".profile-btn");
+
+        if (
+          dropdown &&
+          profileBtn &&
+          !profileBtn.contains(event.target) &&
+          !dropdown.contains(event.target)
+        ) {
+          dropdown.classList.remove("active");
+        }
+      });
+
+      function enableEditing() {
+        const editables = document.querySelectorAll(".editable");
+        const editButton = document.getElementById("editButton");
+        const updateButton = document.getElementById("updateButton");
+
+        editables.forEach((input) => {
+          input.disabled = false;
+          input.style.background = "white";
+        });
+
+        editButton.style.display = "none";
+        updateButton.style.display = "inline-flex";
+      }
+
+      // Handle form submission
+      document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("form[method='POST']");
+        if (form) {
+          form.addEventListener("submit", function (e) {
+            const updateButton = document.getElementById("updateButton");
+            const editables = document.querySelectorAll(".editable");
+
+            // Check if any fields are enabled (editing mode)
+            let isEditing = false;
+            editables.forEach((input) => {
+              if (!input.disabled) {
+                isEditing = true;
+              }
+            });
+
+            if (isEditing) {
+              // Show loading state
+              updateButton.disabled = true;
+              updateButton.innerHTML =
+                '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+              // Allow form to submit normally
+              return true;
+            }
+          });
+        }
+      });
+
+      function uploadProfilePic(input) {
+        if (input.files && input.files[0]) {
+          const formData = new FormData();
+          formData.append("profile_pic", input.files[0]);
+
+          fetch("/upload_profile_pic", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                const profilePic = document.querySelector(".profile-pic");
+                if (profilePic) {
+                  profilePic.src = data.image_url;
+                } else {
+                  // Replace placeholder with image
+                  const placeholder = document.querySelector(
+                    ".profile-pic-placeholder"
+                  );
+                  if (placeholder) {
+                    placeholder.outerHTML = `<img src="${data.image_url}" alt="Profile Picture" class="profile-pic">`;
+                  }
+                }
+                showToast("Profile picture updated successfully!", "success");
+              } else {
+                showToast(
+                  "Error updating profile picture: " +
+                    (data.error || "Unknown error"),
+                  "error"
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              showToast("Error updating profile picture", "error");
+            });
+        }
+      }
+
+      function uploadBanner(input) {
+        if (input.files && input.files[0]) {
+          const formData = new FormData();
+          formData.append("banner", input.files[0]);
+
+          fetch("/upload_banner", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                const banner = document.querySelector(".profile-banner");
+                if (banner) {
+                  banner.src = data.image_url;
+                } else {
+                  // Create banner image if it doesn't exist
+                  const bannerContainer =
+                    document.querySelector(".banner-container");
+                  const overlay = document.querySelector(".banner-overlay");
+                  const newBanner = document.createElement("img");
+                  newBanner.src = data.image_url;
+                  newBanner.alt = "Profile Banner";
+                  newBanner.className = "profile-banner";
+                  bannerContainer.insertBefore(newBanner, overlay);
+                }
+                showToast("Banner updated successfully!", "success");
+              } else {
+                showToast(
+                  "Error updating banner: " + (data.error || "Unknown error"),
+                  "error"
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              showToast("Error updating banner", "error");
+            });
+        }
+      }
+
+      function showToast(message, type) {
+        // Remove existing toast if any
+        const existingToast = document.querySelector(".toast");
+        if (existingToast) {
+          existingToast.remove();
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast ${type} show`;
+        toast.innerHTML = `
+                <i class="fas fa-${
+                  type === "success" ? "check" : "exclamation"
+                }-circle"></i>
+                <span>${message}</span>
+            `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.animation = "slideInRight 0.3s ease reverse";
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>

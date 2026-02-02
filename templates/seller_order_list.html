@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Orders Details</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Web site created using create-react-app" />
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/seller_orders.css') }}" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="orders-details">
+        <div class="rowdashboaard">
+            <aside class="sidebar">
+                <h2>Seller Menu</h2>
+                <div class="nav-menu">
+                    <a href="{{ url_for('seller_dashboard') }}" class="nav-button">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('seller_products') }}" class="nav-button">
+                        <i class="fas fa-box"></i>
+                        <span>All Products</span>
+                    </a>
+                    <a href="{{ url_for('add_new_product') }}" class="nav-button">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Add Products</span>
+                    </a>
+                    <a href="{{ url_for('seller_order_list') }}" class="nav-button active">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Order List</span>
+                    </a>
+                </div>
+                <button class="sidebar-toggle">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </aside>
+            <div class="newscreenbody">
+                <header class="header">
+                    <div class="rowsearch_one">
+                        <div class="profile-dropdown">
+                            <button class="dropdown-btn">Profile</button>
+                            <div class="dropdown-content">
+                                <a href="{{ url_for('profile') }}">Profile</a>
+                                <a href="#" onclick="logout()">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <div class="column_one">
+                    <div>
+                        <div class="product">
+                            <div class="rowproducts">
+                                <h5 class="products ui heading size-headingmd">Orders</h5>
+                            </div>
+                            <div class="lineone_one"></div>
+                            {% if orders %}
+                            <table cellpadding="0" cellspacing="0" class="ui table size-xs">
+                                <thead class="row_one">
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>Order ID</th>
+                                        <th>Customer Email</th>
+                                        <th>Quantity</th>
+                                        <th>Total Price</th>
+                                        <th>Payment Method</th>
+                                        <th>Status</th>
+                                        <th>Cancellation Reason</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                    <tr>
+                                        <td style="text-align: left;">
+                                            {% if order.image %}
+                                            <img src="{{ url_for('static', filename='uploads/' + order.image) }}" 
+                                                 alt="{{ order.name }}" 
+                                                 style="width: 84px; height: 84px; margin-right: 10px; vertical-align: middle; float: left;">
+                                            {% endif %}
+                                            <span style="vertical-align: middle;">{{ order.name }}</span>
+                                        </td>
+                                        <td>{{ order.id }}</td>
+                                        <td>{{ order.email }}</td>
+                                        <td>{{ order.quantity }}</td>
+                                        <td>₱{{ '%.2f'|format(order.total_price|float) }}</td>
+                                        <td>{{ order.payment_method }}</td>
+                                        <td>
+                                            <span class="status-badge" style="
+                                                padding: 8px 14px;
+                                                border-radius: 20px;
+                                                font-size: 12px;
+                                                font-weight: 700;
+                                                display: inline-block;
+                                                {% if order.status == 'Pending' %}
+                                                background-color: #fff3cd;
+                                                color: #856404;
+                                                {% elif order.status == 'Preparing' %}
+                                                background-color: #d1ecf1;
+                                                color: #0c5460;
+                                                {% elif order.status == 'Prepared' %}
+                                                background-color: #d4edda;
+                                                color: #155724;
+                                                {% elif order.status == 'Cancelled' %}
+                                                background-color: #ff4444;
+                                                color: #ffffff;
+                                                font-weight: 800;
+                                                {% else %}
+                                                background-color: #d3d3d3;
+                                                color: #333;
+                                                {% endif %}
+                                            ">
+                                                {% if order.status == 'Cancelled' %}
+                                                <i class="fas fa-times-circle" style="margin-right: 5px;"></i>
+                                                {% endif %}
+                                                {{ order.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if order.status == 'Cancelled' and order.cancellation_reason %}
+                                            <div style="
+                                                max-width: 220px;
+                                                overflow: hidden;
+                                                text-overflow: ellipsis;
+                                                white-space: nowrap;
+                                                cursor: help;
+                                                color: #ff4444;
+                                                font-size: 12px;
+                                                font-weight: 600;
+                                            " title="{{ order.cancellation_reason }}">
+                                                📋 {{ order.cancellation_reason }}
+                                            </div>
+                                            {% else %}
+                                            <span style="color: #999;">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div style="display: flex; gap: 6px;">
+                                                {% if order.status == 'Cancelled' %}
+                                                <button type="button" class="view-reason-btn" onclick="showCancellationReason('{{ order.id }}', '{{ order.name }}', '{{ order.email }}', '{{ order.quantity }}', '{{ order.total_price }}', '{{ order.cancellation_reason }}')" style="
+                                                    background-color: #ff4444;
+                                                    color: white;
+                                                    padding: 8px 16px;
+                                                    border: none;
+                                                    border-radius: 4px;
+                                                    font-size: 12px;
+                                                    font-weight: 600;
+                                                    cursor: pointer;
+                                                    transition: all 0.3s ease;
+                                                    display: flex;
+                                                    align-items: center;
+                                                    gap: 6px;
+                                                    white-space: nowrap;
+                                                " onmouseover="this.style.backgroundColor='#dd3333'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 68, 68, 0.3)'" onmouseout="this.style.backgroundColor='#ff4444'; this.style.transform='translateY(0)'; this.style.boxShadow='none'" title="View cancellation reason and order details">
+                                                    <i class="fas fa-eye"></i> View Reason
+                                                </button>
+                                                {% else %}
+                                                <form action="{{ url_for('seller_mark_preparing', order_id=order.id) }}" method="POST" style="display:inline-block;">
+                                                    <button type="submit" class="ship" {% if order.status != 'Pending' %}disabled{% endif %} title="{% if order.status != 'Pending' %}Order status must be Pending{% endif %}">Prepare</button>
+                                                </form>
+                                                <form action="{{ url_for('seller_finish_preparing', order_id=order.id) }}" method="POST" style="display:inline-block; margin-left:6px;">
+                                                    <button type="submit" class="delivered" {% if order.status != 'Preparing' %}disabled{% endif %} title="{% if order.status != 'Preparing' %}Order status must be Preparing{% endif %}">Finish Preparing</button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% else %}
+                            <div class="no-orders" style="text-align: center; padding: 20px;">
+                                <p>No orders found.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="menu-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Cancellation Reason Modal -->
+    <div id="reasonModal" style="
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        animation: fadeIn 0.3s ease;
+        overflow-y: auto;
+    ">
+        <div style="
+            background-color: #ffffff;
+            margin: 3% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            animation: slideDown 0.3s ease;
+            overflow: hidden;
+        ">
+            <!-- Header -->
+            <div style="
+                background: linear-gradient(135deg, #ff4444 0%, #ff6666 100%);
+                padding: 20px 30px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
+                <h2 style="margin: 0; color: white; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                    <i class="fas fa-times-circle"></i> Order Cancellation Details
+                </h2>
+                <span onclick="closeReasonModal()" style="
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: rgba(255, 255, 255, 0.8);
+                    cursor: pointer;
+                    transition: color 0.2s;
+                    line-height: 1;
+                " onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='rgba(255, 255, 255, 0.8)'">&times;</span>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 30px;">
+                
+                <!-- Product Details Section -->
+                <div style="
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 8px;
+                    margin-bottom: 25px;
+                    border-left: 4px solid #ff4444;
+                ">
+                    <h3 style="color: #333; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">📦 Product Details</h3>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <p style="color: #666; margin: 0 0 5px 0; font-size: 12px; font-weight: 600;">Order ID</p>
+                            <p style="color: #333; margin: 0; font-size: 16px; font-weight: 700;" id="reasonOrderId"></p>
+                        </div>
+                        <div>
+                            <p style="color: #666; margin: 0 0 5px 0; font-size: 12px; font-weight: 600;">Customer Email</p>
+                            <p style="color: #333; margin: 0; font-size: 14px;" id="reasonCustomerEmail"></p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p style="color: #666; margin: 0 0 5px 0; font-size: 12px; font-weight: 600;">Product Name</p>
+                        <p style="color: #333; margin: 0; font-size: 16px; font-weight: 600;" id="reasonProductName"></p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                        <div>
+                            <p style="color: #666; margin: 0 0 5px 0; font-size: 12px; font-weight: 600;">Quantity Cancelled</p>
+                            <p style="color: #333; margin: 0; font-size: 16px; font-weight: 700;" id="reasonQuantity"></p>
+                        </div>
+                        <div>
+                            <p style="color: #666; margin: 0 0 5px 0; font-size: 12px; font-weight: 600;">Total Amount</p>
+                            <p style="color: #333; margin: 0; font-size: 16px; font-weight: 700;" id="reasonTotalPrice"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cancellation Reason Section -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #333; margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-comment-dots" style="color: #ff4444;"></i> Reason for Cancellation
+                    </h3>
+                    <div style="
+                        background-color: #fff3f0;
+                        border-left: 5px solid #ff4444;
+                        padding: 18px;
+                        border-radius: 6px;
+                        color: #333;
+                        line-height: 1.8;
+                        min-height: 100px;
+                        word-wrap: break-word;
+                        white-space: pre-wrap;
+                        font-size: 14px;
+                        border: 1px solid #ffe0d9;
+                    " id="reasonText"></div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 15px; border-top: 1px solid #eee;">
+                    <button onclick="closeReasonModal()" style="
+                        background-color: #f0f0f0;
+                        color: #333;
+                        padding: 12px 24px;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 600;
+                        transition: all 0.3s;
+                    " onmouseover="this.style.backgroundColor='#e0e0e0'" onmouseout="this.style.backgroundColor='#f0f0f0'">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <script src="{{ url_for('static', filename='js/seller_order_list.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script>
+        function showCancellationReason(orderId, productName, customerEmail, quantity, totalPrice, reason) {
+            document.getElementById('reasonOrderId').textContent = '#' + orderId;
+            document.getElementById('reasonProductName').textContent = productName;
+            document.getElementById('reasonCustomerEmail').textContent = customerEmail;
+            document.getElementById('reasonQuantity').textContent = quantity;
+            document.getElementById('reasonTotalPrice').textContent = '₱' + parseFloat(totalPrice).toFixed(2);
+            document.getElementById('reasonText').textContent = reason || 'No reason provided';
+            document.getElementById('reasonModal').style.display = 'block';
+        }
+
+        function closeReasonModal() {
+            document.getElementById('reasonModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('reasonModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

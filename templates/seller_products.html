@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>All products</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Web site created using create-react-app" />
+  <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+  <link rel="stylesheet" type="text/css" href="static/css/seller_products.css" />
+  <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+</head>
+
+<body>
+  <div class="all-products">
+    <div class="rowdashboaard">
+      <aside class="sidebar">
+        <h2>Seller Menu</h2>
+        <ul class="columndashboaar">
+          <li>
+            <a href="{{ url_for('seller_dashboard') }}">
+              <i class="fas fa-chart-line"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('seller_products') }}">
+              <i class="fas fa-box"></i>
+              <span>Products</span>
+            </a>
+          </li>
+          <li class="toggle-container">
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+          </li>
+          <li>
+            <a href="{{ url_for('add_new_product') }}" class="add-products">
+              <i class="fas fa-plus-circle"></i>
+              <span>Add Products</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ url_for('seller_order_list') }}">
+              <i class="fas fa-shopping-cart"></i>
+              <span>Orders</span>
+            </a>
+          </li>
+        </ul>
+      </aside>
+      <div class="newscreenbody">
+        <header class="header">
+          <div class="rowsearch_one">
+            <!-- Profile and Notifications -->
+            <a href="#">
+              <img src="https://via.placeholder.com/24x24/666666/FFFFFF?text=!" alt="Notifications" class="arrowup_one" />
+            </a>
+            <div class="profile-dropdown">
+              <button class="dropdown-btn">Profile</button>
+              <div class="dropdown-content">
+                <a href="/profile">Profile</a>
+                <a href="#" onclick="confirmLogout()">Logout</a>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Sort and Search Form on the right side -->
+        <div class="filter-sort">
+          <form action="{{ url_for('seller_products') }}" method="GET" class="sort-category-form">
+            <!-- Sales Sorting Dropdown -->
+            <select name="sales_sort" class="sales_sort_dropdown" onchange="this.form.submit()">
+              <option value="">Sort by Sales</option>
+              <option value="highest" {% if sales_sort=='highest' %}selected{% endif %}>Highest Sales</option>
+              <option value="lowest" {% if sales_sort=='lowest' %}selected{% endif %}>Lowest Sales</option>
+            </select>
+            <!-- Category Dropdown -->
+            <select name="category" class="category_dropdown" onchange="this.form.submit()">
+              <option value="">Select Category</option>
+              {% for category in categories %}
+              <option value="{{ category }}" {% if category==selected_category %}selected{% endif %}>{{ category }}
+              </option>
+              {% endfor %}
+            </select>
+
+            <!-- Search Form -->
+            <input type="text" name="search" placeholder="Search products..." class="search_input"
+              value="{{ request.args.get('search', '') }}">
+            <button type="submit" class="search_button">
+              <img src="https://via.placeholder.com/24x24/666666/FFFFFF?text=?" alt="Search" class="search_one" />
+            </button>
+
+
+          </form>
+        </div>
+
+        <div class="columnadd_new">
+          <div class="rowallseller_products">
+            <div class="columnallseller_products">
+              <h1 class="allseller_products ui heading size-headinglg">All Products</h1>
+              <h2 class="homeall ui heading size-headings">Home &gt; All Products</h2>
+            </div>
+          </div>
+          <div class="column">
+            <div class="all_products">
+              <!-- Loop through products and display them -->
+              {% for product in products %}
+              <div class="columnlorem">
+                <div class="rowlorem_ipsum">
+                  <img id="productImage" src="{{ url_for('static', filename='uploads/' ~ product.image) }}"
+                    alt="{{ product.name }}" class="lorem_ipsum_one" />
+                  <div class="columnadidasult">
+                    <div class="rowadidasultra">
+                      <div class="columnadidasult-12">
+                        <h3 class="summary ui heading size-headings">{{ product.name }}</h3>
+                        <h4 class="ui heading size-headingxs">{{ product.cetegory }}</h4>
+                      </div>
+                    </div>
+                    <h5 class="price ui heading size-headingxs">PHP {{ product.price }}.00</h5>
+                  </div>
+                </div>
+                <div class="column-1">
+                  <div class="columnsummary">
+                    <h6 class="summary ui heading size-headings">Description</h6>
+                    <p class="longdistance ui text size-textxs">{{ product.description }}</p>
+                  </div>
+                  <div class="columnsales">
+                    <div class="rowsales">
+                      <p class="sales ui heading size-headingxs">Item Sales </p>
+                      <div class="rowzipcode">
+                        <p class="ui heading size-headingxs">{{ product.received_orders }}</p>
+                      </div>
+                    </div>
+                    <div class="columnlinesixte">
+                      <div class="linesixteen_one"></div>
+                      <div class="rowsales">
+                        <p class="sales ui heading size-headingxs">Quantity</p>
+                        <div class="rowzipcode">
+                          <div class="columnline"></div>
+                          <p class="ui heading size-headingxs">{{ product.quantity }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Edit Button -->
+                <div class="edit-button">
+                  <button onclick="openEditModal('{{ product.id }}', '{{ product.name }}', '{{ product.description }}', '{{ product.price }}', '{{ product.quantity }}', '{{ product.category }}', '{{ product.size }}', '{{ product.color }}', '{{ product.image }}')">
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
+                  <button class="delete-btn" onclick="confirmDelete('{{ product.id }}')">
+                    <i class="fas fa-trash"></i> Delete
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div id="editProductModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Edit Product</h2>
+      <form id="editProductForm" method="POST" enctype="multipart/form-data">
+        <input type="hidden" id="editProductId" name="product_id">
+        
+        <div class="form-group">
+          <label for="editName">Product Name</label>
+          <input type="text" id="editName" name="name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editDescription">Description</label>
+          <textarea id="editDescription" name="description" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editPrice">Price</label>
+          <input type="number" id="editPrice" name="price" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editQuantity">Quantity</label>
+          <input type="number" id="editQuantity" name="quantity" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editSize">Size</label>
+          <select id="editSize" name="size" required>
+            {% for size in range(36, 48) %}
+              <option value="{{ size }}">{{ size }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editColor">Color</label>
+          <select id="editColor" name="color" required>
+            <option value="red">Red</option>
+            <option value="orange">Orange</option>
+            <option value="yellow">Yellow</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="purple">Purple</option>
+            <option value="black">Black</option>
+            <option value="white">White</option>
+            <option value="brown">Brown</option>
+            <option value="pink">Pink</option>
+            <option value="gray">Gray</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editCategory">Category</label>
+          <select id="editCategory" name="category" required>
+            {% for category in categories %}
+            <option value="{{ category }}">{{ category }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editImage">Product Image</label>
+          <div class="image-upload-container">
+            <img id="currentImage" src="" alt="Current product image" class="preview-image">
+            <input type="file" id="editImage" name="image" accept="image/*" onchange="previewImage(this)">
+            <label for="editImage" class="upload-label">Choose New Image</label>
+          </div>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="submit" class="save-btn">Save Changes</button>
+          <button type="button" class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/seller_products.js') }}"></script>
+
+</body>
+
+</html>

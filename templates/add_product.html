@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Add New Product</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Add a new product" />
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+
+    <!-- Link to local CSS files -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/add_product.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_theme.css') }}">
+
+    <!-- Add this line in your head section -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="add-new-product">
+        <div class="rowsidebarlogo">
+            <aside class="sidebar">
+                <h2>Seller Menu</h2>
+                
+                <nav class="nav-menu">
+                    <a href="{{ url_for('seller_dashboard') }}" class="nav-button">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('seller_products') }}" class="nav-button">
+                        <i class="fas fa-box"></i>
+                        <span>Products</span>
+                    </a>
+                    
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    
+                    <a href="{{ url_for('add_new_product') }}" class="nav-button active">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Add Products</span>
+                    </a>
+                    <a href="{{ url_for('seller_order_list') }}" class="nav-button">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Orders</span>
+                    </a>
+                </nav>
+                
+                <div class="logout-container">
+                    <button class="logout" onclick="confirmLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </aside>
+
+            <div class="newscreenbody">
+                <header class="header">
+                    <div class="rowsearch_one">
+                        <a href="#">
+                            <img src="https://via.placeholder.com/24x24/666666/FFFFFF?text=!" alt="Notifications" class="arrowdown_one" />
+                        </a>
+                        <div class="profile-dropdown">
+                            <button class="dropdown-btn">Profile</button>
+                            <div class="dropdown-content">
+                                <a href="/profile">Profile</a>
+                                <a href="#" onclick="confirmLogout()">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="flash-messages">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                <div class="form-container">
+                    <form action="/add_new_product" method="POST" enctype="multipart/form-data">
+                        <div class="column_four">
+                            <div class="column_three">
+                                <div class="rowproductname">
+                                    <!-- Left Column -->
+                                    <div class="column_one">
+                                        <div class="columnproductna">
+                                            <h5 class="ui heading size-headings">Product Name</h5>
+                                            <input type="text" name="product_name" placeholder="Enter product name" class="inputinitial" required />
+                                        </div>
+                                        <div class="columnproductna">
+                                            <h6 class="ui heading size-headings">Description</h6>
+                                            <input type="text" name="description" placeholder="Enter product description" class="inputinitial" required />
+                                        </div>
+                                        <div class="columnproductna">
+                                            <h5 class="ui heading size-headings">Category</h5>
+                                            <select name="category" id="categorySelect" class="inputinitial" required>
+                                                <option value="">Select Category</option>
+                                                <option value="Baby Clothes & Accessories">Baby Clothes & Accessories</option>
+                                                <option value="Toys & Games">Toys & Games</option>
+                                                <option value="Educational Materials">Educational Materials</option>
+                                                <option value="Strollers & Gear">Strollers & Gear</option>
+                                                <option value="Nursery Furniture">Nursery Furniture</option>
+                                                <option value="Safety and Health">Safety and Health</option>
+                                            </select>
+                                        </div>
+                                        <div class="columnproductna" id="colorsSection">
+                                            <h5 class="ui heading size-headings">Colors</h5>
+                                            <div class="multiple-select-container">
+                                                <select name="colors[]" id="colorsSelect" class="inputinitial multiple-select" multiple required>
+                                                    <option value="red">Red</option>
+                                                    <option value="blue">Blue</option>
+                                                    <option value="green">Green</option>
+                                                    <option value="black">Black</option>
+                                                    <option value="white">White</option>
+                                                    <option value="yellow">Yellow</option>
+                                                    <option value="purple">Purple</option>
+                                                    <option value="orange">Orange</option>
+                                                    <option value="pink">Pink</option>
+                                                    <option value="gray">Gray</option>
+                                                    <option value="brown">Brown</option>
+                                                </select>
+                                                <small class="helper-text">Hold Ctrl (Windows) or Command (Mac) to select multiple colors</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Right Column -->
+                                    <div class="column_one">
+                                        <div class="columnproductna" id="sizesSection">
+                                            <h5 class="ui heading size-headings">Sizes</h5>
+                                            <div class="multiple-select-container">
+                                                <select name="sizes[]" id="sizesSelect" class="inputinitial multiple-select" multiple required>
+                                                    {% for size in range(36, 47) %}
+                                                        <option value="{{ size }}">{{ size }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <small class="helper-text">Hold Ctrl (Windows) or Command (Mac) to select multiple sizes</small>
+                                            </div>
+                                        </div>
+                                        <div class="columnproductna">
+                                            <h5 class="ui heading size-headings">Stock Quantity</h5>
+                                            <input type="number" name="stock_quantity" placeholder="Enter stock quantity" class="inputinitial" required />
+                                        </div>
+                                        <div class="columnproductna">
+                                            <h5 class="ui heading size-headings">Price (PHP)</h5>
+                                            <input type="number" name="regular_price" placeholder="Enter regular price" class="inputinitial" required />
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+
+                                <!-- Image Upload Section -->
+                                <div class="columnproductna">
+                                    <h5 class="ui heading size-headings">Product Gallery</h5>
+                                    <div class="column_two">
+                                        <div class="upload-container">
+                                            <div class="preview-area">
+                                                <!-- Default upload state -->
+                                                <div class="default-upload-state">
+                                                    <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: #3498DB; margin-bottom: 1rem;"></i>
+                                                    <div class="columndropyour">
+                                                        <h6 class="dropyour ui heading size-headingxs">Drop your image here, or browse</h6>
+                                                        <h6 class="dropyour ui heading size-headingxs">Jpeg, png formats are allowed</h6>
+                                                    </div>
+                                                </div>
+                                                <!-- Preview image will replace the above content -->
+                                            </div>
+                                        </div>
+                                        <input type="file" name="product_image" accept="image/jpeg, image/png" class="inputinitial" onchange="previewImage(event)" required />
+                                    </div>
+                                </div>
+
+                                <div class="rowdelete">
+                                    <button type="button" class="cancel" onclick="window.location.href='/seller_dashboard'">Cancel</button>
+                                    <button type="submit" class="delete" onclick="confirmAddProduct(event)">Add Product</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Product Already Exists -->
+    <div id="productExistsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Product Already Exists</h2>
+            <p>This product already exists, edit the product for changes.</p>
+            <div class="modal-buttons">
+                <button onclick="document.getElementById('productExistsModal').style.display = 'none';">Close</button>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/add_product.js') }}"></script>
+</body>
+</html>
+
+

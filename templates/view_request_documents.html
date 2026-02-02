@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Request Documents</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_user_management.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Documents for Request #{{ item.id }}</h1>
+        <p><strong>Name:</strong> {{ item.first_name }} {{ item.last_name }}</p>
+        <p><strong>Email:</strong> {{ item.email }}</p>
+
+        <div class="docs">
+            {% set doc = item.document_id %}
+            {% set bir = item.bir %}
+
+            {% if doc %}
+                {% set doc_lower = doc.lower() %}
+                {% if doc_lower.endswith('.pdf') %}
+                    <div style="margin-bottom:12px;">
+                        <embed src="{{ url_for('view_document', filename=doc) }}" type="application/pdf" width="100%" height="420px" />
+                        <p style="margin-top:8px;"><a href="{{ url_for('view_document', filename=doc) }}" target="_blank">Open ID Document in new tab</a></p>
+                    </div>
+                {% else %}
+                    <div style="margin-bottom:12px;">
+                        <img src="{{ url_for('view_document', filename=doc) }}" alt="ID Document" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.2);" />
+                        <p style="margin-top:8px;"><a href="{{ url_for('view_document', filename=doc) }}" target="_blank">Open ID Document in new tab</a></p>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {% if bir %}
+                {% set bir_lower = bir.lower() %}
+                {% if bir_lower.endswith('.pdf') %}
+                    <div style="margin-bottom:12px;">
+                        <embed src="{{ url_for('view_bir', filename=bir) }}" type="application/pdf" width="100%" height="420px" />
+                        <p style="margin-top:8px;"><a href="{{ url_for('view_bir', filename=bir) }}" target="_blank">Open BIR Document in new tab</a></p>
+                    </div>
+                {% else %}
+                    <div style="margin-bottom:12px;">
+                        <img src="{{ url_for('view_bir', filename=bir) }}" alt="BIR Document" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.2);" />
+                        <p style="margin-top:8px;"><a href="{{ url_for('view_bir', filename=bir) }}" target="_blank">Open BIR Document in new tab</a></p>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {% if not doc and not bir %}
+                <p>No documents attached for this request.</p>
+            {% endif %}
+        </div>
+
+        <div style="margin-top:12px;">
+            <button onclick="closeSelf()">Close</button>
+        </div>
+
+        <script>
+            function closeSelf(){
+                // If embedded in an iframe, ask parent to close the modal (same-origin assumed)
+                if (window.parent && window.parent !== window && typeof window.parent.closeRequestDocsModal === 'function'){
+                    try { window.parent.closeRequestDocsModal(); } catch(e) { window.close(); }
+                } else {
+                    window.close();
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>

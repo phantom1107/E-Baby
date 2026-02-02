@@ -1,0 +1,80 @@
+[
+  {
+    "sender": "jeffperson.jp09@gmail.com",
+    "role": "User",
+    "message": "hello, how to use this app?\\",
+    "timestamp": "2025-11-17T01:26:49.482699"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "User",
+    "message": "bahala ka jan, bleh!",
+    "timestamp": "2025-11-17T01:35:57.059544"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "User",
+    "message": "de joke lng",
+    "timestamp": "2025-11-17T01:36:23.805924"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "User",
+    "message": "wait sa tutorial",
+    "timestamp": "2025-11-17T01:36:35.114753"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "nanjan ka pa?",
+    "timestamp": "2025-11-17T02:52:29.241897"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "oyyyyy",
+    "timestamp": "2025-11-17T11:59:02.754913"
+  },
+  {
+    "sender": "jeffperson.jp09@gmail.com",
+    "role": "Rider",
+    "message": "bakit?",
+    "timestamp": "2025-11-17T11:59:13.959492"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "boss",
+    "timestamp": "2025-11-18T00:31:10.748586"
+  },
+  {
+    "sender": "jeffperson.jp09@gmail.com",
+    "role": "Rider",
+    "message": "bakit?",
+    "timestamp": "2025-11-18T00:32:04.465602"
+  },
+  {
+    "sender": "jeffperson.jp09@gmail.com",
+    "role": "Rider",
+    "message": "hello po taga san ka?",
+    "timestamp": "2025-11-18T00:32:19.801623"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "taga pila",
+    "timestamp": "2025-11-18T00:32:27.055025"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "kila vonn",
+    "timestamp": "2025-11-18T00:32:30.048720"
+  },
+  {
+    "sender": "admin@gmail.com",
+    "role": "Admin",
+    "message": "hello",
+    "timestamp": "2025-11-20T01:07:11.038147"
+  }
+]

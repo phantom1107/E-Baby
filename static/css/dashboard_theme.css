@@ -1,0 +1,530 @@
+/* Dashboard theme overrides - light (default) and dark */
+
+/* Default: light theme */
+body[data-dashboard-theme="light"]{
+  --dash-bg: #f6f7fb;
+  --dash-surface: #ffffff;
+  --dash-text: #0b1220;
+  --dash-muted: #6b7280;
+}
+
+/* Dark theme */
+body[data-dashboard-theme="dark"]{
+  --dash-bg: #0b1220;
+  --dash-surface: #071226;
+  --dash-text: #e6eef8;
+  --dash-muted: #94a3b8;
+}
+
+/* Apply simple, conservative overrides so we don't break layout */
+body[data-dashboard-theme="light"]{
+  background: var(--dash-bg) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] .main-content,
+body[data-dashboard-theme="light"] .header,
+body[data-dashboard-theme="light"] .sidebar{
+  background: var(--dash-surface) !important;
+  color: var(--dash-text) !important;
+}
+
+/* Subtle shadow for header in light mode */
+body[data-dashboard-theme="light"] .header{box-shadow:0 1px 0 rgba(16,24,40,0.04);}
+
+/* Dim video background so white theme looks clean */
+body[data-dashboard-theme="light"] .video-background{opacity:0.06}
+
+/* Dark overrides */
+body[data-dashboard-theme="dark"]{
+  background: var(--dash-bg) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="dark"] .main-content,
+body[data-dashboard-theme="dark"] .header,
+body[data-dashboard-theme="dark"] .sidebar{
+  background: var(--dash-surface) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="dark"] .video-background{opacity:0.04;filter:grayscale(20%);}
+
+/* Theme toggle button */
+.theme-toggle{background:transparent;border:none;color:var(--dash-text);cursor:pointer;padding:6px 8px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center}
+.theme-toggle i{font-size:16px}
+
+/* Small responsiveness */
+@media (max-width:900px){
+  .chat-panel{right:10px;left:10px;width:auto}
+}
+
+/* Modal / overlay improvements so confirmation dialogs are clearly visible */
+/* Apply neutral, high-contrast styling in light mode */
+body[data-dashboard-theme="light"] .modal{
+  background: rgba(15, 23, 42, 0.55) !important; /* darker overlay for readability */
+  backdrop-filter: blur(4px);
+}
+
+body[data-dashboard-theme="light"] .modal .modal-content{
+  background: var(--dash-surface) !important;
+  color: var(--dash-text) !important;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(2,6,23,0.25);
+  padding: 22px;
+}
+
+/* Make primary and secondary modal actions clearly visible and accessible */
+body[data-dashboard-theme="light"] .modal .modal-actions .btn-primary{
+  background: linear-gradient(90deg,#6a4cff,#9b55ff); /* purple gradient to match site */
+  color: #fff !important;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(106,76,255,0.18);
+}
+
+body[data-dashboard-theme="light"] .modal .modal-actions .btn-secondary{
+  background: transparent;
+  color: var(--dash-text) !important;
+  border: 1px solid rgba(11,18,32,0.08);
+  padding: 10px 16px;
+  border-radius: 8px;
+}
+
+/* Dark theme: keep modal contrast but with darker surfaces */
+body[data-dashboard-theme="dark"] .modal{
+  background: rgba(2,6,23,0.6) !important;
+  backdrop-filter: blur(3px);
+}
+
+body[data-dashboard-theme="dark"] .modal .modal-content{
+  background: linear-gradient(180deg, rgba(12,20,36,0.9), rgba(7,12,22,0.95));
+  color: var(--dash-text) !important;
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(2,6,23,0.6);
+  padding: 20px;
+}
+
+body[data-dashboard-theme="dark"] .modal .modal-actions .btn-primary{
+  background: linear-gradient(90deg,#7a5bff,#5ec2ff);
+  color:#071226 !important;
+  border: none;
+  padding: 10px 18px;
+  border-radius:8px;
+}
+
+body[data-dashboard-theme="dark"] .modal .modal-actions .btn-secondary{
+  background: transparent;
+  color: var(--dash-text) !important;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 16px;
+  border-radius:8px;
+}
+
+/* Ensure modal headings and body text are readable and spaced */
+.modal .modal-header h2{margin:0 0 8px 0;color:inherit}
+.modal .modal-body{color:inherit;line-height:1.5}
+
+/* Enforce readable text color across common UI elements depending on theme */
+body[data-dashboard-theme="light"] .header-title h1,
+body[data-dashboard-theme="light"] .header-title p,
+body[data-dashboard-theme="light"] .header-subtitle,
+body[data-dashboard-theme="light"] .sidebar-title,
+body[data-dashboard-theme="light"] .nav-menu .nav-item,
+body[data-dashboard-theme="light"] .nav-menu .nav-item span,
+body[data-dashboard-theme="light"] .nav-menu .nav-item i,
+body[data-dashboard-theme="light"] .main-content,
+body[data-dashboard-theme="light"] .main-content h2,
+body[data-dashboard-theme="light"] .section-header h2,
+body[data-dashboard-theme="light"] .stat-card,
+body[data-dashboard-theme="light"] .stat-card .stat-info,
+body[data-dashboard-theme="light"] .table-container,
+body[data-dashboard-theme="light"] table,
+body[data-dashboard-theme="light"] .orders-table,
+body[data-dashboard-theme="light"] .products-grid,
+body[data-dashboard-theme="light"] .profile-container,
+body[data-dashboard-theme="light"] .flash-messages,
+body[data-dashboard-theme="light"] .user-info,
+body[data-dashboard-theme="light"] .threads-list,
+body[data-dashboard-theme="light"] .chat-panel-main,
+body[data-dashboard-theme="light"] .logout-btn,
+body[data-dashboard-theme="light"] .logout-btn span,
+body[data-dashboard-theme="light"] .btn-secondary{
+  color: var(--dash-text) !important;
+}
+
+/* Override gradient text in admin CSS so header uses solid readable color in light mode */
+body[data-dashboard-theme="light"] .header-title h1{
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: var(--dash-text) !important;
+  color: var(--dash-text) !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+body[data-dashboard-theme="light"] .header-subtitle{
+  color: var(--dash-muted) !important;
+}
+
+body[data-dashboard-theme="dark"] .header-title h1,
+body[data-dashboard-theme="dark"] .header-title p,
+body[data-dashboard-theme="dark"] .header-subtitle,
+body[data-dashboard-theme="dark"] .sidebar-title,
+body[data-dashboard-theme="dark"] .nav-menu .nav-item,
+body[data-dashboard-theme="dark"] .nav-menu .nav-item span,
+body[data-dashboard-theme="dark"] .nav-menu .nav-item i,
+body[data-dashboard-theme="dark"] .main-content,
+body[data-dashboard-theme="dark"] .main-content h2,
+body[data-dashboard-theme="dark"] .section-header h2,
+body[data-dashboard-theme="dark"] .stat-card,
+body[data-dashboard-theme="dark"] .stat-card .stat-info,
+body[data-dashboard-theme="dark"] .table-container,
+body[data-dashboard-theme="dark"] table,
+body[data-dashboard-theme="dark"] .orders-table,
+body[data-dashboard-theme="dark"] .products-grid,
+body[data-dashboard-theme="dark"] .profile-container,
+body[data-dashboard-theme="dark"] .flash-messages,
+body[data-dashboard-theme="dark"] .user-info,
+body[data-dashboard-theme="dark"] .threads-list,
+body[data-dashboard-theme="dark"] .chat-panel-main,
+body[data-dashboard-theme="dark"] .logout-btn,
+body[data-dashboard-theme="dark"] .logout-btn span,
+body[data-dashboard-theme="dark"] .btn-secondary{
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="dark"] .header-title h1{
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: var(--dash-text) !important;
+  color: var(--dash-text) !important;
+  text-shadow: none !important;
+}
+
+/* Ensure links and small text remain legible */
+body[data-dashboard-theme="light"] a, body[data-dashboard-theme="light"] .small-text{color:var(--dash-text) !important}
+body[data-dashboard-theme="dark"] a, body[data-dashboard-theme="dark"] .small-text{color:var(--dash-text) !important}
+
+/* Light mode: Maintain design details with appropriate borders, shadows, and backgrounds */
+body[data-dashboard-theme="light"] {
+  --light-border: rgba(11, 18, 32, 0.1);
+  --light-shadow: rgba(11, 18, 32, 0.08);
+  --light-card-bg: #f9fafb;
+  --light-hover-bg: #f3f4f6;
+}
+
+/* Card and container styling for light mode */
+body[data-dashboard-theme="light"] .stat-card,
+body[data-dashboard-theme="light"] .chart-card,
+body[data-dashboard-theme="light"] .table-container,
+body[data-dashboard-theme="light"] .filter-controls,
+body[data-dashboard-theme="light"] .request-card,
+body[data-dashboard-theme="light"] .settings-card,
+body[data-dashboard-theme="light"] .recent-activity,
+body[data-dashboard-theme="light"] .seller-card {
+  background: var(--light-card-bg) !important;
+  border: 1px solid var(--light-border) !important;
+  box-shadow: 0 1px 3px var(--light-shadow) !important;
+}
+
+body[data-dashboard-theme="light"] .stat-card:hover {
+  box-shadow: 0 4px 12px rgba(11, 18, 32, 0.12) !important;
+  background: #ffffff !important;
+}
+
+/* Table styling for light mode */
+body[data-dashboard-theme="light"] table th {
+  background: #f3f4f6 !important;
+  color: var(--dash-text) !important;
+  border-bottom: 2px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] table td {
+  border-bottom: 1px solid var(--light-border) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] table tbody tr:hover {
+  background: #f9fafb !important;
+}
+
+/* Section headers and dividers */
+body[data-dashboard-theme="light"] .section-header {
+  border-bottom: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .chart-header {
+  border-bottom: 1px solid var(--light-border) !important;
+}
+
+/* Input fields in light mode */
+body[data-dashboard-theme="light"] .search-input,
+body[data-dashboard-theme="light"] input[type="text"],
+body[data-dashboard-theme="light"] input[type="email"],
+body[data-dashboard-theme="light"] input[type="number"],
+body[data-dashboard-theme="light"] select,
+body[data-dashboard-theme="light"] textarea {
+  background: #ffffff !important;
+  border: 1px solid var(--light-border) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] .search-input:focus,
+body[data-dashboard-theme="light"] input[type="text"]:focus,
+body[data-dashboard-theme="light"] input[type="email"]:focus,
+body[data-dashboard-theme="light"] input[type="number"]:focus,
+body[data-dashboard-theme="light"] select:focus,
+body[data-dashboard-theme="light"] textarea:focus {
+  border-color: #6a4cff !important;
+  box-shadow: 0 0 0 3px rgba(106, 76, 255, 0.1) !important;
+  outline: none !important;
+}
+
+/* Buttons in light mode */
+body[data-dashboard-theme="light"] .filter-btn,
+body[data-dashboard-theme="light"] .period-btn {
+  background: #ffffff !important;
+  border: 1px solid var(--light-border) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] .filter-btn:hover,
+body[data-dashboard-theme="light"] .period-btn:hover {
+  background: #f9fafb !important;
+  border-color: #6a4cff !important;
+  color: #6a4cff !important;
+}
+
+body[data-dashboard-theme="light"] .search-btn {
+  background: #6a4cff !important;
+  border: 1px solid #6a4cff !important;
+  color: #ffffff !important;
+}
+
+body[data-dashboard-theme="light"] .search-btn:hover {
+  background: #5a3cff !important;
+}
+
+/* View all / action buttons */
+body[data-dashboard-theme="light"] .view-all-btn,
+body[data-dashboard-theme="light"] .export-btn {
+  background: #ffffff !important;
+  border: 1px solid #6a4cff !important;
+  color: #6a4cff !important;
+}
+
+body[data-dashboard-theme="light"] .view-all-btn:hover,
+body[data-dashboard-theme="light"] .export-btn:hover {
+  background: #6a4cff !important;
+  color: #ffffff !important;
+}
+
+/* Stats and info boxes */
+body[data-dashboard-theme="light"] .stat-info {
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] .stat-title {
+  color: var(--dash-muted) !important;
+}
+
+body[data-dashboard-theme="light"] .stat-value {
+  color: var(--dash-text) !important;
+}
+
+/* Activity items and timeline */
+body[data-dashboard-theme="light"] .activity-item {
+  background: #f9fafb !important;
+  border: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .activity-item:hover {
+  background: #f3f4f6 !important;
+}
+
+body[data-dashboard-theme="light"] .timeline-content {
+  background: #f9fafb !important;
+  border: 1px solid var(--light-border) !important;
+}
+
+/* Request cards */
+body[data-dashboard-theme="light"] .request-card {
+  background: #ffffff !important;
+}
+
+body[data-dashboard-theme="light"] .request-card:hover {
+  box-shadow: 0 8px 16px rgba(11, 18, 32, 0.15) !important;
+}
+
+/* Settings cards */
+body[data-dashboard-theme="light"] .settings-card {
+  background: #ffffff !important;
+}
+
+body[data-dashboard-theme="light"] .settings-header {
+  background: #f9fafb !important;
+  border-bottom: 1px solid var(--light-border) !important;
+}
+
+/* Badges and status indicators */
+body[data-dashboard-theme="light"] .user-type-badge,
+body[data-dashboard-theme="light"] .status-badge,
+body[data-dashboard-theme="light"] .reason-option {
+  background: #f3f4f6 !important;
+  color: var(--dash-text) !important;
+  border: 1px solid var(--light-border) !important;
+}
+
+/* Modal form elements */
+body[data-dashboard-theme="light"] .modal .form-group input,
+body[data-dashboard-theme="light"] .modal .form-group select,
+body[data-dashboard-theme="light"] .modal .form-group textarea {
+  background: #f9fafb !important;
+  border: 1px solid var(--light-border) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] .modal .form-group input:focus,
+body[data-dashboard-theme="light"] .modal .form-group select:focus,
+body[data-dashboard-theme="light"] .modal .form-group textarea:focus {
+  border-color: #6a4cff !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(106, 76, 255, 0.1) !important;
+}
+
+/* Notification bell and header elements */
+body[data-dashboard-theme="light"] .notification-bell {
+  background: #f9fafb !important;
+  border: 1px solid var(--light-border) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] .user-info {
+  background: #f9fafb !important;
+  border: 1px solid var(--light-border) !important;
+}
+
+/* Sidebar styling in light mode */
+body[data-dashboard-theme="light"] .sidebar {
+  border-right: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .logo-section {
+  border-bottom: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .nav-item {
+  color: var(--dash-text) !important;
+  transition: all 0.3s ease;
+}
+
+body[data-dashboard-theme="light"] .nav-item:hover {
+  background: #f3f4f6 !important;
+}
+
+/* Logout button styling */
+body[data-dashboard-theme="light"] .logout-btn {
+  border: 1px solid #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+body[data-dashboard-theme="light"] .logout-btn:hover {
+  background: #fef2f2 !important;
+}
+
+/* Flash messages */
+body[data-dashboard-theme="light"] .flash-message {
+  border: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .flash-message.success {
+  background: #f0fdf4 !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+}
+
+body[data-dashboard-theme="light"] .flash-message.error {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+}
+
+body[data-dashboard-theme="light"] .flash-message.info {
+  background: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #1e40af !important;
+}
+
+/* Modal and form styling */
+body[data-dashboard-theme="light"] .modal-content {
+  border: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .modal-header {
+  border-bottom: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .modal-actions {
+  border-top: 1px solid var(--light-border) !important;
+}
+
+body[data-dashboard-theme="light"] .current-info {
+  background: #f3f4f6 !important;
+  border: 1px solid var(--light-border) !important;
+}
+
+/* Custom reason textarea */
+body[data-dashboard-theme="light"] .custom-reason {
+  background: #f9fafb !important;
+  border: 1px solid var(--light-border) !important;
+  color: var(--dash-text) !important;
+}
+
+body[data-dashboard-theme="light"] .custom-reason:focus {
+  border-color: #6a4cff !important;
+  background: #ffffff !important;
+}
+
+  /* ===== Add Product Form Light Mode Overrides ===== */
+  /* Fix select, input, and option elements for light mode readability */
+  body[data-dashboard-theme="light"] select,
+  body[data-dashboard-theme="light"] input[type="text"],
+  body[data-dashboard-theme="light"] input[type="email"],
+  body[data-dashboard-theme="light"] input[type="password"],
+  body[data-dashboard-theme="light"] input[type="number"],
+  body[data-dashboard-theme="light"] textarea {
+    color: var(--dash-text) !important;
+    background-color: #f9fafb !important;
+    border-color: rgba(11, 18, 32, 0.15) !important;
+  }
+
+  /* Fix option elements background and text in light mode */
+  body[data-dashboard-theme="light"] select option {
+    background-color: #ffffff !important;
+    color: var(--dash-text) !important;
+  }
+
+  /* Focus states for light mode */
+  body[data-dashboard-theme="light"] select:focus,
+  body[data-dashboard-theme="light"] input:focus,
+  body[data-dashboard-theme="light"] textarea:focus {
+    border-color: #6a4cff !important;
+    box-shadow: 0 0 0 3px rgba(106, 76, 255, 0.1) !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Multiple select dropdown in light mode */
+  body[data-dashboard-theme="light"] .multiple-select-container select {
+    color: var(--dash-text) !important;
+    background-color: #f9fafb !important;
+  }
+
+  /* Helper text in light mode */
+  body[data-dashboard-theme="light"] .helper-text {
+    color: var(--dash-muted) !important;
+  }
+

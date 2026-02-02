@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/checkout.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- Navigation Header -->
+    <header class="navbar">
+      <div class="navbar-content">
+        <!-- Logo -->
+        <div class="logo-section">
+          <a href="/homepage" class="logo-link">
+            <img
+              src="/static/images/logo/E-Baby Logo.png"
+              alt="E-Baby"
+              class="logo-image"
+            />
+          </a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-section">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search products..."
+            class="search-input"
+          />
+          <button class="search-button" onclick="performSearch()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+
+        <!-- User Menu -->
+        <div class="user-menu">
+          <div class="profile-menu-container">
+            <button class="profile-btn" onclick="toggleProfileDropdown()">
+              <i class="fas fa-user-circle"></i>
+              <span
+                >{{ session['email'] if session['email'] else 'Guest' }}</span
+              >
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu" id="profileDropdown">
+              <a href="/profile" class="dropdown-item">
+                <i class="fas fa-user"></i> My Profile
+              </a>
+              <a href="/cart" class="dropdown-item">
+                <i class="fas fa-shopping-cart"></i> Back to Cart
+              </a>
+              <a href="/orders" class="dropdown-item">
+                <i class="fas fa-shopping-box"></i> My Orders
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="#" onclick="logout()" class="dropdown-item logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Checkout Section -->
+    <main class="checkout-main">
+      <div class="checkout-wrapper">
+        <!-- Progress Indicator -->
+        <div class="progress-bar">
+          <div class="progress-step active">
+            <span class="progress-number">1</span>
+            <span class="progress-label">Delivery</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step">
+            <span class="progress-number">2</span>
+            <span class="progress-label">Payment</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step">
+            <span class="progress-number">3</span>
+            <span class="progress-label">Confirm</span>
+          </div>
+        </div>
+
+        <!-- Checkout Form -->
+        <form id="checkoutForm" class="checkout-content">
+          <!-- Step 1: Delivery Address -->
+          <section class="checkout-step active" id="step1">
+            <div class="checkout-section">
+              <div class="section-header">
+                <h2>
+                  <i class="fas fa-map-marker-alt"></i> Step 1: Delivery Address
+                </h2>
+              </div>
+              <div class="section-content">
+                <div class="current-address-box">
+                  <p id="current-address" class="address-text">
+                    {{ session.get('address', 'No address found.') }}
+                  </p>
+                  <button
+                    type="button"
+                    class="btn-edit-address"
+                    onclick="showAddressEdit()"
+                  >
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
+                </div>
+
+                <!-- Address Edit Form -->
+                <div
+                  id="address-edit-form"
+                  class="form-group"
+                  style="display: none"
+                >
+                  <textarea
+                    id="new-address"
+                    class="form-textarea"
+                    rows="4"
+                    placeholder="Enter your delivery address..."
+                  >
+{{ session.get('address', '') }}</textarea
+                  >
+                  <div class="form-buttons">
+                    <button
+                      type="button"
+                      class="btn-primary"
+                      onclick="saveAddress()"
+                    >
+                      <i class="fas fa-check"></i> Save Address
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-secondary"
+                      onclick="cancelAddressEdit()"
+                    >
+                      <i class="fas fa-times"></i> Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Products Display for Step 1 -->
+            <div class="checkout-section products-section">
+              <div class="section-header">
+                <h2><i class="fas fa-box"></i> Order Items</h2>
+              </div>
+              <div class="section-content">
+                <div class="products-list">
+                  {% for item in cart_items %}
+                  <div class="product-item" id="item-{{ item.id }}" data-product-id="{{ item.product_id }}" data-color="{{ item.color or '' }}" data-size="{{ item.size or '' }}" data-quantity="{{ item.quantity }}">
+                    <div class="product-image-wrapper">
+                      <img
+                        src="{% if item.image and item.image.startswith('/') %}{{ item.image }}{% elif item.image %}/static/uploads/{{ item.image }}{% else %}/static/images/defaults/product-default.png{% endif %}"
+                        alt="{{ item.name }}"
+                        class="product-image"
+                        onerror="this.src='/static/images/defaults/product-default.png'"
+                      />
+                    </div>
+                    <div class="product-details">
+                      <h4 class="product-name">{{ item.name }}</h4>
+                      <p class="product-price">
+                        ₱{{ "%.2f"|format(item.price) }}
+                      </p>
+                      <div class="product-meta">
+                        {% if item.color %}<span class="product-variant">Color: <strong>{{ item.color }}</strong></span><br>{% endif %}
+                        {% if item.size %}<span class="product-variant">Size: <strong>{{ item.size }}</strong></span><br>{% endif %}
+                        <span class="product-qty"
+                          >Qty: <strong>{{ item.quantity }}</strong></span
+                        >
+                        <span class="product-stock-status" id="stock-{{ item.id }}" style="color: #10B981; font-size: 0.9rem;"><i class="fas fa-check-circle"></i> Stock Available</span>                        >
+                        <span class="product-total"
+                          >Total:
+                          <strong
+                            >₱{{ (item.price * item.quantity) | round(2)
+                            }}</strong
+                          ></span
+                        >
+                      </div>
+                      <button
+                        type="button"
+                        class="btn-remove-item"
+                        onclick="removeProductItem({{ item.id }});"
+                      >
+                        <i class="fas fa-trash"></i> Remove
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Step Navigation -->
+            <div class="step-navigation">
+              <button
+                type="button"
+                class="btn-secondary"
+                onclick="backToCart()"
+              >
+                <i class="fas fa-arrow-left"></i> Back to Cart
+              </button>
+              <button type="button" class="btn-primary" onclick="goToStep(2)">
+                <i class="fas fa-arrow-right"></i> Continue to Payment
+              </button>
+            </div>
+          </section>
+
+          <!-- Step 2: Payment Method -->
+          <section class="checkout-step" id="step2">
+            <div class="checkout-section">
+              <div class="section-header">
+                <h2>
+                  <i class="fas fa-credit-card"></i> Step 2: Payment Method
+                </h2>
+              </div>
+              <div class="section-content">
+                <form>
+                  <label class="payment-option">
+                    <input type="radio" name="payment" value="cod" checked />
+                    <span class="radio-label">
+                      <i class="fas fa-money-bill-wave"></i>
+                      <span>
+                        <strong>Cash on Delivery (COD)</strong>
+                        <small>Pay when you receive your order</small>
+                      </span>
+                    </span>
+                  </label>
+                </form>
+
+                <div class="info-box">
+                  <i class="fas fa-info-circle"></i>
+                  <p>
+                    Please ensure someone is available to receive the order. Our
+                    rider will contact you for confirmation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review Order Summary for Step 2 -->
+            <div class="checkout-section summary-section">
+              <div class="section-header">
+                <h2><i class="fas fa-receipt"></i> Order Summary</h2>
+              </div>
+              <div class="section-content">
+                <div class="cost-breakdown">
+                  <div class="cost-row">
+                    <span class="cost-label">Subtotal:</span>
+                    <span class="cost-value"
+                      >₱{{ '%.2f'|format(subtotal|float) }}</span
+                    >
+                  </div>
+                  <div class="cost-row">
+                    <span class="cost-label">Shipping:</span>
+                    <span class="cost-value"
+                      >₱{{ '%.2f'|format(shipping_fee|float) }}</span
+                    >
+                  </div>
+                  <div class="cost-row">
+                    <span class="cost-label">Tax (2.5%):</span>
+                    <span class="cost-value"
+                      >₱{{ '%.2f'|format(tax|float) }}</span
+                    >
+                  </div>
+                </div>
+
+                <div class="cost-total">
+                  <span class="total-label">Total Amount:</span>
+                  <span class="total-value"
+                    >₱{{ '%.2f'|format(total_price|float) }}</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Step Navigation -->
+            <div class="step-navigation">
+              <button type="button" class="btn-secondary" onclick="goToStep(1)">
+                <i class="fas fa-arrow-left"></i> Back to Delivery
+              </button>
+              <button type="button" class="btn-primary" onclick="goToStep(3)">
+                <i class="fas fa-arrow-right"></i> Review Order
+              </button>
+            </div>
+          </section>
+
+          <!-- Step 3: Confirm Order -->
+          <section class="checkout-step" id="step3">
+            <div class="checkout-section">
+              <div class="section-header">
+                <h2>
+                  <i class="fas fa-clipboard-check"></i> Step 3: Review &
+                  Confirm
+                </h2>
+              </div>
+              <div class="section-content">
+                <div class="confirmation-details">
+                  <div class="confirmation-item">
+                    <div class="confirmation-icon">
+                      <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="confirmation-info">
+                      <h4>Delivery Address</h4>
+                      <p id="confirm-address">
+                        {{ session.get('address', 'No address found.') }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="confirmation-item">
+                    <div class="confirmation-icon">
+                      <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="confirmation-info">
+                      <h4>Payment Method</h4>
+                      <p id="confirm-payment">Cash on Delivery (COD)</p>
+                    </div>
+                  </div>
+
+                  <div class="confirmation-item">
+                    <div class="confirmation-icon">
+                      <i class="fas fa-box"></i>
+                    </div>
+                    <div class="confirmation-info">
+                      <h4>Items</h4>
+                      <p id="confirm-items-count">
+                        {{ cart_items|length }} item(s)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="info-box confirm-info">
+                  <i class="fas fa-check-circle"></i>
+                  <p>
+                    By confirming, you agree to our terms and conditions. You
+                    can track your order in My Orders.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Final Order Summary -->
+            <div class="checkout-section final-summary">
+              <div class="section-header">
+                <h2><i class="fas fa-calculator"></i> Final Total</h2>
+              </div>
+              <div class="section-content">
+                <div class="cost-breakdown">
+                  <div class="cost-row">
+                    <span class="cost-label">Subtotal:</span>
+                    <span class="cost-value"
+                      >₱{{ '%.2f'|format(subtotal|float) }}</span
+                    >
+                  </div>
+                  <div class="cost-row">
+                    <span class="cost-label">Shipping:</span>
+                    <span class="cost-value"
+                      >₱{{ '%.2f'|format(shipping_fee|float) }}</span
+                    >
+                  </div>
+                  <div class="cost-row">
+                    <span class="cost-label">Tax (2.5%):</span>
+                    <span class="cost-value"
+                      >₱{{ '%.2f'|format(tax|float) }}</span
+                    >
+                  </div>
+                </div>
+
+                <div class="cost-total">
+                  <span class="total-label">Total Amount:</span>
+                  <span class="total-value"
+                    >₱{{ '%.2f'|format(total_price|float) }}</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Step Navigation -->
+            <div class="step-navigation">
+              <button type="button" class="btn-secondary" onclick="goToStep(2)">
+                <i class="fas fa-arrow-left"></i> Back to Payment
+              </button>
+              <button
+                type="button"
+                class="btn-confirm"
+                onclick="confirmOrder()"
+              >
+                <i class="fas fa-check-circle"></i> Confirm & Place Order
+              </button>
+            </div>
+          </section>
+        </form>
+      </div>
+    </main>
+
+    <!-- Modern Footer -->
+    <footer class="site-footer">
+      <div class="footer-wrapper">
+        <div class="footer-content">
+          <!-- Brand Section -->
+          <div class="footer-column footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-baby-carriage"></i>
+              <span>E-Baby</span>
+            </div>
+            <p class="footer-description">
+              Your premier destination for quality baby products from trusted sellers.
+            </p>
+            <div class="footer-socials">
+              <a href="#" class="social-link" title="Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </a>
+              <a href="#" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+              </a>
+              <a href="#" class="social-link" title="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-column">
+            <h4 class="footer-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="/about">About Us</a></li>
+              <li><a href="/contact">Contact Us</a></li>
+              <li><a href="/faq">FAQ</a></li>
+              <li><a href="/shipping">Shipping Info</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="footer-column">
+            <h4 class="footer-title">Get In Touch</h4>
+            <ul class="footer-contact">
+              <li>
+                <i class="fas fa-envelope"></i>
+                <a href="mailto:ebabyservices@gmail.com">ebabyservices@gmail.com</a>
+              </li>
+              <li>
+                <i class="fas fa-phone"></i>
+                <a href="tel:+639651337681">+63 965 133 7681</a>
+              </li>
+              <li>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Philippines</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="footer-divider"></div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="footer-bottom-content">
+            <p class="copyright">&copy; 2024 E-Baby. All rights reserved.</p>
+            <div class="footer-bottom-links">
+              <a href="#">Privacy Policy</a>
+              <a href="#">Terms & Conditions</a>
+              <a href="#">Cookie Policy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
+  </body>
+</html>

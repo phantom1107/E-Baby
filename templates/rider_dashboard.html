@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-Baby - Rider Dashboard</title>
+    <meta name="user-email" content="{{ session.get('email','') }}" />
+    <meta name="user-role" content="{{ session.get('user_type','') }}" />
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/rider_dashboard.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/chat.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard_theme.css') }}"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <!-- Video background -->
+    <video autoplay muted loop class="video-background">
+      <source
+        src="https://via.placeholder.com/1920x1080/000000/FFFFFF?text=Rider+Background"
+        type="video/mp4"
+      />
+    </video>
+
+    <div class="dashboard-container">
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <!-- Logo Section -->
+        <div class="logo-section">
+          <img
+            src="static/images/logo/E-Baby Logo.png"
+            alt="E-Baby Logo"
+            class="logo"
+          />
+          <h2 class="sidebar-title">Rider Portal</h2>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="nav-menu">
+          <a href="#dashboard" class="nav-item active" data-section="dashboard">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#orders" class="nav-item" data-section="orders">
+            <i class="fas fa-box"></i>
+            <span>Available Orders</span>
+          </a>
+          <a href="#deliveries" class="nav-item" data-section="deliveries">
+            <i class="fas fa-truck"></i>
+            <span>My Deliveries</span>
+          </a>
+          <a href="#earnings" class="nav-item" data-section="earnings">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Earnings</span>
+          </a>
+          <a href="#profile" class="nav-item" data-section="profile">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+          </a>
+        </nav>
+
+        <!-- Sidebar Toggle -->
+        <button class="sidebar-toggle" onclick="toggleSidebar()">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- Logout Button -->
+        <div class="logout-container">
+          <button class="logout-btn" onclick="showLogoutModal()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </button>
+        </div>
+
+        <!-- Chat Button with Dropdown -->
+        <div class="chat-open-container">
+          <div class="chat-dropdown">
+            <button
+              id="openChatBtn"
+              class="chat-open-btn"
+              title="Open Chat"
+              onclick="toggleChatDropdown(event)"
+            >
+              <i class="fas fa-comments"></i>
+              <span>Chat</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              id="chatDropdownMenu"
+              class="chat-dropdown-menu"
+              style="display: none"
+            >
+              <a
+                href="#"
+                class="chat-dropdown-item"
+                onclick="startChatWithUserType('Buyer'); return false;"
+              >
+                <i class="fas fa-user"></i> Chat with Buyers
+              </a>
+              <a
+                href="#"
+                class="chat-dropdown-item"
+                onclick="startChatWithUserType('Seller'); return false;"
+              >
+                <i class="fas fa-store"></i> Chat with Sellers
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Chat Panel - Chrome-style Window -->
+      <div id="chatPanel" class="chat-panel" aria-hidden="true">
+        <!-- Chrome-style Header with Controls -->
+        <div class="chat-panel-header" id="chatHeader">
+          <div class="chat-panel-title">Message Center</div>
+          <div class="chat-window-controls">
+            <button
+              id="chatThemeToggle"
+              class="chat-theme-toggle"
+              title="Change Theme"
+            >
+              <i class="fas fa-palette"></i>
+            </button>
+            <button
+              id="chatMinimizeBtn"
+              class="chat-control-btn minimize"
+              title="Minimize"
+            >
+              <i class="fas fa-minus"></i>
+            </button>
+            <button
+              id="chatMaximizeBtn"
+              class="chat-control-btn maximize"
+              title="Maximize"
+            >
+              <i class="fas fa-expand"></i>
+            </button>
+            <button
+              id="chatCloseBtn"
+              class="chat-control-btn close"
+              title="Close"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel Content -->
+        <div class="chat-panel-inner">
+          <div class="chat-panel-content">
+            <div class="chat-panel-sidebar" id="chatThreads">
+              <!-- thread list populated by JS -->
+              <div class="threads-header" id="threadsHeader">
+                <span id="threadsHeaderText">Conversations</span>
+                <button
+                  id="toggleDisplayBtn"
+                  class="toggle-display-btn"
+                  title="Toggle between Email and Name"
+                  style="display: none"
+                  onclick="toggleThreadDisplay()"
+                >
+                  <i class="fas fa-exchange-alt"></i>
+                </button>
+              </div>
+              <div id="threadsList" class="threads-list">Loading...</div>
+            </div>
+            <div class="chat-panel-main">
+              <div class="chat-panel-top">
+                <div id="chatWith" class="chat-with">Select a conversation</div>
+              </div>
+              <div id="chatMessages" class="chat-messages-large">
+                No thread selected
+              </div>
+              <div class="chat-input-area">
+                <input
+                  id="chatInput"
+                  type="text"
+                  placeholder="Type a message..."
+                />
+                <button id="chatSendBtn" class="btn-send">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+          <div class="header-content">
+            <div class="header-title">
+              <h1 id="page-title">Rider Dashboard</h1>
+              <p class="header-subtitle">
+                Welcome to your delivery management center
+              </p>
+            </div>
+            <div class="header-actions">
+              <div class="notification-bell">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge">2</span>
+              </div>
+              <button
+                id="themeToggle"
+                class="theme-toggle"
+                title="Toggle Dashboard Theme"
+              >
+                <i id="themeToggleIcon" class="fas fa-moon"></i>
+              </button>
+              <div class="user-info">
+                <div class="user-avatar">
+                  <i class="fas fa-motorcycle"></i>
+                </div>
+                <div class="user-details">
+                  <span class="user-name"
+                    >{{ session.get('email', 'Rider') }}</span
+                  >
+                  <span class="user-role">Delivery Rider</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="content-section active">
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon deliveries">
+                <i class="fas fa-motorcycle"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">Total Deliveries</div>
+                <div class="stat-value">{{ total_deliveries or 0 }}</div>
+                <div class="stat-change positive">+12% this month</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon pending">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">Available Orders</div>
+                <div class="stat-value">{{ pending_orders or 0 }}</div>
+                <div class="stat-change neutral">Awaiting pickup</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon earnings">
+                <i class="fas fa-money-bill-wave"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">Total Earnings</div>
+                <div class="stat-value">₱{{ total_earnings or 0 }}</div>
+                <div class="stat-change positive">+8% this month</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon rating">
+                <i class="fas fa-star"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">Customer Rating</div>
+                <div class="stat-value">{{ customer_rating or 5.0 }}</div>
+                <div class="stat-change positive">Excellent service</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analytics Section -->
+          <div class="analytics-grid">
+            <div class="chart-card">
+              <div class="chart-header">
+                <h2><i class="fas fa-chart-line"></i> Delivery Performance</h2>
+                <div class="date-filters">
+                  <button class="period-btn active" data-period="week">
+                    Week
+                  </button>
+                  <button class="period-btn" data-period="month">Month</button>
+                  <button class="period-btn" data-period="year">Year</button>
+                </div>
+              </div>
+              <div class="chart-body">
+                <canvas id="deliveryChart"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-header">
+                <h2><i class="fas fa-chart-pie"></i> Earnings Overview</h2>
+              </div>
+              <div class="chart-body">
+                <canvas id="earningsChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Deliveries -->
+          <div class="recent-deliveries">
+            <div class="section-header">
+              <h2><i class="fas fa-history"></i> Recent Deliveries</h2>
+              <button class="view-all-btn" onclick="showSection('deliveries')">
+                View All
+              </button>
+            </div>
+            <div class="deliveries-table-wrapper">
+              <table class="deliveries-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Pickup Location</th>
+                    <th>Delivery Address</th>
+                    <th>Status</th>
+                    <th>Earnings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if recent_deliveries %} {% for delivery in
+                  recent_deliveries %}
+                  <tr>
+                    <td>#{{ delivery.order_id }}</td>
+                    <td>{{ delivery.customer_name }}</td>
+                    <td>{{ delivery.pickup_location }}</td>
+                    <td>{{ delivery.delivery_address }}</td>
+                    <td>
+                      <span
+                        class="status-badge status-{{ delivery.status.lower() }}"
+                      >
+                        {{ delivery.status }}
+                      </span>
+                    </td>
+                    <td>₱{{ delivery.earnings }}</td>
+                  </tr>
+                  {% endfor %} {% else %}
+                  <tr>
+                    <td colspan="6" class="no-data">
+                      No recent deliveries found
+                    </td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Available Orders Section -->
+        <section id="orders-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-box"></i> Available Orders</h2>
+            <div class="header-actions">
+              <button class="refresh-btn" onclick="refreshOrders()">
+                <i class="fas fa-sync-alt"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="orders-container">
+            {% if orders %}
+            <div class="orders-grid">
+              {% for order in orders %}
+              <div class="order-card">
+                <div class="order-header">
+                  <div class="order-id">#{{ order.id }}</div>
+                  <span class="order-status prepared">Prepared</span>
+                </div>
+                <div class="order-content">
+                  <div class="order-image">
+                    {% if order.image %}
+                    <img
+                      src="{{ url_for('static', filename='uploads/' + order.image) }}"
+                      alt="{{ order.name }}"
+                    />
+                    {% else %}
+                    <div class="no-image">
+                      <i class="fas fa-box"></i>
+                    </div>
+                    {% endif %}
+                  </div>
+                  <div class="order-details">
+                    <h3 class="product-name">{{ order.name }}</h3>
+                    <div class="order-info">
+                      <div class="info-item">
+                        <i class="fas fa-user"></i>
+                        <span>{{ order.email }}</span>
+                      </div>
+                      <div class="info-item">
+                        <i class="fas fa-store"></i>
+                        <span>{{ order.seller_email }}</span>
+                      </div>
+                      <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span
+                          >{{ order.delivery_address or 'Address not provided'
+                          }}</span
+                        >
+                      </div>
+                      <div class="info-item">
+                        <i class="fas fa-money-bill"></i>
+                        <span
+                          >₱{{ '%.2f'|format(order.total_price|float) }}</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="order-actions">
+                  <button
+                    class="view-details-btn"
+                    onclick="viewOrderDetails('{{ order.id }}')"
+                  >
+                    <i class="fas fa-eye"></i> View Details
+                  </button>
+                  <button
+                    class="accept-btn"
+                    data-order-id="{{ order.id }}"
+                    data-order-name="{{ order.name }}"
+                    onclick="confirmAcceptDelivery(this)"
+                  >
+                    <i class="fas fa-truck"></i> Accept Delivery
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-orders">
+              <i class="fas fa-box-open"></i>
+              <h3>No Available Orders</h3>
+              <p>Check back later for new delivery opportunities</p>
+              <button class="refresh-btn" onclick="refreshOrders()">
+                <i class="fas fa-sync-alt"></i> Refresh Orders
+              </button>
+            </div>
+            {% endif %}
+          </div>
+        </section>
+
+        <!-- Prepared Orders Section -->
+        <section id="prepared-orders-section" class="content-section">
+          <div class="section-header">
+            <h2>
+              <i class="fas fa-cube"></i> Prepared Orders Ready for Pickup
+            </h2>
+            <div class="header-actions">
+              <button class="refresh-btn" onclick="refreshOrders()">
+                <i class="fas fa-sync-alt"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="prepared-orders-container">
+            {% if prepared_orders %}
+            <div class="orders-grid">
+              {% for order in prepared_orders %}
+              <div class="order-card">
+                <div class="order-header">
+                  <div class="order-id">#{{ order.id }}</div>
+                  <span class="order-status prepared">Prepared</span>
+                </div>
+                <div class="order-content">
+                  <div class="order-image">
+                    {% if order.image %}
+                    <img
+                      src="{{ url_for('static', filename='uploads/' + order.image) }}"
+                      alt="{{ order.name }}"
+                    />
+                    {% else %}
+                    <div class="no-image">
+                      <i class="fas fa-box"></i>
+                    </div>
+                    {% endif %}
+                  </div>
+                  <div class="order-details">
+                    <h3 class="product-name">{{ order.name }}</h3>
+                    <div class="order-info">
+                      <div class="info-item">
+                        <i class="fas fa-user"></i>
+                        <span>{{ order.email }}</span>
+                      </div>
+                      <div class="info-item">
+                        <i class="fas fa-store"></i>
+                        <span>{{ order.seller_email }}</span>
+                      </div>
+                      <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span
+                          >{{ order.delivery_address or 'Address not provided'
+                          }}</span
+                        >
+                      </div>
+                      <div class="info-item">
+                        <i class="fas fa-money-bill"></i>
+                        <span
+                          >₱{{ '%.2f'|format(order.total_price|float) }}</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="order-actions">
+                  <button
+                    class="view-details-btn"
+                    onclick="viewOrderDetails('{{ order.id }}')"
+                  >
+                    <i class="fas fa-eye"></i> View Details
+                  </button>
+                  <button
+                    class="accept-btn"
+                    data-order-id="{{ order.id }}"
+                    data-order-name="{{ order.name }}"
+                    onclick="confirmAcceptDelivery(this)"
+                  >
+                    <i class="fas fa-truck"></i> Accept Delivery
+                  </button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-orders">
+              <i class="fas fa-box-open"></i>
+              <h3>No Prepared Orders</h3>
+              <p>
+                New orders will appear here when sellers prepare them for pickup
+              </p>
+              <button class="refresh-btn" onclick="refreshOrders()">
+                <i class="fas fa-sync-alt"></i> Refresh
+              </button>
+            </div>
+            {% endif %}
+          </div>
+        </section>
+
+        <!-- My Deliveries Section -->
+        <section id="deliveries-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-truck"></i> My Deliveries</h2>
+            <div class="header-actions">
+              <select
+                class="filter-select"
+                onchange="filterDeliveries(this.value)"
+              >
+                <option value="all">All Deliveries</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="deliveries-container">
+            <div class="deliveries-table-wrapper">
+              <table class="deliveries-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Customer</th>
+                    <th>Pickup Location</th>
+                    <th>Delivery Address</th>
+                    <th>Status</th>
+                    <th>Earnings</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if my_deliveries %} {% for delivery in my_deliveries %}
+                  <tr>
+                    <td>#{{ delivery.order_id }}</td>
+                    <td>
+                      <div class="product-cell">
+                        {% if delivery.image %}
+                        <img
+                          src="{{ url_for('static', filename='uploads/' + delivery.image) }}"
+                          alt="{{ delivery.product_name }}"
+                          class="product-thumb"
+                        />
+                        {% endif %}
+                        <span>{{ delivery.product_name }}</span>
+                      </div>
+                    </td>
+                    <td>{{ delivery.customer_name }}</td>
+                    <td>{{ delivery.pickup_location }}</td>
+                    <td>{{ delivery.delivery_address }}</td>
+                    <td>
+                      <span
+                        class="status-badge status-{{ delivery.status.lower() }}"
+                      >
+                        {{ delivery.status }}
+                      </span>
+                    </td>
+                    <td>₱{{ delivery.earnings }}</td>
+                    <td>
+                      <div class="delivery-actions">
+                        {% if delivery.status == 'Shipping' %}
+                        <button
+                          class="action-btn complete-btn"
+                          onclick="completeDelivery('{{ delivery.order_id }}')"
+                        >
+                          <i class="fas fa-check"></i> Delivered
+                        </button>
+                        {% endif %}
+                        <button
+                          class="action-btn view-btn"
+                          onclick="viewDeliveryDetails('{{ delivery.order_id }}')"
+                        >
+                          <i class="fas fa-eye"></i> View
+                        </button>
+                        <button
+                          class="action-btn cancel-btn"
+                          onclick="cancelDelivery('{{ delivery.order_id }}')"
+                        >
+                          <i class="fas fa-times"></i> Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %} {% else %}
+                  <tr>
+                    <td colspan="8" class="no-data">No deliveries found</td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Earnings Section -->
+        <section id="earnings-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-money-bill-wave"></i> Earnings Overview</h2>
+            <div class="header-actions">
+              <button class="export-btn">
+                <i class="fas fa-download"></i> Export Report
+              </button>
+            </div>
+          </div>
+
+          <div class="earnings-container">
+            <!-- Earnings Summary -->
+            <div class="earnings-summary">
+              <div class="summary-card">
+                <div class="summary-icon today">
+                  <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="summary-info">
+                  <div class="summary-title">Today's Earnings</div>
+                  <div class="summary-value">₱{{ today_earnings or 0 }}</div>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon week">
+                  <i class="fas fa-calendar-week"></i>
+                </div>
+                <div class="summary-info">
+                  <div class="summary-title">This Week</div>
+                  <div class="summary-value">₱{{ week_earnings or 0 }}</div>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon month">
+                  <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="summary-info">
+                  <div class="summary-title">This Week</div>
+                  <div class="summary-value">₱{{ week_earnings or 0 }}</div>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon total">
+                  <i class="fas fa-coins"></i>
+                </div>
+                <div class="summary-info">
+                  <div class="summary-title">Total Earnings</div>
+                  <div class="summary-value">₱{{ total_earnings or 0 }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Earnings Chart -->
+            <div class="earnings-chart-container">
+              <div class="chart-card">
+                <div class="chart-header">
+                  <h3>
+                    <i class="fas fa-chart-bar"></i> Weekly Earnings Breakdown
+                  </h3>
+                </div>
+                <div class="chart-body">
+                  <canvas id="monthlyEarningsChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Earnings History -->
+            <div class="earnings-history">
+              <h3><i class="fas fa-history"></i> Recent Earnings</h3>
+              <div class="earnings-list">
+                {% if earnings_history %} {% for earning in earnings_history %}
+                <div class="earning-item">
+                  <div class="earning-info">
+                    <div class="earning-order">
+                      Order #{{ earning.order_id }}
+                    </div>
+                    <div class="earning-date">{{ earning.date }}</div>
+                  </div>
+                  <div class="earning-amount">₱{{ earning.amount }}</div>
+                </div>
+                {% endfor %} {% else %}
+                <div class="no-earnings">
+                  <p>No earnings history available</p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile-section" class="content-section">
+          <div class="section-header">
+            <h2><i class="fas fa-user"></i> Profile Settings</h2>
+          </div>
+
+          <div class="profile-container">
+            <div class="profile-card">
+              <div class="profile-header">
+                <div class="profile-avatar">
+                  <i class="fas fa-motorcycle"></i>
+                </div>
+                <div class="profile-info">
+                  <h3>{{ session.get('email', 'Rider Account') }}</h3>
+                  <p>Delivery Rider</p>
+                  <div class="profile-stats">
+                    <div class="stat">
+                      <span class="stat-value"
+                        >{{ total_deliveries or 0 }}</span
+                      >
+                      <span class="stat-label">Deliveries</span>
+                    </div>
+                    <div class="stat">
+                      <span class="stat-value"
+                        >{{ customer_rating or 5.0 }}</span
+                      >
+                      <span class="stat-label">Rating</span>
+                    </div>
+                    <div class="stat">
+                      <span class="stat-value">{{ join_date or 'N/A' }}</span>
+                      <span class="stat-label">Member Since</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="profile-actions">
+                <a href="{{ url_for('profile') }}" class="profile-btn">
+                  <i class="fas fa-edit"></i> Edit Profile
+                </a>
+                <a href="{{ url_for('change_password') }}" class="profile-btn">
+                  <i class="fas fa-key"></i> Change Password
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-sign-out-alt"></i> Confirm Logout</h2>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to logout from your rider account?</p>
+        </div>
+        <div class="modal-actions">
+          <button onclick="confirmLogout()" class="btn-primary">
+            <i class="fas fa-check"></i> Yes, Logout
+          </button>
+          <button onclick="closeLogoutModal()" class="btn-secondary">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderDetailsModal" class="modal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h2><i class="fas fa-box"></i> Order Details</h2>
+          <button class="close-btn" onclick="closeOrderDetailsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="orderDetailsContent">
+          <!-- Order details will be loaded here -->
+        </div>
+        <div class="modal-actions">
+          <button onclick="closeOrderDetailsModal()" class="btn-secondary">
+            <i class="fas fa-times"></i> Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Availability Modal -->
+    <div id="availabilityModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fas fa-clock"></i> Set Availability</h2>
+          <button class="close-btn" onclick="closeAvailabilityModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="availabilityForm">
+            <div class="form-group">
+              <label>Available Days</label>
+              <div class="days-selector">
+                <label class="day-checkbox">
+                  <input type="checkbox" name="days" value="monday" />
+                  <span>Mon</span>
+                </label>
+                <label class="day-checkbox">
+                  <input type="checkbox" name="days" value="tuesday" />
+                  <span>Tue</span>
+                </label>
+                <label class="day-checkbox">
+                  <input type="checkbox" name="days" value="wednesday" />
+                  <span>Wed</span>
+                </label>
+                <label class="day-checkbox">
+                  <input type="checkbox" name="days" value="thursday" />
+                  <span>Thu</span>
+                </label>
+                <label class="day-checkbox">
+                  <input type="checkbox" name="days" value="friday" />
+                  <span>Fri</span>
+                </label>
+                <label class="day-checkbox">
+                  <input type="checkbox" name="days" value="saturday" />
+                  <span>Sat</span>
+                </label>
+                <label class="day-checkbox">
+                  <input type="checkbox" name="days" value="sunday" />
+                  <span>Sun</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="startTime">Start Time</label>
+                <input
+                  type="time"
+                  id="startTime"
+                  name="start_time"
+                  value="08:00"
+                />
+              </div>
+              <div class="form-group">
+                <label for="endTime">End Time</label>
+                <input type="time" id="endTime" name="end_time" value="18:00" />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-actions">
+          <button onclick="saveAvailability()" class="btn-primary">
+            <i class="fas fa-save"></i> Save Availability
+          </button>
+          <button onclick="closeAvailabilityModal()" class="btn-secondary">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/rider_dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard_theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+  </body>
+</html>
