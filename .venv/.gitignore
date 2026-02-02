@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+static/videos/
+static/uploads/
+static/requirements/
