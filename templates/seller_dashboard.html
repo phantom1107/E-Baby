@@ -887,6 +887,7 @@
               <table class="orders-table" id="ordersTable">
                 <thead>
                   <tr>
+                    <th>Order ID</th>
                     <th>Product</th>
                     <th>Customer</th>
                     <th>Quantity</th>
@@ -899,6 +900,7 @@
                 <tbody>
                   {% for order in orders %}
                   <tr class="order-row" data-status="{{ order.status.lower() }}">
+                    <td>#{{ order.id }}</td>
                     <td>
                       <div class="product-cell">
                         {% if order.image %}
@@ -908,24 +910,12 @@
                           class="product-thumb"
                         />
                         {% endif %}
-                        <div class="product-info">
-                          <span class="product-name">{{ order.name }}</span>
-                          {% if order.color or order.size %}
-                          <div class="product-variants">
-                            {% if order.color and order.color != 'N/A' %}
-                            <span class="variant-badge">Color: {{ order.color }}</span>
-                            {% endif %}
-                            {% if order.size and order.size != 'N/A' %}
-                            <span class="variant-badge">Size: {{ order.size }}</span>
-                            {% endif %}
-                          </div>
-                          {% endif %}
-                        </div>
+                        <span>{{ order.name }}</span>
                       </div>
                     </td>
                     <td>{{ order.email }}</td>
                     <td>{{ order.quantity }}</td>
-                    <td>₱{{ '%.2f'|format((order.total_price if order.total_price else (order.total if order.total else order.subtotal))|float) }}</td>
+                    <td>₱{{ '%.2f'|format(order.total_price|float) }}</td>
                     <td>{{ order.payment_method }}</td>
                     <td>
                       <span

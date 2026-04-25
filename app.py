@@ -15,10 +15,6 @@ from flask import send_from_directory
 import time
 from firebase_admin import firestore as firebase_firestore
 
-print("\n" + "="*70)
-print("[APP.PY] Starting Flask application initialization...")
-print("="*70)
-
 # Optional: third-party image hosting (Cloudinary)
 try:
     import cloudinary
@@ -29,6 +25,7 @@ try:
         and os.getenv("CLOUDINARY_API_KEY")
         and os.getenv("CLOUDINARY_API_SECRET")
     )
+
     if CLOUDINARY_ENABLED:
         cloudinary.config(
             cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
@@ -324,33 +321,18 @@ def build_report_notification_email_html(user_name: str, user_type: str, status:
 
 @app.route('/')
 def home():
-    """Homepage with all products"""
-    print("\n" + "="*60)
-    print("[HOME ROUTE] Request received")
+    """Homepage with featured products and new arrivals"""
     try:
-        print("[HOME] Calling get_all_homepage_products()...")
-        # Fetch ALL products with seller info in ONE efficient operation
-        all_products = firestore_db.get_all_homepage_products()
-        
-        print(f"[HOME] Successfully got {len(all_products)} products")
-        print("[HOME] Rendering homepage.html...")
+        featured_products = firestore_db.get_featured_products(10)
+        new_arrivals = firestore_db.get_new_arrivals(10, days=30)
         
         return render_template('homepage.html', 
-                             featured_products=all_products,
-                             new_arrivals=all_products,
+                             featured_products=featured_products,
+                             new_arrivals=new_arrivals,
                              now=datetime.now())
                              
     except Exception as e:
-        print(f"[HOME] ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        print("[HOME] Rendering empty homepage...")
-        return render_template('homepage.html', 
-                             featured_products=[],
-                             new_arrivals=[],
-                             now=datetime.now())
-        import traceback
-        traceback.print_exc()
+        print("Error in home route:", str(e))
         return render_template('homepage.html', 
                              featured_products=[],
                              new_arrivals=[],
@@ -358,37 +340,43 @@ def home():
 
 @app.route('/api/debug/products')
 def debug_products():
-    """Debug endpoint to check products in Firestore database"""
+    """Debug endpoint to check products in database"""
     try:
-        # Get all products from Firestore
-        all_products = firestore_db.get_all_products()
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
         
-        # Get all users
-        users_ref = firestore_db.db.collection('users')
-        users_count = len(list(users_ref.stream()))
+        # Check total products
+        cursor.execute('SELECT COUNT(*) as count FROM products')
+        result = cursor.fetchone()
+        total = result['count'] if result else 0
         
-        # Get sample products
-        samples = []
-        for product in all_products[:5]:
-            samples.append({
-                'id': product.get('id'),
-                'name': product.get('name'),
-                'seller_email': product.get('seller_email'),
-                'created_at': str(product.get('created_at', 'N/A'))
-            })
+        # Check products with seller info
+        cursor.execute('''
+            SELECT COUNT(*) as count FROM products p
+            JOIN users u ON p.seller_email = u.email
+        ''')
+        result = cursor.fetchone()
+        with_seller = result['count'] if result else 0
+        
+        # Get a sample
+        cursor.execute('''
+            SELECT p.id, p.name, p.seller_email, u.first_name, u.last_name
+            FROM products p
+            LEFT JOIN users u ON p.seller_email = u.email
+            LIMIT 5
+        ''')
+        samples = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
         
         return jsonify({
-            'total_products': len(all_products),
-            'total_users': users_count,
-            'samples': samples,
-            'message': 'If total_products is 0, you need to add products to Firestore'
+            'total_products': total,
+            'products_with_seller': with_seller,
+            'samples': samples
         })
     except Exception as e:
-        import traceback
-        return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
+        return jsonify({'error': str(e)})
 
 @app.route('/api/products')
 def api_products():
@@ -423,6 +411,8 @@ def api_products():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+@app.route('/')
 
 @app.route('/auth')
 def auth():
@@ -500,8 +490,8 @@ def register():
         return render_template('auth.html', error="Passwords do not match!")
 
     # Handle documents for all user types (Buyer, Seller, Rider)
-    document_url = None
-    bir_url = None
+    document_filename = None
+    bir_filename = None
     
     # ID document is now required for all user types
     document = request.files.get('document_id')
@@ -509,20 +499,11 @@ def register():
     if not document or document.filename == '':
         return render_template('auth.html', error="Please upload a valid ID document.")
     
-    # Upload document to Cloudinary
-    document_url = upload_to_cloudinary(
-        document,
-        folder="ebaby/documents",
-        public_id_prefix=f"document_{email.replace('@', '_').replace('.', '_')}",
-    )
-    
-    if not document_url:
-        # Fallback: save locally
-        document_filename = secure_filename(document.filename)
-        requirements_folder = os.path.join(app.root_path, 'static', 'requirements')
-        os.makedirs(requirements_folder, exist_ok=True)
-        document.save(os.path.join(requirements_folder, document_filename))
-        document_url = url_for('static', filename=f"requirements/{document_filename}", _external=True)
+    # Save the document
+    document_filename = secure_filename(document.filename)
+    requirements_folder = os.path.join(app.root_path, 'static', 'requirements')
+    os.makedirs(requirements_folder, exist_ok=True)
+    document.save(os.path.join(requirements_folder, document_filename))
     
     # Only require BIR document for sellers
     if user_type == 'Seller':
@@ -530,18 +511,8 @@ def register():
         if not bir or bir.filename == '':
             return render_template('auth.html', error="Please upload a BIR document.")
         
-        # Upload BIR to Cloudinary
-        bir_url = upload_to_cloudinary(
-            bir,
-            folder="ebaby/documents",
-            public_id_prefix=f"bir_{email.replace('@', '_').replace('.', '_')}",
-        )
-        
-        if not bir_url:
-            # Fallback: save locally
-            bir_filename = secure_filename(bir.filename)
-            bir.save(os.path.join(requirements_folder, bir_filename))
-            bir_url = url_for('static', filename=f"requirements/{bir_filename}", _external=True)
+        bir_filename = secure_filename(bir.filename)
+        bir.save(os.path.join(requirements_folder, bir_filename))
 
     # Store registration data in session
     session['registration_data'] = {
@@ -551,8 +522,8 @@ def register():
         'address': address,
         'password': password,
         'user_type': user_type,
-        'document_id': document_url,
-        'bir': bir_url
+        'document_id': document_filename,
+        'bir': bir_filename
     }
 
     # Generate and send OTP
@@ -702,9 +673,19 @@ def login():
         return redirect(url_for('admin_dashboard'))
 
     try:
-        # Check if account is pending (optimized - only checks for this specific email)
-        pending_request = firestore_db.check_pending_request_by_email(email)
-        if pending_request and pending_request.get('password') == password:
+        # Check if account is pending (in requests collections)
+        seller_requests = firestore_db.get_all_pending_requests('seller')
+        if any(r.get('email') == email and r.get('password') == password for r in seller_requests):
+            flash('Your account is pending approval. Please wait for admin approval before logging in.', 'error')
+            return redirect(url_for('login_page'))
+        
+        rider_requests = firestore_db.get_all_pending_requests('rider')
+        if any(r.get('email') == email and r.get('password') == password for r in rider_requests):
+            flash('Your account is pending approval. Please wait for admin approval before logging in.', 'error')
+            return redirect(url_for('login_page'))
+        
+        buyer_requests = firestore_db.get_all_pending_requests('buyer')
+        if any(r.get('email') == email and r.get('password') == password for r in buyer_requests):
             flash('Your account is pending approval. Please wait for admin approval before logging in.', 'error')
             return redirect(url_for('login_page'))
 
@@ -803,27 +784,71 @@ def forgot_password():
 
 @app.route('/homepage')
 def homepage():
-    """Homepage with all products"""
-    print("\n" + "="*60)
-    print("[HOMEPAGE ROUTE] Request received")
+    """Homepage with featured and new arrival products from Firestore"""
+    print("Session data:", session)
+    print("Profile pic path:", session.get('profile_pic'))
+    
     try:
-        print("[HOMEPAGE] Calling get_all_homepage_products()...")
-        # Fetch ALL products with seller info in ONE efficient operation
-        all_products = firestore_db.get_all_homepage_products()
+        from datetime import datetime, timedelta
         
-        print(f"[HOMEPAGE] Successfully got {len(all_products)} products")
-        print("[HOMEPAGE] Rendering homepage.html...")
+        # Get all products from Firestore
+        all_products = firestore_db.get_all_products()
+        print(f"Total products in Firestore: {len(all_products) if all_products else 0}")
+        
+        if not all_products:
+            return render_template('homepage.html', 
+                                 featured_products=[],
+                                 new_arrivals=[],
+                                 now=datetime.now())
+        
+        # Get seller information for each product
+        all_users = firestore_db.get_all_users()
+        seller_lookup = {u.get('email'): u for u in all_users if u.get('email')}
+        
+        # Enrich products with seller info
+        for product in all_products:
+            seller_email = product.get('seller_email', '')
+            seller_info = seller_lookup.get(seller_email, {})
+            product['first_name'] = seller_info.get('first_name', 'Unknown')
+            product['last_name'] = seller_info.get('last_name', 'Seller')
+            product['seller_email'] = seller_email
+            # Ensure price is float
+            product['price'] = float(product.get('price', 0))
+        
+        # Get featured products (random selection)
+        import random
+        featured_products = random.sample(all_products, min(10, len(all_products)))
+        print(f"Featured products count: {len(featured_products)}")
+        
+        # Get new arrivals (products from last 30 days, sorted by date)
+        now = datetime.now()
+        cutoff_date = now - timedelta(days=30)
+        new_arrivals = []
+        
+        for product in all_products:
+            created_at = product.get('created_at')
+            if isinstance(created_at, str):
+                try:
+                    created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00')).replace(tzinfo=None)
+                except:
+                    continue
+            
+            if isinstance(created_at, datetime) and created_at >= cutoff_date:
+                new_arrivals.append(product)
+        
+        # Sort new arrivals by date descending
+        new_arrivals.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        print(f"New arrivals count: {len(new_arrivals)}")
         
         return render_template('homepage.html', 
-                             featured_products=all_products,
-                             new_arrivals=all_products,
+                             featured_products=featured_products if featured_products else [],
+                             new_arrivals=new_arrivals if new_arrivals else [],
                              now=datetime.now())
                              
     except Exception as e:
-        print(f"[HOMEPAGE] ERROR: {str(e)}")
+        print("Error in homepage route:", str(e))
         import traceback
         traceback.print_exc()
-        print("[HOMEPAGE] Rendering empty homepage...")
         return render_template('homepage.html', 
                              featured_products=[],
                              new_arrivals=[],
@@ -1211,19 +1236,14 @@ def get_seller_stats():
         # Parse order dates and filter
         filtered_orders = []
         for order in orders:
-            order_date = order.get('date') or order.get('created_at')
+            order_date = order.get('date')
             if isinstance(order_date, str):
                 try:
-                    # Parse and remove timezone info to make it naive
                     order_date = datetime.fromisoformat(order_date.replace('Z', '+00:00')).replace(tzinfo=None)
                 except:
                     continue
-            # Ensure order_date is timezone-naive for comparison
-            if isinstance(order_date, datetime):
-                if order_date.tzinfo is not None:
-                    order_date = order_date.replace(tzinfo=None)
-                if order_date >= cutoff_date:
-                    filtered_orders.append(order)
+            if isinstance(order_date, datetime) and order_date >= cutoff_date:
+                filtered_orders.append(order)
         
         # Calculate stats for completed orders only
         received_orders = [o for o in filtered_orders if o.get('status') == 'Received']
@@ -1375,10 +1395,6 @@ def seller_dashboard():
         # Get all orders for this seller from Firestore
         orders = firestore_db.get_orders_by_seller(user_email)
         
-        print(f"[seller_dashboard] Found {len(orders)} orders for {user_email}")
-        if orders:
-            print(f"[seller_dashboard] First order sample: {orders[0]}")
-        
         # Filter by date range if specified
         filtered_orders = orders
         if start_date and end_date:
@@ -1407,9 +1423,7 @@ def seller_dashboard():
         total_sales = 0
         total_items = 0
         for order in received_orders:
-            # Use total_price if available, otherwise use total or subtotal
-            order_total = float(order.get('total_price', 0) or order.get('total', 0) or order.get('subtotal', 0))
-            total_sales += order_total
+            total_sales += float(order.get('total_price', 0))
             total_items += int(order.get('quantity', 0))
         
         # Apply 5% fee to get seller earnings (seller gets 95%)
@@ -1531,204 +1545,137 @@ def admin_dashboard():
 def rider_dashboard():
     user_email = session.get('email')
     
-    if not user_email:
-        return redirect(url_for('login'))
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
     
-    try:
-        from datetime import datetime, timedelta
-        
-        # Get all orders for calculations
-        all_orders = firestore_db.get_all_orders()
-        
-        # Get rider's total deliveries (completed orders assigned to them)
-        total_deliveries = len([o for o in all_orders if o.get('rider_email') == user_email and o.get('status') == 'Received'])
-        
-        # Get pending orders (all prepared orders available for pickup)
-        pending_orders_list = [o for o in all_orders if o.get('status') == 'Prepared']
-        pending_orders = len(pending_orders_list)
-        
-        # Get total earnings from rider_earnings
-        rider_earnings = firestore_db.get_rider_earnings(user_email)
-        total_earnings = sum(float(e.get('amount', 0)) for e in rider_earnings if e.get('status') == 'Completed')
-        
-        # Customer rating (placeholder - could be added later)
-        customer_rating = 5.0
-        
-        # Get available orders (orders that are 'Prepared' - ready for pickup)
-        # Add category, variant info, and total_price to each order
-        orders = []
-        for order in pending_orders_list:
-            # Ensure total_price exists
-            if 'total_price' not in order:
-                order['total_price'] = order.get('total', 0) or order.get('subtotal', 0) or 0
-            
-            # Fetch category from product if missing
-            if not order.get('category'):
-                product_id = order.get('product_id')
-                if product_id:
-                    product = firestore_db.get_product_by_id(str(product_id))
-                    if product:
-                        order['category'] = product.get('category', 'General')
-                    else:
-                        order['category'] = 'General'
-                else:
-                    order['category'] = 'General'
-            orders.append(order)
-        
-        # Sort by date ascending
-        orders.sort(key=lambda x: x.get('date') or x.get('created_at') or datetime.min)
-        
-        # Get rider's current deliveries (orders in 'Shipping' status)
-        my_deliveries = []
-        for order in all_orders:
-            if order.get('rider_email') == user_email and order.get('status') == 'Shipping':
-                # Calculate earnings based on order total
-                total_price = float(order.get('total_price', 0) or order.get('total', 0))
-                earnings = 20 if total_price >= 1500 else 10
-                
-                # Fetch category from product if missing
-                category = order.get('category')
-                if not category:
-                    product_id = order.get('product_id')
-                    if product_id:
-                        product = firestore_db.get_product_by_id(str(product_id))
-                        if product:
-                            category = product.get('category', 'General')
-                        else:
-                            category = 'General'
-                    else:
-                        category = 'General'
-                
-                delivery_data = {
-                    'order_id': order.get('id'),
-                    'product_name': order.get('name'),
-                    'customer_name': order.get('email'),
-                    'pickup_location': 'Store Location',
-                    'delivery_address': order.get('delivery_address'),
-                    'status': order.get('status'),
-                    'image': order.get('image'),
-                    'date': order.get('date') or order.get('created_at'),
-                    'earnings': earnings,
-                    'color': order.get('color'),
-                    'size': order.get('size'),
-                    'category': category
-                }
-                my_deliveries.append(delivery_data)
-        
-        # Sort by date descending
-        my_deliveries.sort(key=lambda x: x.get('date') or datetime.min, reverse=True)
-        
-        # Get rider's recent completed deliveries (last 5)
-        recent_deliveries = []
-        for order in all_orders:
-            if order.get('rider_email') == user_email and order.get('status') == 'Received':
-                # Find corresponding earning
-                earning_amount = 0
-                for earning in rider_earnings:
-                    if earning.get('order_id') == order.get('id'):
-                        earning_amount = float(earning.get('amount', 0))
-                        break
-                
-                delivery_data = {
-                    'order_id': order.get('id'),
-                    'customer_name': order.get('email'),
-                    'pickup_location': 'Store Location',
-                    'delivery_address': order.get('delivery_address'),
-                    'status': order.get('status'),
-                    'earnings': earning_amount,
-                    'date': order.get('date') or order.get('created_at')
-                }
-                recent_deliveries.append(delivery_data)
-        
-        # Sort by date descending and limit to 5
-        recent_deliveries.sort(key=lambda x: x.get('date') or datetime.min, reverse=True)
-        recent_deliveries = recent_deliveries[:5]
-        
-        # Calculate earnings breakdown by period
-        now = datetime.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        week_start = now - timedelta(days=7)
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        
-        today_earnings = 0
-        week_earnings = 0
-        month_earnings = 0
-        
-        for earning in rider_earnings:
-            if earning.get('status') != 'Completed':
-                continue
-                
-            earn_date = earning.get('date')
-            if isinstance(earn_date, str):
-                try:
-                    earn_date = datetime.fromisoformat(earn_date.replace('Z', '+00:00')).replace(tzinfo=None)
-                except:
-                    continue
-            
-            if isinstance(earn_date, datetime):
-                if earn_date.tzinfo is not None:
-                    earn_date = earn_date.replace(tzinfo=None)
-                
-                amount = float(earning.get('amount', 0))
-                
-                if earn_date >= today_start:
-                    today_earnings += amount
-                if earn_date >= week_start:
-                    week_earnings += amount
-                if earn_date >= month_start:
-                    month_earnings += amount
-        
-        # Earnings history (last 10)
-        earnings_history = []
-        for earning in rider_earnings:
-            if earning.get('status') == 'Completed':
-                earnings_history.append({
-                    'order_id': earning.get('order_id'),
-                    'date': earning.get('date'),
-                    'amount': float(earning.get('amount', 0))
-                })
-        
-        # Sort by date descending and limit to 10
-        earnings_history.sort(key=lambda x: x.get('date') or datetime.min, reverse=True)
-        earnings_history = earnings_history[:10]
-        
-        return render_template('rider_dashboard.html',
-                             total_deliveries=total_deliveries,
-                             pending_orders=pending_orders,
-                             total_earnings=total_earnings,
-                             customer_rating=customer_rating,
-                             orders=orders,
-                             prepared_orders=orders,
-                             my_deliveries=my_deliveries,
-                             recent_deliveries=recent_deliveries,
-                             today_earnings=today_earnings,
-                             week_earnings=week_earnings,
-                             month_earnings=month_earnings,
-                             earnings_history=earnings_history)
+    # Get rider's total deliveries (completed orders assigned to them)
+    cursor.execute("""
+        SELECT COUNT(*) as total_deliveries
+        FROM orders 
+        WHERE rider_email = %s AND status = 'Received'
+    """, (user_email,))
+    result = cursor.fetchone()
+    total_deliveries = result['total_deliveries'] if result else 0
     
-    except Exception as e:
-        print(f"Error in rider_dashboard: {e}")
-        import traceback
-        traceback.print_exc()
-        return render_template('rider_dashboard.html',
-                             total_deliveries=0,
-                             pending_orders=0,
-                             total_earnings=0,
-                             customer_rating=5.0,
-                             orders=[],
-                             prepared_orders=[],
-                             my_deliveries=[],
-                             recent_deliveries=[],
-                             today_earnings=0,
-                             week_earnings=0,
-                             month_earnings=0,
-                             earnings_history=[])
+    # Get pending orders (all prepared orders available for pickup)
+    cursor.execute("""
+        SELECT COUNT(*) as pending_orders
+        FROM orders 
+        WHERE status = 'Prepared'
+    """)
+    result = cursor.fetchone()
+    pending_orders = result['pending_orders'] if result else 0
+    
+    # Get total earnings from rider_earnings table
+    cursor.execute("""
+        SELECT COALESCE(SUM(amount), 0) as total_earnings
+        FROM rider_earnings
+        WHERE rider_email = %s AND status = 'Completed'
+    """, (user_email,))
+    earnings_result = cursor.fetchone()
+    total_earnings = float(earnings_result['total_earnings']) if earnings_result else 0
+    
+    # Customer rating (placeholder - could be added later)
+    customer_rating = 5.0
+    
+    # Get available orders (orders that are 'Prepared' - ready for pickup)
+    cursor.execute("""
+        SELECT *, seller_email
+        FROM orders
+        WHERE status = 'Prepared'
+        ORDER BY date ASC
+    """)
+    orders = cursor.fetchall()
+    
+    # Get rider's current deliveries (orders in 'Shipping' status)
+    cursor.execute("""
+        SELECT o.id as order_id, o.name as product_name, o.email as customer_name,
+               'Store Location' as pickup_location, o.delivery_address,
+               o.status, o.image, o.date,
+               CASE 
+                 WHEN o.total_price >= 1500 THEN 20
+                 ELSE 10
+               END as earnings
+        FROM orders o
+        WHERE o.rider_email = %s AND o.status = 'Shipping'
+        ORDER BY o.date DESC
+    """, (user_email,))
+    my_deliveries = cursor.fetchall()
+    
+    # Get rider's recent completed deliveries (last 5)
+    cursor.execute("""
+        SELECT o.id as order_id, o.email as customer_name, 
+               'Store Location' as pickup_location, o.delivery_address,
+               o.status, re.amount as earnings, o.date
+        FROM orders o
+        LEFT JOIN rider_earnings re ON o.id = re.order_id
+        WHERE o.rider_email = %s AND o.status = 'Received'
+        ORDER BY o.date DESC
+        LIMIT 5
+    """, (user_email,))
+    recent_deliveries = cursor.fetchall()
+    
+    # Calculate earnings breakdown by period
+    cursor.execute("""
+        SELECT DATE(re.date) as earn_date, SUM(re.amount) as daily_earnings
+        FROM rider_earnings re
+        WHERE re.rider_email = %s AND DATE(re.date) = CURDATE()
+    """, (user_email,))
+    today_result = cursor.fetchone()
+    today_earnings = float(today_result['daily_earnings']) if today_result and today_result['daily_earnings'] else 0
+    
+    cursor.execute("""
+        SELECT SUM(re.amount) as week_earnings
+        FROM rider_earnings re
+        WHERE re.rider_email = %s 
+        AND re.date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    """, (user_email,))
+    week_result = cursor.fetchone()
+    week_earnings = float(week_result['week_earnings']) if week_result and week_result['week_earnings'] else 0
+    
+    cursor.execute("""
+        SELECT SUM(re.amount) as month_earnings
+        FROM rider_earnings re
+        WHERE re.rider_email = %s 
+        AND YEAR(re.date) = YEAR(NOW())
+        AND MONTH(re.date) = MONTH(NOW())
+    """, (user_email,))
+    month_result = cursor.fetchone()
+    month_earnings = float(month_result['month_earnings']) if month_result and month_result['month_earnings'] else 0
+    
+    # Earnings history (actual earnings from rider_earnings table)
+    cursor.execute("""
+        SELECT o.id as order_id, re.date, re.amount
+        FROM rider_earnings re
+        JOIN orders o ON o.id = re.order_id
+        WHERE re.rider_email = %s
+        ORDER BY re.date DESC
+        LIMIT 10
+    """, (user_email,))
+    earnings_history = cursor.fetchall()
+    
+    cursor.close()
+    connection.close()
+    
+    return render_template('rider_dashboard.html',
+                         total_deliveries=total_deliveries,
+                         pending_orders=pending_orders,
+                         total_earnings=total_earnings,
+                         customer_rating=customer_rating,
+                         orders=orders,
+                        prepared_orders=orders,
+                         my_deliveries=my_deliveries,
+                         recent_deliveries=recent_deliveries,
+                         today_earnings=today_earnings,
+                         week_earnings=week_earnings,
+                         month_earnings=month_earnings,
+                         earnings_history=earnings_history)
 
 @app.route('/order_details')
 def order_details():
     return render_template('order_details.html')
 
-@app.route('/api/order/<order_id>')
+@app.route('/api/order/<int:order_id>')
 def get_order_details(order_id):
     """API endpoint to fetch order details by order ID"""
     try:
@@ -1774,7 +1721,7 @@ def get_order_details(order_id):
         return jsonify({'success': False, 'error': str(err)}), 500
 
 @app.route('/api/rider/earnings')
-def get_rider_earnings_api():
+def get_rider_earnings():
     """API endpoint to fetch rider earnings data for charts"""
     rider_email = session.get('email')
     if not rider_email:
@@ -1782,15 +1729,10 @@ def get_rider_earnings_api():
     
     try:
         # Get all rider earnings from Firestore
-        earnings_ref = firestore_db.db.collection('rider_earnings')
-        earnings_query = earnings_ref.where('rider_email', '==', rider_email).stream()
+        earnings_docs = firestore_db.get_documents('rider_earnings')
         
-        # Convert to list
-        rider_earnings = []
-        for doc in earnings_query:
-            earn_data = doc.to_dict()
-            earn_data['id'] = doc.id
-            rider_earnings.append(earn_data)
+        # Filter by rider email
+        rider_earnings = [doc for doc in earnings_docs if doc.get('rider_email') == rider_email]
         
         # Initialize data structures
         daily_earnings = {}
@@ -2217,7 +2159,7 @@ def add_new_product():
 
     return render_template('add_product.html')
 
-@app.route('/update_products/<product_id>', methods=['GET', 'POST'])
+@app.route('/update_products/<int:product_id>', methods=['GET', 'POST'])
 def edit_product(product_id):
     user_email = session.get('email')  # Get logged-in user's email
     
@@ -2321,7 +2263,7 @@ def edit_product(product_id):
 
     return render_template('update_products.html', product=product)
 
-@app.route('/delete_product/<product_id>', methods=['DELETE'])
+@app.route('/delete_product/<int:product_id>', methods=['DELETE'])
 def delete_product(product_id):
     if 'email' not in session:
         return jsonify({'success': False, 'error': 'Not authenticated'}), 401
@@ -2367,31 +2309,29 @@ def product_details(product_id):
         print(f"Error fetching product details: {e}")
         return redirect(url_for('homepage'))
 
-@app.route('/api/product_variants/<product_id>')
+@app.route('/api/product_variants/<int:product_id>')
 def api_product_variants(product_id):
-    """API endpoint to get all variants for a product from Firestore"""
+    """API endpoint to get all variants for a product"""
     try:
-        # Get variants from Firestore
-        variants = firestore_db.get_product_variants(product_id)
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
         
-        # Format for JSON response
-        variant_list = []
-        for variant in variants:
-            variant_list.append({
-                'id': variant.get('id'),
-                'color': variant.get('color'),
-                'size': variant.get('size'),
-                'stock': variant.get('stock', 0)
-            })
+        cursor.execute('''
+            SELECT id, color, size, stock
+            FROM product_variants
+            WHERE product_id = %s
+            ORDER BY color, size ASC
+        ''', (product_id,))
         
-        return jsonify({'success': True, 'variants': variant_list})
+        variants = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'variants': variants})
     except Exception as e:
-        print(f"Error fetching product variants: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/product_variants/<product_id>/update-stock', methods=['POST'])
+@app.route('/api/product_variants/<int:product_id>/update-stock', methods=['POST'])
 def update_variant_stocks(product_id):
     """API endpoint to update variant stocks"""
     if 'email' not in session:
@@ -2495,7 +2435,7 @@ def add_product_variant():
         print(f"Error adding variant: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/migrate_product_variants/<product_id>', methods=['POST'])
+@app.route('/api/migrate_product_variants/<int:product_id>', methods=['POST'])
 def migrate_product_variants(product_id):
     """Migrate legacy products to new variant system"""
     if 'email' not in session:
@@ -3914,31 +3854,23 @@ def allowed_file(filename):
 def upload_image():
     # Check if the POST request has the file part
     if 'product_image' not in request.files:
-        return jsonify({'success': False, 'error': 'No file uploaded'})
+        flash('No file part', 'error')
+        return redirect(request.url)
 
     file = request.files['product_image']
 
     # If user does not select a file, browser submits an empty file without a filename
     if file.filename == '':
-        return jsonify({'success': False, 'error': 'No file selected'})
+        flash('No selected file', 'error')
+        return redirect(request.url)
 
     if file and allowed_file(file.filename):
-        # Prefer Cloudinary if configured
-        image_url = upload_to_cloudinary(
-            file,
-            folder="ebaby/products",
-            public_id_prefix=f"product_{int(time.time())}",
-        )
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return redirect(url_for('add_new_product'))
 
-        if not image_url:
-            # Fallback: save locally
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            image_url = url_for('static', filename=f"uploads/{filename}", _external=True)
-
-        return jsonify({'success': True, 'image_url': image_url})
-
-    return jsonify({'success': False, 'error': 'Invalid file format. Only jpg, jpeg, png, and gif allowed.'})
+    flash('Invalid file format. Only jpg, jpeg, and png allowed.', 'error')
+    return redirect(request.url)
 
 @app.route('/upload_profile_pic', methods=['POST'])
 def upload_profile_pic():
@@ -4045,6 +3977,9 @@ def add_to_cart():
     if 'email' not in session:
         return jsonify({'success': False, 'message': 'Please login first'})
     
+    conn = None
+    cursor = None
+    
     try:
         data = request.json
         user_email = session['email']
@@ -4054,15 +3989,15 @@ def add_to_cart():
         print(f"Data: {data}")
         
         # Validate required fields
-        required_fields = ['product_id', 'name', 'price', 'image', 'color', 'quantity']
+        required_fields = ['product_id', 'name', 'price', 'image', 'color', 'size', 'quantity']
         for field in required_fields:
             if field not in data:
                 print(f"Missing required field: {field}")
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'})
         
-        # Convert and validate data types (product_id stays as string for Firestore)
+        # Convert and validate data types
         try:
-            product_id = str(data['product_id'])  # Keep as string for Firestore
+            product_id = int(data['product_id'])
             new_quantity = int(data['quantity'])
             price = float(data['price'])
             print(f"Validated data types: product_id={product_id}, qty={new_quantity}, price={price}")
@@ -4070,85 +4005,100 @@ def add_to_cart():
             print(f"Data type conversion error: {str(e)}")
             return jsonify({'success': False, 'message': f'Invalid data types: {str(e)}'})
         
-        # Get values
-        size_value = data.get('size', '')
-        color_value = data.get('color', '')
-        seller_email = data.get('seller_email', '')
-        print(f"Color: {color_value}, Size: {size_value}, Seller: {seller_email}")
+        # Connect to database
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        print("Database connection established")
         
-        # Get product from Firestore to check stock
-        product = firestore_db.get_product_by_id(product_id)
-        if not product:
-            print(f"Product not found: {product_id}")
-            return jsonify({'success': False, 'message': 'Product not found'})
+        # Ensure size is a string, not None
+        size_value = data.get('size') or ''
+        color_value = data.get('color') or ''
+        print(f"Color: {color_value}, Size: {size_value}")
         
-        # Calculate total stock from variants or use product stock
-        variants = firestore_db.get_product_variants(product_id)
-        if variants:
-            # Check if specific variant exists and has stock
-            matching_variant = None
-            for v in variants:
-                if v.get('color') == color_value and v.get('size') == size_value:
-                    matching_variant = v
-                    break
-            
-            if matching_variant:
-                product_stock = matching_variant.get('stock', 0)
-                print(f"Using variant stock: {product_stock} for {color_value}/{size_value}")
-            else:
-                # Calculate total stock from all variants
-                product_stock = sum(v.get('stock', 0) for v in variants)
-                print(f"Variant not found, using total stock: {product_stock}")
-        else:
-            # Use product's own stock field
-            product_stock = product.get('quantity', product.get('stock', 0))
-            print(f"No variants, using product stock: {product_stock}")
+        # Check if product and variant exist and have stock
+        cursor.execute('''
+            SELECT pv.stock FROM product_variants pv
+            JOIN products p ON pv.product_id = p.id
+            WHERE p.id = %s AND pv.color = %s AND pv.size = %s
+        ''', (product_id, color_value, size_value))
         
-        if product_stock <= 0:
-            print("Product out of stock")
-            return jsonify({'success': False, 'outOfStock': True, 'message': 'This product is out of stock'})
+        variant_stock = cursor.fetchone()
         
-        if new_quantity > product_stock:
-            print(f"Insufficient stock: requested {new_quantity}, available {product_stock}")
-            return jsonify({'success': False, 'insufficientStock': True, 'available': product_stock, 'message': f'Only {product_stock} items available'})
+        if not variant_stock:
+            cursor.close()
+            conn.close()
+            print(f"Variant not found for product {product_id}, color={color_value}, size={size_value}")
+            return jsonify({'success': False, 'message': 'This product variant is not available'})
         
-        # Check if product already exists in cart (Firestore)
-        existing_cart_items = firestore_db.get_cart(user_email)
-        existing_item = None
-        for item in existing_cart_items:
-            if (item.get('product_id') == product_id and 
-                item.get('color') == color_value and 
-                item.get('size') == size_value):
-                existing_item = item
-                break
+        if variant_stock['stock'] <= 0:
+            cursor.close()
+            conn.close()
+            print("Product variant out of stock")
+            return jsonify({'success': False, 'outOfStock': True, 'message': 'This product variant is out of stock'})
         
+        # Check if requested quantity is available
+        if new_quantity > variant_stock['stock']:
+            cursor.close()
+            conn.close()
+            print(f"Insufficient stock: requested {new_quantity}, available {variant_stock['stock']}")
+            return jsonify({'success': False, 'insufficientStock': True, 'available': variant_stock['stock'], 'message': f'Only {variant_stock["stock"]} items available'})
+        
+        # Check if product already exists in cart
+        cursor.execute('''
+            SELECT * FROM cart 
+            WHERE email = %s AND product_id = %s AND color = %s AND size = %s
+        ''', (user_email, product_id, color_value, size_value))
+        
+        existing_item = cursor.fetchone()
         print(f"Existing item: {existing_item is not None}")
         
         if existing_item:
             # Update quantity if item exists
             new_qty = existing_item['quantity'] + new_quantity
-            if new_qty > product_stock:
-                return jsonify({'success': False, 'insufficientStock': True, 'available': product_stock, 'message': f'Only {product_stock} items available'})
-            
-            firestore_db.update_cart_item(existing_item['id'], {'quantity': new_qty})
-            print(f"Updated cart item quantity to {new_qty}")
-            return jsonify({'success': True, 'message': 'Cart updated successfully'})
+            cursor.execute('''
+                UPDATE cart 
+                SET quantity = %s 
+                WHERE email = %s AND product_id = %s AND color = %s AND size = %s
+            ''', (new_qty, user_email, product_id, color_value, size_value))
+            print(f"Updated existing item: qty={new_qty}")
         else:
-            # Add new item to cart
-            cart_item = {
-                'product_id': product_id,
-                'name': data['name'],
-                'price': price,
-                'image': data['image'],
-                'color': color_value,
-                'size': size_value,
-                'quantity': new_quantity,
-                'seller_email': seller_email
-            }
+            # Insert new item if it doesn't exist
+            seller_email = data.get('seller_email') or ''
+            print(f"Inserting new item. seller_email={seller_email}")
             
-            firestore_db.add_to_cart(user_email, cart_item)
-            print("Added new item to cart")
-            return jsonify({'success': True, 'message': 'Product added to cart successfully'})
+            cursor.execute('''
+                INSERT INTO cart (email, product_id, name, price, image, color, size, quantity, seller_email)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                user_email,
+                product_id,
+                data['name'],
+                price,
+                data['image'],
+                color_value,
+                size_value,
+                new_quantity,
+                seller_email
+            ))
+            print("Inserted new cart item")
+        
+        conn.commit()
+        print("Commit successful")
+        cursor.close()
+        conn.close()
+        print("Connections closed")
+        
+        try:
+            print("About to call jsonify")
+            result = jsonify({'success': True})
+            print(f"jsonify returned: {result}")
+            print("About to return result")
+            return result
+        except Exception as jsonify_err:
+            print(f"ERROR in jsonify: {str(jsonify_err)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'message': f'Error in jsonify: {str(jsonify_err)}'})
         
     except Exception as e:
         print(f"\n=== ADD_TO_CART ERROR ===")
@@ -4156,6 +4106,16 @@ def add_to_cart():
         import traceback
         traceback.print_exc()
         print("=== END ERROR ===\n")
+        
+        # Close connections if they exist
+        try:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        except Exception as close_err:
+            print(f"Error closing connections: {str(close_err)}")
+        
         return jsonify({'success': False, 'message': str(e)})
     
 @app.route('/get_cart_count')
@@ -4400,24 +4360,38 @@ def checkout():
             return jsonify({'success': False, 'error': str(e)})
     
     # GET request - display checkout page
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
     user_email = session['email']
     
-    # Get all cart items from Firestore
-    all_cart_items = firestore_db.get_cart(user_email)
-    
-    # Filter to only selected items if checkout_cart_ids is set
+    # Simply fetch the selected items from cart that were marked for checkout
+    # If checkout_cart_ids is set, use those; otherwise use all cart items
     if 'checkout_cart_ids' in session and session['checkout_cart_ids']:
         selected_ids = session['checkout_cart_ids']
-        checkout_items = [item for item in all_cart_items if item.get('id') in selected_ids]
+        format_strings = ','.join(['%s'] * len(selected_ids))
+        cursor.execute(f"""
+            SELECT id, product_id, name, price, quantity, color, image, size, email, seller_email
+            FROM cart
+            WHERE id IN ({format_strings}) AND email = %s
+        """, tuple(selected_ids) + (user_email,))
     else:
-        checkout_items = all_cart_items
+        cursor.execute("""
+            SELECT id, product_id, name, price, quantity, color, image, size, email, seller_email
+            FROM cart
+            WHERE email = %s
+        """, (user_email,))
+    
+    checkout_items = cursor.fetchall()
     
     # Calculate pricing breakdown
-    subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 0)) for item in checkout_items)
+    subtotal = sum(float(item['price']) * int(item['quantity']) for item in checkout_items)
     shipping_fee = 38.00
     tax_rate = 0.025
     tax = subtotal * tax_rate
     total_price = subtotal + shipping_fee + tax
+    
+    cursor.close()
+    connection.close()
     
     return render_template('checkout.html', 
                          cart_items=checkout_items, 
@@ -4517,45 +4491,11 @@ def confirm_order():
         # Insert each item as a separate order
         for item in items:
             try:
-                # Debug: Print item data
-                print(f"[confirm_order] Processing item: {item}")
-                
-                # Get product_id from item - try multiple sources
-                product_id = item.get('product_id')
-                
-                # If no product_id, try 'id' field (cart item ID might be product ID)
-                if not product_id:
-                    # Get cart item from Firestore to find product_id
-                    cart_item_id = item.get('id')
-                    if cart_item_id:
-                        cart_item = firestore_db.db.collection('cart').document(cart_item_id).get()
-                        if cart_item.exists:
-                            cart_data = cart_item.to_dict()
-                            product_id = cart_data.get('product_id')
-                            print(f"[confirm_order] Found product_id from cart: {product_id}")
-                
-                # If still no product_id, try to find product by name (legacy cart items)
-                if not product_id:
-                    print(f"[confirm_order] No product_id in item, searching by name: {item.get('name')}")
-                    all_products = firestore_db.get_all_products()
-                    for p in all_products:
-                        if p.get('name') == item.get('name'):
-                            product_id = p.get('id')
-                            print(f"[confirm_order] Found product by name: {product_id}")
-                            break
-                
-                if not product_id:
-                    print(f"[confirm_order] Could not find product_id for item: {item.get('name')}")
-                    failed_items.append(f"{item.get('name', 'Unknown')} - Product not found")
-                    continue
-                
-                print(f"[confirm_order] Looking for product with ID: {product_id}")
-                
                 # Get product details from Firestore
-                product = firestore_db.get_product_by_id(str(product_id))
+                product = firestore_db.get_product_by_id(str(item.get('product_id', item['id'])))
                 if not product:
-                    print(f"Product not found: {product_id} (item name: {item.get('name')})")
-                    failed_items.append(item.get('name', 'Unknown'))
+                    print(f"Product not found: {item['name']}")
+                    failed_items.append(item['name'])
                     continue
                     
                 seller_email = product.get('seller_email')
@@ -4565,8 +4505,7 @@ def confirm_order():
                 color_value = item.get('color', '').strip()
                 size_value = item.get('size', '').strip()
                 
-                # Use the product_id we found/verified above
-                variants = firestore_db.get_product_variants(str(product_id))
+                variants = firestore_db.get_product_variants(str(item.get('product_id', item['id'])))
                 variant_match = None
                 if variants:
                     for variant in variants:
@@ -4575,7 +4514,7 @@ def confirm_order():
                             break
                 
                 if not variant_match:
-                    print(f"Variant not found for product_id={product_id}, color='{color_value}', size='{size_value}'")
+                    print(f"Variant not found for product_id={item.get('product_id', item['id'])}, color='{color_value}', size='{size_value}'")
                     failed_items.append(f"{item['name']} (Color: {color_value}, Size: {size_value})")
                     continue
                     
@@ -4584,11 +4523,11 @@ def confirm_order():
                 
                 # Check if stock is sufficient
                 if current_stock < order_quantity:
-                    print(f"Insufficient stock: product_id={product_id}, available={current_stock}, requested={order_quantity}")
+                    print(f"Insufficient stock: product_id={item.get('product_id', item['id'])}, available={current_stock}, requested={order_quantity}")
                     failed_items.append(f"{item['name']} - Insufficient stock")
                     continue
                 
-                print(f"Processing order: product_id={product_id}, current_stock={current_stock}, order_quantity={order_quantity}")
+                print(f"Processing order: product_id={item.get('product_id', item['id'])}, current_stock={current_stock}, order_quantity={order_quantity}")
 
                 # Generate transaction ID
                 transaction_id = f"TXN{order_date.strftime('%Y%m%d%H%M%S')}{item['id']}"
@@ -4608,8 +4547,6 @@ def confirm_order():
                 order_data = {
                     'email': user_email,
                     'name': item['name'],
-                    'total_price': item_total,  # Add total_price field
-                    'price': float(item['price']),  # Unit price
                     'total': item_total,
                     'subtotal': item_subtotal,
                     'shipping': item_shipping,
@@ -4618,13 +4555,11 @@ def confirm_order():
                     'image': product_image,
                     'status': 'Pending',
                     'payment_method': payment_method,
-                    'date': datetime.now(),  # Add date field
                     'created_at': datetime.now(),
                     'delivery_address': delivery_address,
                     'seller_email': seller_email,
                     'transaction_id': transaction_id,
-                    'product_id': str(product_id),  # Use the product_id we found
-                    'category': product.get('category', 'N/A'),  # Add category
+                    'product_id': str(item.get('product_id', item['id'])),
                     'color': color_value,
                     'size': size_value,
                     'commission': item_commission,
@@ -4632,17 +4567,20 @@ def confirm_order():
                 }
                 
                 # Add order to Firestore and get the ID
-                order_id = firestore_db.create_order(order_data)
+                order_id = firestore_db.add_document('orders', order_data)
                 print(f"Order created: {order_id}")
 
                 # Reduce stock from product_variants
                 new_stock = max(0, current_stock - order_quantity)
                 print(f"Updating variant stock: {current_stock} - {order_quantity} = {new_stock}")
                 
-                # Update the variant stock
-                if variant_match and variant_match.get('id'):
-                    firestore_db.update_variant_stock(variant_match['id'], new_stock)
-                    print(f"Updated variant {variant_match['id']} stock to {new_stock}")
+                # Update the variant with new stock
+                if variants:
+                    for idx, var in enumerate(variants):
+                        if var.get('color') == color_value and var.get('size') == size_value:
+                            var['stock'] = new_stock
+                            break
+                    firestore_db.update_product_variant(str(item.get('product_id', item['id'])), variants)
                 
                 successful_orders += 1
                 
@@ -4684,56 +4622,25 @@ def orders():
     # Get orders from Firestore
     user_orders = firestore_db.get_orders_by_email(user_email)
     
-    print(f"[orders] Found {len(user_orders)} orders for {user_email}")
-    
-    # Batch fetch products for orders that need category info
-    product_ids_needed = []
-    for order in user_orders:
-        if not order.get('category') and order.get('product_id'):
-            product_ids_needed.append(order['product_id'])
-    
-    # Fetch all needed products at once
-    products_map = {}
-    if product_ids_needed:
-        unique_product_ids = list(set(product_ids_needed))
-        for product_id in unique_product_ids:
-            product = firestore_db.get_product_by_id(product_id)
-            if product:
-                products_map[product_id] = product
-    
     # Convert dates if needed and set defaults
     for order in user_orders:
-        # Handle both 'date' and 'created_at' fields
-        if not order.get('date') and order.get('created_at'):
-            order['date'] = order['created_at']
-        
         if isinstance(order.get('date'), str):
             try:
                 order['date'] = datetime.strptime(order['date'], '%Y-%m-%d %H:%M:%S')
             except:
                 order['date'] = datetime.now()
-        elif not order.get('date'):
-            order['date'] = datetime.now()
         
-        # Set defaults for missing fields and fetch category from product if needed
+        # Set defaults for missing fields
         if not order.get('category'):
-            # Try to get category from cached products
-            product_id = order.get('product_id')
-            if product_id and product_id in products_map:
-                order['category'] = products_map[product_id].get('category', 'General')
-            else:
-                order['category'] = 'General'
-        
+            order['category'] = 'N/A'
         if not order.get('size'):
-            order['size'] = order.get('size', 'N/A')
+            order['size'] = 'N/A'
         if not order.get('color'):
-            order['color'] = order.get('color', 'N/A')
-        
-        print(f"[orders] Order: {order.get('name')} - Color: {order.get('color')}, Size: {order.get('size')}, Status: {order.get('status')}")
+            order['color'] = 'N/A'
     
     return render_template('orders.html', orders=user_orders)
 
-@app.route('/mark_as_received/<order_id>', methods=['POST'])
+@app.route('/mark_as_received/<int:order_id>', methods=['POST'])
 def mark_as_received(order_id):
     if 'email' not in session:
         return jsonify({'success': False, 'error': 'Please login first'})
@@ -4783,7 +4690,7 @@ def send_cancellation_email(seller_email, order_name, reason, customer_email):
         print(f"Error sending email: {e}")
 
 
-@app.route('/delete_order/<order_id>', methods=['POST'])
+@app.route('/delete_order/<int:order_id>', methods=['POST'])
 def delete_order(order_id):
     user_email = session.get('email')
     
@@ -4840,7 +4747,7 @@ def delete_order(order_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/update_order_status/<order_id>', methods=['POST'])
+@app.route('/update_order_status/<int:order_id>', methods=['POST'])
 def update_order_status(order_id):
     status = request.form.get('stat')
     if not status:
@@ -4856,7 +4763,7 @@ def update_order_status(order_id):
 
 
 # New: Seller can mark order as Preparing, then Finished Preparing (Prepared)
-@app.route('/seller/order/prepare/<order_id>', methods=['POST'])
+@app.route('/seller/order/prepare/<int:order_id>', methods=['POST'])
 def seller_mark_preparing(order_id):
     seller_email = session.get('email')
     if not seller_email:
@@ -4903,7 +4810,7 @@ def seller_mark_preparing(order_id):
         return jsonify({'success': False, 'error': str(err)}), 500
 
 
-@app.route('/seller/order/finish_preparing/<order_id>', methods=['POST'])
+@app.route('/seller/order/finish_preparing/<int:order_id>', methods=['POST'])
 def seller_finish_preparing(order_id):
     seller_email = session.get('email')
     if not seller_email:
@@ -4970,7 +4877,7 @@ def rider_prepared_orders():
         return render_template('rider_prepared_orders.html', orders=[])
 
 
-@app.route('/rider/order/accept/<order_id>', methods=['POST'])
+@app.route('/rider/order/accept/<int:order_id>', methods=['POST'])
 def rider_accept_order(order_id):
     """Accept an order for delivery - changes status to 'Shipping'"""
     rider_email = session.get('email')
@@ -5020,7 +4927,7 @@ def rider_accept_order(order_id):
         print(f"Error: {err}")
         return jsonify({'success': False, 'error': str(err)}), 500
 
-@app.route('/rider/order/complete/<order_id>', methods=['POST'])
+@app.route('/rider/order/complete/<int:order_id>', methods=['POST'])
 def rider_complete_order(order_id):
     """Complete delivery - changes status to 'Delivered' and records earnings"""
     rider_email = session.get('email')
@@ -5050,10 +4957,9 @@ def rider_complete_order(order_id):
             'commission': commission,
             'shipping_fee': shipping_fee,
             'total_earned': rider_earnings,
-            'status': 'Completed',
-            'date': datetime.now()
+            'created_at': datetime.now()
         }
-        firestore_db.create_rider_earnings(earnings_data)
+        firestore_db.add_document('rider_earnings', earnings_data)
         
         customer_email = order.get('email')
         
@@ -5089,7 +4995,7 @@ def rider_complete_order(order_id):
         print(f"Error: {err}")
         return jsonify({'success': False, 'error': str(err)}), 500
 
-@app.route('/rider/order/cancel/<order_id>', methods=['POST'])
+@app.route('/rider/order/cancel/<int:order_id>', methods=['POST'])
 def rider_cancel_order(order_id):
     """Cancel a delivery - changes status from 'Shipping' back to 'Prepared'"""
     rider_email = session.get('email')
@@ -5114,7 +5020,7 @@ def rider_cancel_order(order_id):
         print(f"Error: {err}")
         return jsonify({'success': False, 'error': str(err)}), 500
 
-@app.route('/rider/order/deliver/<order_id>', methods=['POST'])
+@app.route('/rider/order/deliver/<int:order_id>', methods=['POST'])
 def rider_deliver_order(order_id):
     """Legacy endpoint - redirect to accept"""
     return rider_accept_order(order_id)
@@ -6662,4 +6568,5 @@ def api_admin_order_report():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
