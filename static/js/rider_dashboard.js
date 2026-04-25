@@ -658,12 +658,6 @@ function viewOrderDetails(orderId) {
                             <h3>Order Information</h3>
                             <div class="detail-grid">
                                 <div class="detail-item">
-                                    <span class="detail-label">Order ID:</span>
-                                    <span class="detail-value">#${
-                                      order.id
-                                    }</span>
-                                </div>
-                                <div class="detail-item">
                                     <span class="detail-label">Status:</span>
                                     <span class="detail-value status-badge status-${order.status.toLowerCase()}">${
           order.status
@@ -828,10 +822,6 @@ function showCompleteDeliveryModal(orderData, commission, shippingFee, totalEarn
             </div>
             <h3>Order Details</h3>
             <div class="card-content">
-              <div class="info-row">
-                <span class="label">Order ID:</span>
-                <span class="value">#${orderData.id}</span>
-              </div>
               <div class="info-row">
                 <span class="label">Product:</span>
                 <span class="value">${orderData.product_name}</span>
@@ -1259,10 +1249,6 @@ function showAcceptDeliveryModal(orderData, button) {
       <div class="order-confirmation-details">
         <div class="confirmation-section">
           <h3><i class="fas fa-box"></i> Order Information</h3>
-          <div class="detail-row">
-            <span class="detail-label">Order ID:</span>
-            <span class="detail-value">#${orderData.id}</span>
-          </div>
           <div class="detail-row">
             <span class="detail-label">Product:</span>
             <span class="detail-value">${orderData.product_name}</span>

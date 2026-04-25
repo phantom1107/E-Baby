@@ -23,11 +23,41 @@ function openEditModal(user) {
   form.address.value = user.address;
   form.user_type.value = user.user_type;
 
-  // Set form action
-  form.action = `/update_users/${user.id}`;
+  // Store user ID for form submission
+  form.dataset.userId = user.id;
 
   modal.style.display = "block";
 }
+
+// Handle form submission
+document.getElementById("editForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  
+  const userId = this.dataset.userId;
+  const formData = new FormData(this);
+  
+  fetch(`/update/${userId}`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.text();
+  })
+  .then(html => {
+    // Show success message
+    alert('User updated successfully!');
+    document.getElementById("editModal").style.display = "none";
+    // Reload the page to see updated data
+    location.reload();
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error updating user: ' + error.message);
+  });
+});
 
 // Close modal when clicking the X
 document.querySelector(".close").onclick = function () {

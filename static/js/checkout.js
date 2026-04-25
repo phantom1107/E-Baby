@@ -214,21 +214,16 @@ function confirmOrder() {
         const qtyMatch = item.querySelector('.product-qty').textContent.match(/\d+/);
         const quantity = qtyMatch ? parseInt(qtyMatch[0]) : 1;
         
-        // Get color and size from product-variant spans
-        let color = '';
-        let size = '';
-        const variantSpans = item.querySelectorAll('.product-variant');
-        variantSpans.forEach(span => {
-            const text = span.textContent;
-            if (text.includes('Color:')) {
-                color = span.querySelector('strong')?.textContent || '';
-            } else if (text.includes('Size:')) {
-                size = span.querySelector('strong')?.textContent || '';
-            }
-        });
+        // Get product_id from data attribute
+        const productId = item.dataset.productId || itemId;
+        
+        // Get color and size from data attributes (more reliable than parsing text)
+        const color = item.dataset.color || '';
+        const size = item.dataset.size || '';
         
         items.push({
             id: itemId,
+            product_id: productId,  // Include product_id
             name: name,
             price: price,
             quantity: quantity,

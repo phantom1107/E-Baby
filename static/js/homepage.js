@@ -423,7 +423,7 @@ function loadWishlistPreview() {
                                 <h4>${item.name}</h4>
                                 <p>₱${formatPrice(item.price)}</p>
                             </div>
-                            <button class="remove-btn" onclick="removeFromWishlist(${item.id})">
+                            <button class="remove-btn" onclick="removeFromWishlist('${item.id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -651,12 +651,100 @@ function openAddToCartModal(productId, name, price, image, colors, sizes, stock,
                 // Show modal
                 document.getElementById('addToCartModal').classList.add('show');
             } else {
-                alert('No variants available for this product');
+                // No variants - use legacy color/size from product attributes
+                console.log('No variants found, using legacy product attributes');
+                
+                const colorSelect = document.getElementById('colorSelect');
+                const sizeSelect = document.getElementById('sizeSelect');
+                const sizeGroup = document.getElementById('sizeGroupContainer');
+                
+                // Parse colors from product
+                const colorArray = colors ? colors.split(',').map(c => c.trim()).filter(c => c) : ['Default'];
+                colorSelect.innerHTML = '<option value="">Select a color</option>';
+                colorArray.forEach(color => {
+                    const option = document.createElement('option');
+                    option.value = color;
+                    option.textContent = color;
+                    colorSelect.appendChild(option);
+                });
+                
+                // Parse sizes from product
+                const sizeArray = sizes ? sizes.split(',').map(s => s.trim()).filter(s => s) : [];
+                if (sizeArray.length > 0) {
+                    currentProduct.hasSizes = true;
+                    sizeSelect.innerHTML = '<option value="">Select a size</option>';
+                    sizeArray.forEach(size => {
+                        const option = document.createElement('option');
+                        option.value = size;
+                        option.textContent = size;
+                        sizeSelect.appendChild(option);
+                    });
+                    sizeGroup.style.display = 'block';
+                } else {
+                    currentProduct.hasSizes = false;
+                    sizeGroup.style.display = 'none';
+                }
+                
+                // Set quantity limits
+                const quantityInput = document.getElementById('quantityInput');
+                quantityInput.value = 1;
+                quantityInput.max = Math.min(10, stock || 10);
+                
+                const stockWarning = document.getElementById('stockWarning');
+                stockWarning.textContent = `(Available: ${stock || 0})`;
+                stockWarning.style.color = stock <= 5 ? '#e74c3c' : '#666';
+                
+                // Show modal
+                document.getElementById('addToCartModal').classList.add('show');
             }
         })
         .catch(error => {
             console.error('Error loading variants:', error);
-            alert('Error loading product variants');
+            // Fallback to legacy mode on error
+            console.log('Error loading variants, using legacy product attributes');
+            
+            const colorSelect = document.getElementById('colorSelect');
+            const sizeSelect = document.getElementById('sizeSelect');
+            const sizeGroup = document.getElementById('sizeGroupContainer');
+            
+            // Parse colors from product
+            const colorArray = colors ? colors.split(',').map(c => c.trim()).filter(c => c) : ['Default'];
+            colorSelect.innerHTML = '<option value="">Select a color</option>';
+            colorArray.forEach(color => {
+                const option = document.createElement('option');
+                option.value = color;
+                option.textContent = color;
+                colorSelect.appendChild(option);
+            });
+            
+            // Parse sizes from product
+            const sizeArray = sizes ? sizes.split(',').map(s => s.trim()).filter(s => s) : [];
+            if (sizeArray.length > 0) {
+                currentProduct.hasSizes = true;
+                sizeSelect.innerHTML = '<option value="">Select a size</option>';
+                sizeArray.forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelect.appendChild(option);
+                });
+                sizeGroup.style.display = 'block';
+            } else {
+                currentProduct.hasSizes = false;
+                sizeGroup.style.display = 'none';
+            }
+            
+            // Set quantity limits
+            const quantityInput = document.getElementById('quantityInput');
+            quantityInput.value = 1;
+            quantityInput.max = Math.min(10, stock || 10);
+            
+            const stockWarning = document.getElementById('stockWarning');
+            stockWarning.textContent = `(Available: ${stock || 0})`;
+            stockWarning.style.color = stock <= 5 ? '#e74c3c' : '#666';
+            
+            // Show modal
+            document.getElementById('addToCartModal').classList.add('show');
         });
 }
 
@@ -833,10 +921,10 @@ function filterByCategory(category) {
             container.innerHTML = '';
             
             if (data.products && data.products.length > 0) {
-                // Group by seller
+                // Group by seller (fallbacks to avoid "undefined undefined")
                 const sellerGroups = {};
                 data.products.forEach(product => {
-                    const sellerName = `${product.first_name} ${product.last_name}`;
+                    const sellerName = `${product.first_name || 'Unknown'} ${product.last_name || 'Seller'}`;
                     if (!sellerGroups[sellerName]) {
                         sellerGroups[sellerName] = [];
                     }
@@ -862,8 +950,8 @@ function filterByCategory(category) {
 
                     const grid = document.getElementById(gridId);
                     products.forEach(product => {
-                        const imagePath = product.image && !product.image.startsWith('/') ? '/static/uploads/' + product.image : (product.image || '/static/images/defaults/product-default.png');
-                        const stock = product.quantity || 999;
+                        const imagePath = (product.image && (product.image.startsWith('http') || product.image.startsWith('//'))) ? product.image : (product.image ? '/static/uploads/' + product.image : '/static/images/defaults/product-default.png');
+                        const stock = product.quantity || product.stock || 999;
                         
                         const productHTML = `
                             <div class="product-card">
@@ -876,7 +964,7 @@ function filterByCategory(category) {
                                         <button type="button" class="action-btn wishlist" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${imagePath}" onclick="handleAddToWishlist(this)">
                                             <i class="fas fa-heart"></i> Wishlist
                                         </button>
-                                        <button type="button" class="action-btn view-details" onclick="viewProductDetails(${product.id})">
+                                        <button type="button" class="action-btn view-details" onclick="viewProductDetails('${product.id}')">
                                             <i class="fas fa-eye"></i> View Details
                                         </button>
                                     </div>

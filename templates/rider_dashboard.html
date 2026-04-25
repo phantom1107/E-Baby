@@ -321,7 +321,6 @@
               <table class="deliveries-table">
                 <thead>
                   <tr>
-                    <th>Order ID</th>
                     <th>Customer</th>
                     <th>Pickup Location</th>
                     <th>Delivery Address</th>
@@ -333,7 +332,6 @@
                   {% if recent_deliveries %} {% for delivery in
                   recent_deliveries %}
                   <tr>
-                    <td>#{{ delivery.order_id }}</td>
                     <td>{{ delivery.customer_name }}</td>
                     <td>{{ delivery.pickup_location }}</td>
                     <td>{{ delivery.delivery_address }}</td>
@@ -348,7 +346,7 @@
                   </tr>
                   {% endfor %} {% else %}
                   <tr>
-                    <td colspan="6" class="no-data">
+                    <td colspan="5" class="no-data">
                       No recent deliveries found
                     </td>
                   </tr>
@@ -376,7 +374,6 @@
               {% for order in orders %}
               <div class="order-card">
                 <div class="order-header">
-                  <div class="order-id">#{{ order.id }}</div>
                   <span class="order-status prepared">Prepared</span>
                 </div>
                 <div class="order-content">
@@ -394,6 +391,16 @@
                   </div>
                   <div class="order-details">
                     <h3 class="product-name">{{ order.name }}</h3>
+                    {% if order.color or order.size %}
+                    <div class="product-variants">
+                      {% if order.color and order.color != 'N/A' %}
+                      <span class="variant-badge">Color: {{ order.color }}</span>
+                      {% endif %}
+                      {% if order.size and order.size != 'N/A' %}
+                      <span class="variant-badge">Size: {{ order.size }}</span>
+                      {% endif %}
+                    </div>
+                    {% endif %}
                     <div class="order-info">
                       <div class="info-item">
                         <i class="fas fa-user"></i>
@@ -470,7 +477,6 @@
               {% for order in prepared_orders %}
               <div class="order-card">
                 <div class="order-header">
-                  <div class="order-id">#{{ order.id }}</div>
                   <span class="order-status prepared">Prepared</span>
                 </div>
                 <div class="order-content">
@@ -488,6 +494,16 @@
                   </div>
                   <div class="order-details">
                     <h3 class="product-name">{{ order.name }}</h3>
+                    {% if order.color or order.size %}
+                    <div class="product-variants">
+                      {% if order.color and order.color != 'N/A' %}
+                      <span class="variant-badge">Color: {{ order.color }}</span>
+                      {% endif %}
+                      {% if order.size and order.size != 'N/A' %}
+                      <span class="variant-badge">Size: {{ order.size }}</span>
+                      {% endif %}
+                    </div>
+                    {% endif %}
                     <div class="order-info">
                       <div class="info-item">
                         <i class="fas fa-user"></i>
@@ -569,8 +585,8 @@
               <table class="deliveries-table">
                 <thead>
                   <tr>
-                    <th>Order ID</th>
                     <th>Product</th>
+                    <th>Category</th>
                     <th>Customer</th>
                     <th>Pickup Location</th>
                     <th>Delivery Address</th>
@@ -582,7 +598,6 @@
                 <tbody>
                   {% if my_deliveries %} {% for delivery in my_deliveries %}
                   <tr>
-                    <td>#{{ delivery.order_id }}</td>
                     <td>
                       <div class="product-cell">
                         {% if delivery.image %}
@@ -592,9 +607,22 @@
                           class="product-thumb"
                         />
                         {% endif %}
-                        <span>{{ delivery.product_name }}</span>
+                        <div>
+                          <span>{{ delivery.product_name }}</span>
+                          {% if delivery.color or delivery.size %}
+                          <div class="product-variants">
+                            {% if delivery.color and delivery.color != 'N/A' %}
+                            <span class="variant-badge">{{ delivery.color }}</span>
+                            {% endif %}
+                            {% if delivery.size and delivery.size != 'N/A' %}
+                            <span class="variant-badge">{{ delivery.size }}</span>
+                            {% endif %}
+                          </div>
+                          {% endif %}
+                        </div>
                       </div>
                     </td>
+                    <td>{{ delivery.category or 'General' }}</td>
                     <td>{{ delivery.customer_name }}</td>
                     <td>{{ delivery.pickup_location }}</td>
                     <td>{{ delivery.delivery_address }}</td>
@@ -716,7 +744,7 @@
                 <div class="earning-item">
                   <div class="earning-info">
                     <div class="earning-order">
-                      Order #{{ earning.order_id }}
+                      Delivery Completed
                     </div>
                     <div class="earning-date">{{ earning.date }}</div>
                   </div>

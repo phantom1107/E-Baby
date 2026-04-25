@@ -16,12 +16,61 @@
     <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
   </head>
   <body>
+    <!-- ===== PAGE LOADING OVERLAY ===== -->
+    <div id="pageLoadingOverlay" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+    ">
+      <div style="text-align: center;">
+        <div style="
+          border: 4px solid rgba(255, 255, 255, 0.1);
+          border-top: 4px solid #FF6B9D;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 20px;
+        "></div>
+        <p style="color: white; font-size: 16px; margin: 0;">Loading E-Baby...</p>
+      </div>
+    </div>
+
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+
+    <!-- Hide loading overlay when page is fully loaded -->
+    <script>
+      window.addEventListener('load', function() {
+        const overlay = document.getElementById('pageLoadingOverlay');
+        if (overlay) {
+          overlay.style.opacity = '0';
+          overlay.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() {
+            overlay.style.display = 'none';
+          }, 300);
+        }
+      });
+    </script>
+
     <!-- ===== HEADER & NAVIGATION ===== -->
     <header>
       <div class="top-header">
         <!-- Logo -->
         <div class="logo-container">
-          <a href="/homepage" class="logo-link">
+          <a href="/" class="logo-link">
             <img
               src="/static/images/logo/E-Baby Logo.png"
               alt="E-Baby"
@@ -143,18 +192,18 @@
       <nav class="main-nav">
         <ul class="nav-links">
           <li>
-            <a href="/homepage" class="active">
+            <a href="/" class="active">
               <i class="fas fa-home"></i> HOME
             </a>
           </li>
           <li>
             <a href="#featured-section">
-              <i class="fas fa-star"></i> FEATURED
+              <i class="fas fa-fire"></i> POPULAR
             </a>
           </li>
           <li>
             <a href="#new-arrivals-section">
-              <i class="fas fa-tag"></i> NEW ARRIVALS
+              <i class="fas fa-shopping-bag"></i> ALL PRODUCTS
             </a>
           </li>
           <li class="dropdown-nav">
@@ -348,15 +397,15 @@
     <!-- ===== FEATURED PRODUCTS SECTION ===== -->
     <section class="featured-section" id="featured-section">
       <div class="section-header">
-        <h2>Featured Products</h2>
-        <p>Handpicked selections from our best sellers</p>
+        <h2>Popular Products</h2>
+        <p>Best selling products from our trusted sellers</p>
       </div>
 
       <div class="products-wrapper">
         {% if featured_products %}
         <div class="sellers-container" id="featuredContainer">
           {% set featured_by_seller = {} %} {% for product in featured_products
-          %} {% set seller_name = product.first_name + ' ' + product.last_name
+          %} {% set seller_name = (product.first_name or 'Unknown') ~ ' ' ~ (product.last_name or 'Seller')
           %} {% if seller_name not in featured_by_seller %} {% set _ =
           featured_by_seller.update({seller_name: []}) %} {% endif %} {% set _ =
           featured_by_seller[seller_name].append(product) %} {% endfor %} {% for
@@ -372,11 +421,13 @@
             </div>
             <div class="products-grid">
               {% for product in seller_products %}
+              {% set product_img_src = product.image_url if (product.image_url and (product.image_url[:4] == 'http')) else ('/static/uploads/' ~ (product.image or '')) %}
               <div class="product-card">
                 <div class="product-image">
                   <img
-                    src="/static/uploads/{{ product.image }}"
+                    src="{{ product_img_src }}"
                     alt="{{ product.name }}"
+                    onerror="this.src='/static/images/defaults/product-default.png'"
                   />
                   <div class="product-actions">
                     <button
@@ -385,10 +436,10 @@
                       data-product-id="{{ product.id }}"
                       data-product-name="{{ product.name }}"
                       data-product-price="{{ product.price }}"
-                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-product-image="{{ product_img_src }}"
                       data-product-colors="{{ product.color }}"
                       data-product-sizes="{{ product.size }}"
-                      data-product-stock="{{ product.quantity }}"
+                      data-product-stock="{{ product.quantity or 0 }}"
                       data-seller-email="{{ product.seller_email }}"
                       onclick="handleAddToCart(this)"
                     >
@@ -400,7 +451,7 @@
                       data-product-id="{{ product.id }}"
                       data-product-name="{{ product.name }}"
                       data-product-price="{{ product.price }}"
-                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-product-image="{{ product_img_src }}"
                       data-seller-email="{{ product.seller_email }}"
                       onclick="handleAddToWishlist(this)"
                     >
@@ -409,7 +460,7 @@
                     <button
                       type="button"
                       class="action-btn view-details"
-                      onclick="viewProductDetails({{ product.id }})"
+                      onclick="viewProductDetails('{{ product.id }}')"
                     >
                       <i class="fas fa-eye"></i> View Details
                     </button>
@@ -421,7 +472,7 @@
                     ₱{{ "%.2f"|format(product.price) }}
                   </p>
                   <p class="product-stock">
-                    <i class="fas fa-box"></i> Stock: {{ product.quantity }}
+                    <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
                   </p>
                 </div>
               </div>
@@ -433,8 +484,8 @@
         {% else %}
         <div class="no-products">
           <i class="fas fa-box-open"></i>
-          <h3>No Featured Products</h3>
-          <p>Check back soon for exciting new products!</p>
+          <h3>No Popular Products</h3>
+          <p>Check back soon for exciting products!</p>
         </div>
         {% endif %}
       </div>
@@ -443,15 +494,15 @@
     <!-- ===== NEW ARRIVALS SECTION ===== -->
     <section class="new-arrivals-section" id="new-arrivals-section">
       <div class="section-header">
-        <h2>New Arrivals</h2>
-        <p>Latest products added in the last 1-2 days</p>
+        <h2>All Products</h2>
+        <p>Browse our complete collection of baby products</p>
       </div>
 
       <div class="products-wrapper">
         {% if new_arrivals %}
         <div class="sellers-container" id="newArrivalsContainer">
           {% set arrivals_by_seller = {} %} {% for product in new_arrivals %} {%
-          set seller_name = product.first_name + ' ' + product.last_name %} {%
+          set seller_name = (product.first_name or 'Unknown') ~ ' ' ~ (product.last_name or 'Seller') %} {%
           if seller_name not in arrivals_by_seller %} {% set _ =
           arrivals_by_seller.update({seller_name: []}) %} {% endif %} {% set _ =
           arrivals_by_seller[seller_name].append(product) %} {% endfor %} {% for
@@ -467,15 +518,13 @@
             </div>
             <div class="products-grid">
               {% for product in seller_products %}
+              {% set product_img_src = product.image_url if (product.image_url and (product.image_url[:4] == 'http')) else ('/static/uploads/' ~ (product.image or '')) %}
               <div class="product-card">
                 <div class="product-image">
-                  {% set days_old = (now - product.created_at).days %} {% if
-                  days_old <= 2 %}
-                  <div class="product-badge">NEW</div>
-                  {% endif %}
                   <img
-                    src="/static/uploads/{{ product.image }}"
+                    src="{{ product_img_src }}"
                     alt="{{ product.name }}"
+                    onerror="this.src='/static/images/defaults/product-default.png'"
                   />
                   <div class="product-actions">
                     <button
@@ -484,10 +533,10 @@
                       data-product-id="{{ product.id }}"
                       data-product-name="{{ product.name }}"
                       data-product-price="{{ product.price }}"
-                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-product-image="{{ product_img_src }}"
                       data-product-colors="{{ product.color }}"
                       data-product-sizes="{{ product.size }}"
-                      data-product-stock="{{ product.quantity }}"
+                      data-product-stock="{{ product.quantity or 0 }}"
                       data-seller-email="{{ product.seller_email }}"
                       onclick="handleAddToCart(this)"
                     >
@@ -499,7 +548,7 @@
                       data-product-id="{{ product.id }}"
                       data-product-name="{{ product.name }}"
                       data-product-price="{{ product.price }}"
-                      data-product-image="/static/uploads/{{ product.image }}"
+                      data-product-image="{{ product_img_src }}"
                       data-seller-email="{{ product.seller_email }}"
                       onclick="handleAddToWishlist(this)"
                     >
@@ -508,7 +557,7 @@
                     <button
                       type="button"
                       class="action-btn view-details"
-                      onclick="viewProductDetails({{ product.id }})"
+                      onclick="viewProductDetails('{{ product.id }}')"
                     >
                       <i class="fas fa-eye"></i> View Details
                     </button>
@@ -520,7 +569,7 @@
                     ₱{{ "%.2f"|format(product.price) }}
                   </p>
                   <p class="product-stock">
-                    <i class="fas fa-box"></i> Stock: {{ product.quantity }}
+                    <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
                   </p>
                 </div>
               </div>
@@ -532,7 +581,7 @@
         {% else %}
         <div class="no-products">
           <i class="fas fa-box-open"></i>
-          <h3>No New Arrivals</h3>
+          <h3>No Products Available</h3>
           <p>Check back soon for new products!</p>
         </div>
         {% endif %}
@@ -938,3 +987,99 @@
 </html>
 
 
+
+<script>
+// Show logout success popup when page is fully loaded (separate from loading overlay)
+window.addEventListener('load', function() {
+    const loadingOverlay = document.getElementById('logoutLoadingOverlay');
+    if (loadingOverlay) {
+        console.log('Page loaded, hiding loading overlay and showing success');
+        
+        // First, fade out the "Logging out..." overlay
+        loadingOverlay.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(function() {
+            loadingOverlay.remove();
+            console.log('Loading overlay removed');
+            
+            // Immediately show success popup
+            showLogoutSuccessPopup();
+        }, 300);
+    }
+});
+
+function showLogoutSuccessPopup() {
+    // Create success overlay
+    const successOverlay = document.createElement('div');
+    successOverlay.id = 'logoutSuccessOverlay';
+    successOverlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    `;
+
+    const successBox = document.createElement('div');
+    successBox.style.cssText = `
+        background: white;
+        padding: 3rem 3.5rem;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        min-width: 280px;
+        animation: fadeIn 0.5s ease;
+    `;
+
+    // Success icon
+    const successIcon = document.createElement('div');
+    successIcon.innerHTML = '<i class="fas fa-check-circle" style="font-size: 4rem; color: #10B981; margin-bottom: 1rem;"></i>';
+
+    // Success text
+    const successText = document.createElement('p');
+    successText.textContent = 'Logout successfully!';
+    successText.style.cssText = `
+        margin: 0;
+        font-size: 1.2rem;
+        color: #10B981;
+        font-weight: 600;
+    `;
+
+    successBox.appendChild(successIcon);
+    successBox.appendChild(successText);
+    successOverlay.appendChild(successBox);
+    document.body.appendChild(successOverlay);
+
+    // Hide success popup after 2 seconds
+    setTimeout(function() {
+        successOverlay.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(function() {
+            successOverlay.remove();
+            console.log('Success overlay removed');
+        }, 300);
+    }, 2000);
+}
+
+// Add fadeOut animation if not already present
+if (!document.getElementById('fadeOutStyle')) {
+    const style = document.createElement('style');
+    style.id = 'fadeOutStyle';
+    style.innerHTML = `
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+</script>

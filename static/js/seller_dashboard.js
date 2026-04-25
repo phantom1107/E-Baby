@@ -724,8 +724,16 @@ function openEditModal(
   category,
   image
 ) {
+  console.log('openEditModal called with ID:', id);
+  console.log('ID type:', typeof id);
+  console.log('ID length:', id.length);
+  console.log('ID bytes:', Array.from(id).map(c => c.charCodeAt(0)));
+  
   const modal = document.getElementById("editProductModal");
-  if (!modal) return;
+  if (!modal) {
+    console.error('Edit modal not found');
+    return;
+  }
 
   // Store product ID for later use
   window.currentEditProductId = id;
@@ -737,10 +745,15 @@ function openEditModal(
   document.getElementById("editPrice").value = price;
   document.getElementById("editCategory").value = category;
 
-  // Set current image
+  // Set current image - handle both Cloudinary URLs and local paths
   const currentImage = document.getElementById("currentImage");
   if (currentImage && image) {
-    currentImage.src = `/static/uploads/${image}`;
+    // Check if image is a full URL (Cloudinary) or a local path
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      currentImage.src = image;
+    } else {
+      currentImage.src = `/static/uploads/${image}`;
+    }
   }
 
   // Load and display variant stocks
@@ -756,24 +769,52 @@ function openEditModal(
 
 // Load variant stocks from API
 function loadVariantStocks(productId) {
+  console.log('Loading variants for product:', productId);
   fetch(`/api/product_variants/${productId}`)
-    .then(response => response.json())
+    .then(response => {
+      console.log('Variant response status:', response.status);
+      return response.json();
+    })
     .then(data => {
-      if (data.success && data.variants) {
-        displayVariantStocks(data.variants);
-        // Store variants for later use
-        window.currentProductVariants = data.variants;
-        // Update the pickers
-        updateEditVariantPickers(data.variants);
-        // Render the table
-        renderEditVariantsTable(data.variants);
-      } else if (data.variants && data.variants.length === 0) {
-        // No variants - this is a legacy product that needs migration
-        console.log('No variants found - legacy product');
-        showMigrationNotice(productId);
+      console.log('Variant data received:', data);
+      if (data.success) {
+        if (data.variants && data.variants.length > 0) {
+          displayVariantStocks(data.variants);
+          // Store variants for later use
+          window.currentProductVariants = data.variants;
+          // Update the pickers
+          updateEditVariantPickers(data.variants);
+          // Render the table
+          renderEditVariantsTable(data.variants);
+        } else {
+          // No variants - show message
+          console.log('No variants found for this product');
+          window.currentProductVariants = [];
+          showNoVariantsMessage();
+        }
+      } else {
+        console.error('Failed to load variants:', data.error);
+        showNoVariantsMessage();
       }
     })
-    .catch(err => console.error('Error loading variants:', err));
+    .catch(err => {
+      console.error('Error loading variants:', err);
+      showNoVariantsMessage();
+    });
+}
+
+function showNoVariantsMessage() {
+  const tableBody = document.getElementById("editVariantStockTable");
+  const noMessage = document.getElementById("noEditVariantsMessage");
+  
+  if (tableBody) {
+    tableBody.innerHTML = '';
+  }
+  
+  if (noMessage) {
+    noMessage.style.display = 'block';
+    noMessage.innerHTML = '<i class="fas fa-inbox"></i> No variants found for this product.';
+  }
 }
 
 /**
@@ -896,8 +937,11 @@ function renderEditVariantsTable(variants) {
         <span style="color: rgba(255, 255, 255, 0.8); font-weight: 600;">${variant.stock}</span>
       </td>
       <td style="padding: 1rem; text-align: center;">
-        <button type="button" onclick="selectEditVariantFromTable('${variant.color}', '${variant.size}', ${variant.stock})" style="padding: 0.5rem 0.8rem; background: rgba(99, 102, 241, 0.2); color: rgba(99, 102, 241, 1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; cursor: pointer; transition: all 0.2s ease;" title="Edit stock">
+        <button type="button" onclick="selectEditVariantFromTable('${variant.color}', '${variant.size}', ${variant.stock})" style="padding: 0.5rem 0.8rem; background: rgba(99, 102, 241, 0.2); color: rgba(99, 102, 241, 1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; margin-right: 0.5rem;" title="Edit stock">
           <i class="fas fa-edit"></i>
+        </button>
+        <button type="button" onclick="deleteVariant('${variant.id}', '${variant.color}', '${variant.size}')" style="padding: 0.5rem 0.8rem; background: rgba(239, 68, 68, 0.2); color: rgba(239, 68, 68, 1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; cursor: pointer; transition: all 0.2s ease;" title="Delete variant">
+          <i class="fas fa-trash"></i>
         </button>
       </td>
     </tr>
@@ -915,6 +959,42 @@ function selectEditVariantFromTable(color, size, currentStock) {
   sizePicker.value = size;
   
   selectEditVariant();
+}
+
+/**
+ * Delete a variant
+ */
+function deleteVariant(variantId, color, size) {
+  if (!confirm(`Are you sure you want to delete variant "${color} - ${size}"?`)) {
+    return;
+  }
+  
+  console.log('Deleting variant:', variantId);
+  
+  fetch(`/api/delete_product_variant/${variantId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Delete response:', data);
+      if (data.success) {
+        showSuccessMessage(`Variant "${color} - ${size}" deleted successfully`);
+        // Reload variants
+        const productId = window.currentEditProductId;
+        if (productId) {
+          loadVariantStocks(productId);
+        }
+      } else {
+        alert(data.error || 'Failed to delete variant');
+      }
+    })
+    .catch(error => {
+      console.error('Error deleting variant:', error);
+      alert('Error deleting variant: ' + error.message);
+    });
 }
 
 /**
@@ -993,6 +1073,8 @@ function updateEditVariantStock() {
  */
 function addNewProductVariant() {
   const productId = window.currentEditProductId;
+  console.log('Adding variant for product:', productId);
+  
   if (!productId) {
     alert("Product ID not found");
     return;
@@ -1001,6 +1083,8 @@ function addNewProductVariant() {
   const size = document.getElementById("newVariantSize").value;
   const color = document.getElementById("newVariantColor").value;
   const stock = parseInt(document.getElementById("newVariantStock").value) || 0;
+  
+  console.log('Variant data:', { productId, size, color, stock });
   
   if (!size || !color) {
     alert("Please select both size and color");
@@ -1015,6 +1099,7 @@ function addNewProductVariant() {
   }
   
   // Send to backend
+  console.log('Sending request to /api/add_product_variant');
   fetch('/api/add_product_variant', {
     method: 'POST',
     headers: {
@@ -1027,8 +1112,21 @@ function addNewProductVariant() {
       stock: stock
     })
   })
-    .then(response => response.json())
+    .then(response => {
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      return response.text().then(text => {
+        console.log('Response text:', text);
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error('Failed to parse JSON:', e);
+          throw new Error('Server returned invalid JSON: ' + text.substring(0, 100));
+        }
+      });
+    })
     .then(data => {
+      console.log('Parsed response data:', data);
       if (data.success) {
         // Clear inputs
         document.getElementById("newVariantSize").value = '';
@@ -1046,7 +1144,7 @@ function addNewProductVariant() {
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('Error adding variant');
+      alert('Error adding variant: ' + error.message);
     });
 }
 
@@ -1175,10 +1273,13 @@ function confirmDelete(productId) {
 
 // View product function
 function viewProduct(productId) {
+  console.log('viewProduct called with ID:', productId);
+  
   // Fetch product details and show in modal
   fetch(`/api/product/${productId}`)
     .then((response) => response.json())
     .then((product) => {
+      console.log('Product data received:', product);
       if (product.success) {
         const p = product.data;
         document.getElementById("detailName").textContent = p.name || "N/A";
@@ -1191,9 +1292,15 @@ function viewProduct(productId) {
           p.received_orders || 0;
         document.getElementById("detailDescription").textContent =
           p.description || "No description available";
-        document.getElementById(
-          "detailProductImage"
-        ).src = `/static/uploads/${p.image}`;
+        
+        // Handle image URL - check if it's a full URL (Cloudinary) or local path
+        const imageUrl = p.image_url || p.image || 'defaults/placeholder.png';
+        const detailImage = document.getElementById("detailProductImage");
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+          detailImage.src = imageUrl;
+        } else {
+          detailImage.src = `/static/uploads/${imageUrl}`;
+        }
 
         // Store product ID for edit action
         document.getElementById("productDetailsModal").dataset.productId =
@@ -1208,7 +1315,7 @@ function viewProduct(productId) {
         document.getElementById("productDetailsModal").dataset.productCategory =
           p.category;
         document.getElementById("productDetailsModal").dataset.productImage =
-          p.image;
+          imageUrl;
 
         // Load and display variants
         loadSellerProductVariants(productId);
@@ -1258,8 +1365,11 @@ function loadSellerProductVariants(productId) {
 function showProductDetailsModal() {
   const modal = document.getElementById("productDetailsModal");
   if (modal) {
+    console.log('Showing product details modal');
     modal.classList.add("show");
     modal.style.display = "flex";
+  } else {
+    console.error('Product details modal not found');
   }
 }
 
@@ -1473,7 +1583,7 @@ function confirmPrepareOrder(orderId, productName) {
   if (!orderId) return;
 
   const confirmed = confirm(
-    `Are you sure you want to mark "${productName}" (Order #${orderId}) as Being Prepared?\n\nThe customer will be notified about this status change.`
+    `Are you sure you want to mark "${productName}" as Being Prepared?\n\nThe customer will be notified about this status change.`
   );
 
   if (confirmed) {
@@ -1488,7 +1598,7 @@ function confirmFinishOrder(orderId, productName) {
   if (!orderId) return;
 
   const confirmed = confirm(
-    `Are you sure you want to mark "${productName}" (Order #${orderId}) as Ready for Delivery?\n\nThe customer will be notified that their order is ready for pickup.`
+    `Are you sure you want to mark "${productName}" as Ready for Delivery?\n\nThe customer will be notified that their order is ready for pickup.`
   );
 
   if (confirmed) {

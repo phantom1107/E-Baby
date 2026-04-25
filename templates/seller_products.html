@@ -110,13 +110,19 @@
               {% for product in products %}
               <div class="columnlorem">
                 <div class="rowlorem_ipsum">
-                  <img id="productImage" src="{{ url_for('static', filename='uploads/' ~ product.image) }}"
+                  {% set image_url = product.image_url or product.image or 'defaults/placeholder.png' %}
+                  <img id="productImage" 
+                    {% if image_url.startswith('http') %}
+                      src="{{ image_url }}"
+                    {% else %}
+                      src="{{ url_for('static', filename='uploads/' ~ image_url) }}"
+                    {% endif %}
                     alt="{{ product.name }}" class="lorem_ipsum_one" />
                   <div class="columnadidasult">
                     <div class="rowadidasultra">
                       <div class="columnadidasult-12">
                         <h3 class="summary ui heading size-headings">{{ product.name }}</h3>
-                        <h4 class="ui heading size-headingxs">{{ product.cetegory }}</h4>
+                        <h4 class="ui heading size-headingxs">{{ product.category }}</h4>
                       </div>
                     </div>
                     <h5 class="price ui heading size-headingxs">PHP {{ product.price }}.00</h5>
@@ -125,22 +131,22 @@
                 <div class="column-1">
                   <div class="columnsummary">
                     <h6 class="summary ui heading size-headings">Description</h6>
-                    <p class="longdistance ui text size-textxs">{{ product.description }}</p>
+                    <p class="longdistance ui text size-textxs">{{ product.description[:100] }}...</p>
                   </div>
                   <div class="columnsales">
                     <div class="rowsales">
                       <p class="sales ui heading size-headingxs">Item Sales </p>
                       <div class="rowzipcode">
-                        <p class="ui heading size-headingxs">{{ product.received_orders }}</p>
+                        <p class="ui heading size-headingxs">{{ product.received_orders or 0 }}</p>
                       </div>
                     </div>
                     <div class="columnlinesixte">
                       <div class="linesixteen_one"></div>
                       <div class="rowsales">
-                        <p class="sales ui heading size-headingxs">Quantity</p>
+                        <p class="sales ui heading size-headingxs">Stock</p>
                         <div class="rowzipcode">
                           <div class="columnline"></div>
-                          <p class="ui heading size-headingxs">{{ product.quantity }}</p>
+                          <p class="ui heading size-headingxs">{{ product.total_stock or product.stock or 0 }}</p>
                         </div>
                       </div>
                     </div>
@@ -148,7 +154,7 @@
                 </div>
                 <!-- Edit Button -->
                 <div class="edit-button">
-                  <button onclick="openEditModal('{{ product.id }}', '{{ product.name }}', '{{ product.description }}', '{{ product.price }}', '{{ product.quantity }}', '{{ product.category }}', '{{ product.size }}', '{{ product.color }}', '{{ product.image }}')">
+                  <button onclick="openEditModal('{{ product.id }}', '{{ product.name }}', '{{ product.description }}', '{{ product.price }}', '{{ product.total_stock or product.stock or 0 }}', '{{ product.category }}', '{{ product.size or '' }}', '{{ product.color or '' }}', '{{ product.image_url or product.image or '' }}')">
                     <i class="fas fa-edit"></i> Edit
                   </button>
                   <button class="delete-btn" onclick="confirmDelete('{{ product.id }}')">

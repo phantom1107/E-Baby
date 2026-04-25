@@ -578,8 +578,13 @@
             {% if products %} {% for product in products %}
             <div class="product-card">
               <div class="product-image">
+                {% set image_url = product.get('image_url') or product.get('image') or 'defaults/placeholder.png' %}
                 <img
-                  src="{{ url_for('static', filename='uploads/' ~ product.image) }}"
+                  {% if image_url.startswith('http') %}
+                    src="{{ image_url }}"
+                  {% else %}
+                    src="{{ url_for('static', filename='uploads/' ~ image_url) }}"
+                  {% endif %}
                   alt="{{ product.name }}"
                 />
                 <div class="product-actions">
@@ -882,7 +887,6 @@
               <table class="orders-table" id="ordersTable">
                 <thead>
                   <tr>
-                    <th>Order ID</th>
                     <th>Product</th>
                     <th>Customer</th>
                     <th>Quantity</th>
@@ -895,7 +899,6 @@
                 <tbody>
                   {% for order in orders %}
                   <tr class="order-row" data-status="{{ order.status.lower() }}">
-                    <td>#{{ order.id }}</td>
                     <td>
                       <div class="product-cell">
                         {% if order.image %}
@@ -905,12 +908,24 @@
                           class="product-thumb"
                         />
                         {% endif %}
-                        <span>{{ order.name }}</span>
+                        <div class="product-info">
+                          <span class="product-name">{{ order.name }}</span>
+                          {% if order.color or order.size %}
+                          <div class="product-variants">
+                            {% if order.color and order.color != 'N/A' %}
+                            <span class="variant-badge">Color: {{ order.color }}</span>
+                            {% endif %}
+                            {% if order.size and order.size != 'N/A' %}
+                            <span class="variant-badge">Size: {{ order.size }}</span>
+                            {% endif %}
+                          </div>
+                          {% endif %}
+                        </div>
                       </div>
                     </td>
                     <td>{{ order.email }}</td>
                     <td>{{ order.quantity }}</td>
-                    <td>₱{{ '%.2f'|format(order.total_price|float) }}</td>
+                    <td>₱{{ '%.2f'|format((order.total_price if order.total_price else (order.total if order.total else order.subtotal))|float) }}</td>
                     <td>{{ order.payment_method }}</td>
                     <td>
                       <span

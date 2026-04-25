@@ -13,12 +13,8 @@ function logout() {
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
-        // Show success message
-        showLogoutSuccess();
-        // Redirect after showing success message
-        setTimeout(() => {
-          window.location.replace(data.redirect || "/");
-        }, 2000);
+        // Redirect immediately - the overlay will stay visible until page loads
+        window.location.replace(data.redirect || "/");
       } else {
         hideLogoutLoading();
         alert("Logout failed: " + (data.message || "Please try again"));

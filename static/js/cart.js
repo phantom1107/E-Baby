@@ -142,7 +142,7 @@ function deleteSelectedItems() {
     if (checkbox && checkbox.checked) {
       const itemId = item.getAttribute("data-item-id");
       if (itemId) {
-        selectedIds.push(parseInt(itemId));
+        selectedIds.push(itemId);
       }
     }
   });
@@ -169,7 +169,7 @@ function deleteSelectedItems() {
       if (data.success) {
         selectedIds.forEach((id) => {
           const itemElement = document.querySelector(
-            `.item-card-modern[data-item-id="${id}"]`
+            `.item-card-modern[data-item-id="${String(id)}"]`
           );
           if (itemElement) {
             itemElement.style.animation = "fadeOut 0.3s ease forwards";
@@ -212,7 +212,7 @@ function processCheckout() {
 
   const selectedIds = Array.from(checkedBoxes).map((box) => {
     const cartItem = box.closest(".item-card-modern");
-    return parseInt(cartItem.getAttribute("data-item-id"));
+    return cartItem.getAttribute("data-item-id");
   });
 
   console.log("Sending to checkout - Selected IDs:", selectedIds);

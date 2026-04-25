@@ -20,7 +20,7 @@
       <div class="navbar-content">
         <!-- Logo -->
         <div class="logo-section">
-          <a href="/homepage" class="logo-link">
+          <a href="/" class="logo-link">
             <img
               src="/static/images/logo/E-Baby Logo.png"
               alt="E-Baby"
@@ -174,7 +174,6 @@
             <div class="order-card-header">
               <div class="order-header-left">
                 <h3 class="order-title">{{ order.name }}</h3>
-                <p class="order-id">Order ID: {{ order.id }}</p>
               </div>
               <span
                 class="status-badge status-{{ order.status.lower()|replace(' ', '-') }}"
@@ -188,7 +187,7 @@
               <!-- Product Image Section -->
               <div class="order-product-image">
                 <img
-                  src="{% if order.image.startswith('/') %}{{ order.image }}{% else %}/static/uploads/{{ order.image }}{% endif %}"
+                  src="{% if order.image and order.image.startswith('/') %}{{ order.image }}{% elif order.image %}/static/uploads/{{ order.image }}{% else %}/static/images/defaults/product-default.png{% endif %}"
                   alt="{{ order.name }}"
                   class="product-image"
                   onerror="this.src='/static/images/defaults/product-default.png'"
@@ -203,15 +202,23 @@
                   <p>{{ order.category }}</p>
                 </div>
 
+                <!-- Specifications -->
                 <div class="detail-group">
                   <label>Specifications</label>
                   <p>
-                    <span class="spec-item"
-                      ><strong>Size:</strong> {{ order.size }}</span
-                    >
+                    {% if order.color and order.color != 'N/A' %}
                     <span class="spec-item"
                       ><strong>Color:</strong> {{ order.color }}</span
                     >
+                    {% endif %}
+                    {% if order.size and order.size != 'N/A' %}
+                    <span class="spec-item"
+                      ><strong>Size:</strong> {{ order.size }}</span
+                    >
+                    {% endif %}
+                    {% if (not order.color or order.color == 'N/A') and (not order.size or order.size == 'N/A') %}
+                    <span class="spec-item">Standard</span>
+                    {% endif %}
                   </p>
                 </div>
 
@@ -222,12 +229,18 @@
                     <span class="price-item">
                       <span class="price-label">Unit Price:</span>
                       <span class="price-value"
-                        >₱{{ '%.2f'|format(order.price|float) }}</span
+                        >₱{{ '%.2f'|format((order.price if order.price else (order.total_price if order.total_price else order.total) / order.quantity if order.quantity > 0 else 0)|float) }}</span
                       >
                     </span>
                     <span class="price-item">
                       <span class="price-label">Quantity:</span>
                       <span class="price-value">{{ order.quantity }}</span>
+                    </span>
+                    <span class="price-item">
+                      <span class="price-label">Subtotal:</span>
+                      <span class="price-value"
+                        >₱{{ '%.2f'|format(((order.price if order.price else (order.total_price if order.total_price else order.total) / order.quantity if order.quantity > 0 else 0)|float * order.quantity|int)) }}</span
+                      >
                     </span>
                   </p>
                 </div>
@@ -252,7 +265,7 @@
               <div class="order-total-banner">
                 <span>Total Amount</span>
                 <span class="total-price"
-                  >₱{{ '%.2f'|format(order.total_price|float) }}</span
+                  >₱{{ '%.2f'|format((order.total_price if order.total_price else order.total)|float) }}</span
                 >
               </div>
             </div>
@@ -350,7 +363,7 @@
                 <div class="details-grid">
                   <div class="details-column">
                     <img
-                      src="{% if order.image.startswith('/') %}{{ order.image }}{% else %}/static/uploads/{{ order.image }}{% endif %}"
+                      src="{% if order.image and order.image.startswith('/') %}{{ order.image }}{% elif order.image %}/static/uploads/{{ order.image }}{% else %}/static/images/defaults/product-default.png{% endif %}"
                       alt="{{ order.name }}"
                       class="modal-product-image"
                       onerror="this.src='/static/images/defaults/product-default.png'"
@@ -359,24 +372,32 @@
                   <div class="details-column">
                     <h3>{{ order.name }}</h3>
                     <div class="detail-item">
-                      <strong>Category:</strong> {{ order.category }}
+                      <strong>Category:</strong> {{ order.category if order.category else 'N/A' }}
                     </div>
-                    <div class="detail-item">
-                      <strong>Size:</strong> {{ order.size }}
-                    </div>
+                    {% if order.color and order.color != 'N/A' %}
                     <div class="detail-item">
                       <strong>Color:</strong> {{ order.color }}
                     </div>
+                    {% endif %}
+                    {% if order.size and order.size != 'N/A' %}
+                    <div class="detail-item">
+                      <strong>Size:</strong> {{ order.size }}
+                    </div>
+                    {% endif %}
                     <div class="detail-item">
                       <strong>Price per Item:</strong> ₱{{
-                      '%.2f'|format(order.price|float) }}
+                      '%.2f'|format((order.price if order.price else (order.total_price if order.total_price else order.total) / order.quantity if order.quantity > 0 else 0)|float) }}
                     </div>
                     <div class="detail-item">
                       <strong>Quantity:</strong> {{ order.quantity }}
                     </div>
                     <div class="detail-item">
+                      <strong>Subtotal:</strong> ₱{{
+                      '%.2f'|format(((order.price if order.price else (order.total_price if order.total_price else order.total) / order.quantity if order.quantity > 0 else 0)|float * order.quantity|int)) }}
+                    </div>
+                    <div class="detail-item">
                       <strong>Total:</strong> ₱{{
-                      '%.2f'|format(order.total_price|float) }}
+                      '%.2f'|format((order.total_price if order.total_price else order.total)|float) }}
                     </div>
                     <div class="detail-item">
                       <strong>Payment Method:</strong> {{ order.payment_method
@@ -424,7 +445,7 @@
               You haven't placed any orders yet. Start shopping to see your
               orders here!
             </p>
-            <a href="/homepage" class="btn-primary">
+            <a href="/" class="btn-primary">
               <i class="fas fa-shopping-bag"></i> Start Shopping
             </a>
           </div>

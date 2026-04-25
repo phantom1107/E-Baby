@@ -353,7 +353,7 @@ function checkEmptyOrders() {
                 <i class="fas fa-inbox"></i>
                 <h2>No Orders Yet</h2>
                 <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
-                <a href="/homepage" class="btn-primary">
+                <a href="/" class="btn-primary">
                     <i class="fas fa-shopping-bag"></i> Start Shopping
                 </a>
             </div>

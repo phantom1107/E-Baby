@@ -271,8 +271,14 @@ body {
     border: none;
 }
 
-/* Edit button */
+/* View button */
 .edit-button button:first-child {
+    background: #3498DB;
+    color: white;
+}
+
+/* Edit button */
+.edit-button button:nth-child(2) {
     background: #2C3E50;
     color: white;
 }
