@@ -412,8 +412,6 @@ def api_products():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/')
-
 @app.route('/auth')
 def auth():
     return render_template('auth.html')

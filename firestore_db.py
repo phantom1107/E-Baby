@@ -8,12 +8,26 @@ from firebase_admin import credentials, firestore
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 import os
+import json
 
 # Initialize Firebase (only once)
 try:
     firebase_admin.get_app()
 except ValueError:
-    cred = credentials.Certificate("firebase-config.json")
+    # Try to load from firebase-config.json first (local development)
+    config_path = "firebase-config.json"
+    
+    if os.path.exists(config_path):
+        cred = credentials.Certificate(config_path)
+    else:
+        # Try to load from environment variable (production)
+        config_json = os.getenv("FIREBASE_CONFIG_JSON")
+        if config_json:
+            config_dict = json.loads(config_json)
+            cred = credentials.Certificate(config_dict)
+        else:
+            raise ValueError("Firebase config not found. Set FIREBASE_CONFIG_JSON environment variable.")
+    
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
