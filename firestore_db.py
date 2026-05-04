@@ -9,28 +9,38 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 import os
 import json
+import warnings
+import time
+
+# Suppress the specific UserWarning about positional arguments in where()
+warnings.filterwarnings('ignore', message='Detected filter using positional arguments.*')
 
 # Initialize Firebase (only once)
 try:
     firebase_admin.get_app()
+    db = firestore.client()
 except ValueError:
     # Try to load from firebase-config.json first (local development)
     config_path = "firebase-config.json"
     
-    if os.path.exists(config_path):
-        cred = credentials.Certificate(config_path)
-    else:
-        # Try to load from environment variable (production)
-        config_json = os.getenv("FIREBASE_CONFIG_JSON")
-        if config_json:
-            config_dict = json.loads(config_json)
-            cred = credentials.Certificate(config_dict)
+    try:
+        if os.path.exists(config_path):
+            cred = credentials.Certificate(config_path)
         else:
-            raise ValueError("Firebase config not found. Set FIREBASE_CONFIG_JSON environment variable.")
-    
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+            # Try to load from environment variable (production)
+            config_json = os.getenv("FIREBASE_CONFIG_JSON")
+            if config_json:
+                config_dict = json.loads(config_json)
+                cred = credentials.Certificate(config_dict)
+            else:
+                raise ValueError("Firebase config not found. Set FIREBASE_CONFIG_JSON environment variable.")
+        
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+    except Exception as e:
+        print(f"CRITICAL: Firebase initialization failed: {e}")
+        print("Please regenerate your service account key from Firebase Console")
+        raise
 
 # =============================
 # Collection Names (use these consistently)
@@ -912,51 +922,87 @@ def authenticate_user(email: str, password: str) -> Optional[Dict]:
 
 def get_featured_products(limit: int = 10) -> List[Dict]:
     """Get random featured products with seller info"""
-    try:
-        products = []
-        for doc in db.collection(COLLECTIONS['products']).limit(limit).stream():
-            product_data = doc.to_dict()
-            product_data['id'] = doc.id
+    max_retries = 3
+    retry_delay = 1  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            products = []
+            # Use stream with timeout to prevent hanging
+            query = db.collection(COLLECTIONS['products']).limit(limit)
             
-            # Add seller info
-            if product_data.get('seller_email'):
-                seller = get_user_by_email(product_data['seller_email'])
-                if seller:
-                    product_data['first_name'] = seller.get('first_name')
-                    product_data['last_name'] = seller.get('last_name')
+            for doc in query.stream(timeout=10.0):  # 10 second timeout
+                product_data = doc.to_dict()
+                product_data['id'] = doc.id
+                
+                # Add seller info
+                if product_data.get('seller_email'):
+                    try:
+                        seller = get_user_by_email(product_data['seller_email'])
+                        if seller:
+                            product_data['first_name'] = seller.get('first_name')
+                            product_data['last_name'] = seller.get('last_name')
+                    except Exception as seller_err:
+                        print(f"Error fetching seller info: {seller_err}")
+                        # Continue without seller info
+                
+                products.append(product_data)
+            return products[:limit]
             
-            products.append(product_data)
-        return products[:limit]
-    except Exception as e:
-        print(f"Error fetching featured products: {e}")
-        return []
+        except Exception as e:
+            print(f"Error fetching featured products (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                print("Max retries reached, returning empty list")
+                return []
+    
+    return []
 
 
 def get_new_arrivals(limit: int = 10, days: int = 30) -> List[Dict]:
     """Get recent products with seller info"""
-    try:
-        from datetime import timedelta
-        
-        cutoff_date = datetime.now() - timedelta(days=days)
-        products = []
-        
-        query = db.collection(COLLECTIONS['products']).where("created_at", ">=", cutoff_date).order_by("created_at", direction=firestore.Query.DESCENDING).limit(limit)
-        for doc in query.stream():
-            product_data = doc.to_dict()
-            product_data['id'] = doc.id
+    max_retries = 3
+    retry_delay = 1  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            from datetime import timedelta
             
-            # Add seller info
-            if product_data.get('seller_email'):
-                seller = get_user_by_email(product_data['seller_email'])
-                if seller:
-                    product_data['first_name'] = seller.get('first_name')
-                    product_data['last_name'] = seller.get('last_name')
+            cutoff_date = datetime.now() - timedelta(days=days)
+            products = []
             
-            products.append(product_data)
-        return products
-    except Exception as e:
-        print(f"Error fetching new arrivals: {e}")
-        return []
+            query = db.collection(COLLECTIONS['products']).where("created_at", ">=", cutoff_date).order_by("created_at", direction=firestore.Query.DESCENDING).limit(limit)
+            
+            for doc in query.stream(timeout=10.0):  # Add timeout
+                product_data = doc.to_dict()
+                product_data['id'] = doc.id
+                
+                # Add seller info
+                if product_data.get('seller_email'):
+                    try:
+                        seller = get_user_by_email(product_data['seller_email'])
+                        if seller:
+                            product_data['first_name'] = seller.get('first_name')
+                            product_data['last_name'] = seller.get('last_name')
+                    except Exception as seller_err:
+                        print(f"Error fetching seller info: {seller_err}")
+                        # Continue without seller info
+                
+                products.append(product_data)
+            return products
+            
+        except Exception as e:
+            print(f"Error fetching new arrivals (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                print("Max retries reached, returning empty list")
+                return []
+    
+    return []
 
 
 def check_user_exists(email: str) -> bool:

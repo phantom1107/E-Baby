@@ -15,6 +15,21 @@ from flask import send_from_directory
 import time
 from firebase_admin import firestore as firebase_firestore
 
+# Check Firebase connection on startup
+print("=" * 60)
+print("Checking Firebase connection...")
+try:
+    # Try a simple query with timeout to verify connection
+    test_query = firestore_db.db.collection('users').limit(1).stream(timeout=5.0)
+    list(test_query)  # Force execution
+    print("[OK] Firebase connection successful!")
+except Exception as e:
+    print("[ERROR] Firebase connection FAILED!")
+    print(f"Error: {e}")
+    print("\nPlease run: python test_firebase_connection.py")
+    print("Or see FIREBASE_FIX_GUIDE.md for help")
+print("=" * 60)
+
 # Optional: third-party image hosting (Cloudinary)
 try:
     import cloudinary
