@@ -74,11 +74,11 @@ os.makedirs(app.config['BANNERS_FOLDER'], exist_ok=True)
 
 mail = Mail(app)
 
-# EmailJS Configuration (from mobile app)
-EMAILJS_PUBLIC_KEY = 'HpkmGoJSHy_VNHuqx'
-EMAILJS_PRIVATE_KEY = 'IeHIBlvHW5On0UjX5mA2W'
-EMAILJS_SERVICE_ID = 'service_97ze6i8'
-EMAILJS_TEMPLATE_ID = 'template_46cncd5'  # OTP template
+# EmailJS Configuration (from environment variables for security)
+EMAILJS_PUBLIC_KEY = os.getenv('EMAILJS_PUBLIC_KEY', 'HpkmGoJSHy_VNHuqx')
+EMAILJS_PRIVATE_KEY = os.getenv('EMAILJS_PRIVATE_KEY', 'IeHIBlvHW5On0UjX5mA2W')
+EMAILJS_SERVICE_ID = os.getenv('EMAILJS_SERVICE_ID', 'service_97ze6i8')
+EMAILJS_TEMPLATE_ID = os.getenv('EMAILJS_TEMPLATE_ID', 'template_46cncd5')
 
 def send_email_via_emailjs(to_email, subject, otp_code=None, message=None, first_name='User'):
     """
