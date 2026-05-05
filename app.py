@@ -4669,38 +4669,43 @@ def checkout():
             return jsonify({'success': False, 'error': str(e)})
     
     # GET request - display checkout page
-    connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
     user_email = session['email']
     
-    # Simply fetch the selected items from cart that were marked for checkout
-    # If checkout_cart_ids is set, use those; otherwise use all cart items
+    # Get cart items from Firestore
+    all_cart_items = firestore_db.get_cart(user_email)
+    
+    # Filter by selected IDs if they exist in session
     if 'checkout_cart_ids' in session and session['checkout_cart_ids']:
         selected_ids = session['checkout_cart_ids']
-        format_strings = ','.join(['%s'] * len(selected_ids))
-        cursor.execute(f"""
-            SELECT id, product_id, name, price, quantity, color, image, size, email, seller_email
-            FROM cart
-            WHERE id IN ({format_strings}) AND email = %s
-        """, tuple(selected_ids) + (user_email,))
+        checkout_items = [item for item in all_cart_items if item.get('id') in selected_ids]
     else:
-        cursor.execute("""
-            SELECT id, product_id, name, price, quantity, color, image, size, email, seller_email
-            FROM cart
-            WHERE email = %s
-        """, (user_email,))
+        # If no specific items selected, use all cart items
+        checkout_items = all_cart_items
     
-    checkout_items = cursor.fetchall()
+    # Process items and fix image URLs
+    for item in checkout_items:
+        # Get the actual product to get current image
+        product = firestore_db.get_product_by_id(str(item.get('product_id', '')))
+        
+        # Handle image URL
+        if product:
+            if 'image_urls' in product and product['image_urls']:
+                if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                    item['image'] = product['image_urls'][0]
+                elif isinstance(product['image_urls'], str):
+                    item['image'] = product['image_urls']
+            elif 'image' in product:
+                item['image'] = product['image']
+        
+        if not item.get('image'):
+            item['image'] = '/static/images/defaults/product-default.png'
     
     # Calculate pricing breakdown
-    subtotal = sum(float(item['price']) * int(item['quantity']) for item in checkout_items)
+    subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 1)) for item in checkout_items)
     shipping_fee = 38.00
     tax_rate = 0.025
     tax = subtotal * tax_rate
     total_price = subtotal + shipping_fee + tax
-    
-    cursor.close()
-    connection.close()
     
     return render_template('checkout.html', 
                          cart_items=checkout_items, 
