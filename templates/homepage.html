@@ -424,6 +424,9 @@
               {% set product_img_src = product.image_url if (product.image_url and (product.image_url[:4] == 'http')) else ('/static/uploads/' ~ (product.image or '')) %}
               <div class="product-card">
                 <div class="product-image">
+                  {% if product.category %}
+                  <span class="product-category-badge">{{ product.category }}</span>
+                  {% endif %}
                   <img
                     src="{{ product_img_src }}"
                     alt="{{ product.name }}"
@@ -471,9 +474,16 @@
                   <p class="product-price">
                     ₱{{ "%.2f"|format(product.price) }}
                   </p>
-                  <p class="product-stock">
-                    <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
-                  </p>
+                  <div class="product-meta">
+                    <p class="product-stock">
+                      <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
+                    </p>
+                    {% if product.seller_first_name %}
+                    <p class="product-seller">
+                      <i class="fas fa-store"></i> {{ product.seller_first_name }} {{ product.seller_last_name }}
+                    </p>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
               {% endfor %}
@@ -521,6 +531,9 @@
               {% set product_img_src = product.image_url if (product.image_url and (product.image_url[:4] == 'http')) else ('/static/uploads/' ~ (product.image or '')) %}
               <div class="product-card">
                 <div class="product-image">
+                  {% if product.category %}
+                  <span class="product-category-badge">{{ product.category }}</span>
+                  {% endif %}
                   <img
                     src="{{ product_img_src }}"
                     alt="{{ product.name }}"
@@ -568,9 +581,16 @@
                   <p class="product-price">
                     ₱{{ "%.2f"|format(product.price) }}
                   </p>
-                  <p class="product-stock">
-                    <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
-                  </p>
+                  <div class="product-meta">
+                    <p class="product-stock">
+                      <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
+                    </p>
+                    {% if product.seller_first_name %}
+                    <p class="product-seller">
+                      <i class="fas fa-store"></i> {{ product.seller_first_name }} {{ product.seller_last_name }}
+                    </p>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
               {% endfor %}

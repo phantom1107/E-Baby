@@ -1165,6 +1165,42 @@ section {
   font-weight: 600;
 }
 
+.product-category-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  z-index: 5;
+  box-shadow: var(--shadow-md);
+}
+
+.product-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.product-seller {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 500;
+}
+
+.product-seller i {
+  color: var(--primary-color);
+}
+
 .action-btn.view-details {
   background: #6b7280;
   color: white;

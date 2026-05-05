@@ -997,31 +997,54 @@ def new_arrivals():
                              category_name="New Arrivals")
 
 def _render_category(category_db_value, category_display_name):
-    connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute('''
-        SELECT 
-            p.*,
-            u.first_name as seller_first_name,
-            u.last_name as seller_last_name
-        FROM products p 
-        JOIN users u ON p.seller_email = u.email 
-        WHERE p.category = %s
-    ''', (category_db_value,))
-    products = cursor.fetchall()
-    for product in products:
-        product['price'] = float(product['price']) if product['price'] else 0.0
-    sellers = {}
-    for product in products:
-        if product['seller_email'] not in sellers:
-            sellers[product['seller_email']] = []
-        sellers[product['seller_email']].append(product)
-    cursor.close()
-    connection.close()
-    return render_template('category_template.html', 
-                         category_name=category_display_name, 
-                         products=products,
-                         sellers=sellers)
+    """Render category page with products from Firestore"""
+    try:
+        # Get all products for this category from Firestore
+        all_products = firestore_db.get_all_products()
+        products = [p for p in all_products if p.get('category') == category_db_value]
+        
+        # Process products and add seller info
+        for product in products:
+            product['price'] = float(product.get('price', 0))
+            
+            # Handle image URLs
+            if 'image_urls' in product and product['image_urls']:
+                if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                    product['image'] = product['image_urls'][0]
+                elif isinstance(product['image_urls'], str):
+                    product['image'] = product['image_urls']
+            elif 'image' not in product:
+                product['image'] = '/static/images/defaults/product-default.png'
+            
+            # Get seller info
+            seller_email = product.get('seller_email')
+            if seller_email:
+                seller = firestore_db.get_user_by_email(seller_email)
+                if seller:
+                    product['seller_first_name'] = seller.get('first_name', '')
+                    product['seller_last_name'] = seller.get('last_name', '')
+        
+        # Group products by seller
+        sellers = {}
+        for product in products:
+            seller_email = product.get('seller_email')
+            if seller_email:
+                if seller_email not in sellers:
+                    sellers[seller_email] = []
+                sellers[seller_email].append(product)
+        
+        return render_template('category_template.html', 
+                             category_name=category_display_name, 
+                             products=products,
+                             sellers=sellers)
+    except Exception as e:
+        print(f"Error loading category {category_display_name}: {e}")
+        import traceback
+        traceback.print_exc()
+        return render_template('category_template.html', 
+                             category_name=category_display_name, 
+                             products=[],
+                             sellers={})
 
 @app.route('/baby')
 def category_baby():
@@ -2665,20 +2688,40 @@ def view_seller(seller_email):
         # Get seller's products from Firestore
         products = firestore_db.get_products_by_seller(seller_email)
         
-        # Process the image paths
-        if seller.get('profile_pic'):
-            seller['profile_pic'] = url_for('static', filename=seller['profile_pic'])
+        # Process products - handle image URLs
+        for product in products:
+            if 'image_urls' in product and product['image_urls']:
+                if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                    product['image'] = product['image_urls'][0]
+                elif isinstance(product['image_urls'], str):
+                    product['image'] = product['image_urls']
+            elif 'image' not in product:
+                product['image'] = '/static/images/defaults/product-default.png'
+        
+        # Process seller profile and banner images
+        profile_pic = seller.get('profile_pic_url') or seller.get('profile_pic')
+        if profile_pic:
+            if profile_pic.startswith('http'):
+                seller['profile_pic'] = profile_pic  # Cloudinary URL
+            else:
+                seller['profile_pic'] = url_for('static', filename=profile_pic)  # Local path
         else:
-            seller['profile_pic'] = url_for('static', filename='images/default_profile.png')
-            
-        if seller.get('banner_image'):
-            seller['banner_image'] = url_for('static', filename=seller['banner_image'])
+            seller['profile_pic'] = url_for('static', filename='images/defaults/default_profile.jpg')
+        
+        banner_image = seller.get('banner_image_url') or seller.get('banner_image')
+        if banner_image:
+            if banner_image.startswith('http'):
+                seller['banner_image'] = banner_image  # Cloudinary URL
+            else:
+                seller['banner_image'] = url_for('static', filename=banner_image)  # Local path
         else:
-            seller['banner_image'] = url_for('static', filename='images/default_banner.jpg')
+            seller['banner_image'] = url_for('static', filename='images/defaults/default_banner.jpg')
         
         return render_template('view_seller.html', seller=seller, products=products)
     except Exception as e:
         print(f"Error fetching seller: {e}")
+        import traceback
+        traceback.print_exc()
         return "Error loading seller", 500
 
 @app.route('/view_rider/<rider_email>')
