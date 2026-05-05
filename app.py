@@ -1060,11 +1060,24 @@ def profile():
     user_data = firestore_db.get_user_by_email(session['email'])
     
     if user_data:
-        # Update image paths to use url_for with forward slashes
-        if user_data.get('profile_pic'):
-            user_data['profile_pic'] = url_for('static', filename=user_data['profile_pic'].replace('\\', '/'))
-        if user_data.get('banner_image'):
-            user_data['banner_image'] = url_for('static', filename=user_data['banner_image'].replace('\\', '/'))
+        # Handle both old field names (profile_pic, banner_image) and new ones (profile_pic_url, banner_image_url)
+        # New Cloudinary URLs are already complete URLs, old local paths need url_for
+        profile_pic = user_data.get('profile_pic_url') or user_data.get('profile_pic')
+        banner_image = user_data.get('banner_image_url') or user_data.get('banner_image')
+        
+        if profile_pic:
+            # If it's a full URL (Cloudinary), use as-is; otherwise build local path
+            if profile_pic.startswith('http://') or profile_pic.startswith('https://'):
+                user_data['profile_pic'] = profile_pic
+            else:
+                user_data['profile_pic'] = url_for('static', filename=profile_pic.replace('\\', '/'))
+        
+        if banner_image:
+            # If it's a full URL (Cloudinary), use as-is; otherwise build local path
+            if banner_image.startswith('http://') or banner_image.startswith('https://'):
+                user_data['banner_image'] = banner_image
+            else:
+                user_data['banner_image'] = url_for('static', filename=banner_image.replace('\\', '/'))
     
     return render_template('profile.html', user_data=user_data)
 
@@ -2326,22 +2339,22 @@ def product_details(product_id):
 def api_product_variants(product_id):
     """API endpoint to get all variants for a product"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        # Use Firestore to get variants
+        variants = firestore_db.get_product_variants(str(product_id))
         
-        cursor.execute('''
-            SELECT id, color, size, stock
-            FROM product_variants
-            WHERE product_id = %s
-            ORDER BY color, size ASC
-        ''', (product_id,))
+        # Format variants for frontend (ensure consistent field names)
+        formatted_variants = []
+        for variant in variants:
+            formatted_variants.append({
+                'id': variant.get('id'),
+                'color': variant.get('color', ''),
+                'size': variant.get('size', ''),
+                'stock': variant.get('stock', 0)
+            })
         
-        variants = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        return jsonify({'success': True, 'variants': variants})
+        return jsonify({'success': True, 'variants': formatted_variants})
     except Exception as e:
+        print(f"Error fetching product variants: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/product_variants/<int:product_id>/update-stock', methods=['POST'])
