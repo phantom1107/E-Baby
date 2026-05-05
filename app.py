@@ -403,16 +403,28 @@ def api_products():
         # Filter to only include products with stock info and format data
         products = []
         for product in all_products:
+            # Handle image URLs properly
+            image_url = None
+            if 'image_urls' in product and product['image_urls']:
+                if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                    image_url = product['image_urls'][0]
+                elif isinstance(product['image_urls'], str):
+                    image_url = product['image_urls']
+            elif 'image' in product:
+                image_url = product['image']
+            
+            if not image_url:
+                image_url = '/static/images/defaults/product-default.png'
+            
             # Only include products (optionally filter by stock if needed)
             product_data = {
                 'id': product.get('id'),
                 'name': product.get('name'),
                 'price': float(product.get('price', 0)),
                 'category': product.get('category'),
-                'image_url': product.get('image_url'),
-                'image': product.get('image'),
+                'image': image_url,
                 'seller_email': product.get('seller_email'),
-                'stock': product.get('stock', 0)
+                'stock': product.get('stock') or product.get('quantity', 0)
             }
             products.append(product_data)
         
@@ -818,7 +830,7 @@ def homepage():
         all_users = firestore_db.get_all_users()
         seller_lookup = {u.get('email'): u for u in all_users if u.get('email')}
         
-        # Enrich products with seller info
+        # Enrich products with seller info and fix image URLs
         for product in all_products:
             seller_email = product.get('seller_email', '')
             seller_info = seller_lookup.get(seller_email, {})
@@ -827,6 +839,27 @@ def homepage():
             product['seller_email'] = seller_email
             # Ensure price is float
             product['price'] = float(product.get('price', 0))
+            
+            # Fix image URL handling
+            if 'image_urls' in product and product['image_urls']:
+                # If it's a list, take the first image
+                if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                    product['image'] = product['image_urls'][0]
+                elif isinstance(product['image_urls'], str):
+                    product['image'] = product['image_urls']
+                else:
+                    product['image'] = '/static/images/defaults/product-default.png'
+            elif not product.get('image'):
+                product['image'] = '/static/images/defaults/product-default.png'
+            
+            # Ensure stock/quantity field exists
+            if 'quantity' not in product and 'stock' not in product:
+                product['quantity'] = 0
+                product['stock'] = 0
+            elif 'quantity' in product and 'stock' not in product:
+                product['stock'] = product['quantity']
+            elif 'stock' in product and 'quantity' not in product:
+                product['quantity'] = product['stock']
         
         # Get featured products (random selection)
         import random
@@ -884,7 +917,7 @@ def featured_product():
         all_users = firestore_db.get_all_users()
         seller_lookup = {u.get('email'): u for u in all_users if u.get('email')}
         
-        # Enrich products with seller info
+        # Enrich products with seller info and fix image URLs
         for product in all_products:
             seller_email = product.get('seller_email', '')
             seller_info = seller_lookup.get(seller_email, {})
@@ -892,6 +925,26 @@ def featured_product():
             product['last_name'] = seller_info.get('last_name', 'Seller')
             product['seller_email'] = seller_email
             product['price'] = float(product.get('price', 0))
+            
+            # Fix image URL handling
+            if 'image_urls' in product and product['image_urls']:
+                if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                    product['image'] = product['image_urls'][0]
+                elif isinstance(product['image_urls'], str):
+                    product['image'] = product['image_urls']
+                else:
+                    product['image'] = '/static/images/defaults/product-default.png'
+            elif not product.get('image'):
+                product['image'] = '/static/images/defaults/product-default.png'
+            
+            # Ensure stock/quantity field exists
+            if 'quantity' not in product and 'stock' not in product:
+                product['quantity'] = 0
+                product['stock'] = 0
+            elif 'quantity' in product and 'stock' not in product:
+                product['stock'] = product['quantity']
+            elif 'stock' in product and 'quantity' not in product:
+                product['quantity'] = product['stock']
         
         # Get random sample of products
         products = random.sample(all_products, min(6, len(all_products)))
@@ -2312,36 +2365,55 @@ def delete_product(product_id):
 @app.route('/product_details/<product_id>')
 def product_details(product_id):
     try:
-        # Get product from Firestore
-        product = firestore_db.get_product_by_id(product_id)
-        
+        # Get product from Firestore (product_id is a string)
+        product = firestore_db.get_product_by_id(str(product_id))
+
         if not product:
+            flash('Product not found', 'error')
             return redirect(url_for('homepage'))
+
+        # Ensure image_urls is properly formatted
+        if 'image_urls' in product and product['image_urls']:
+            # If it's a list, take the first image
+            if isinstance(product['image_urls'], list):
+                product['primary_image'] = product['image_urls'][0] if product['image_urls'] else '/static/images/defaults/product-default.png'
+            else:
+                product['primary_image'] = product['image_urls']
+        elif 'image' in product:
+            product['primary_image'] = product['image']
+        else:
+            product['primary_image'] = '/static/images/defaults/product-default.png'
 
         # Get seller information from Firestore
         seller_email = product.get('seller_email')
         seller_data = firestore_db.get_user_by_email(seller_email) if seller_email else None
-        
+
         # Create seller object
         seller = {
             'first_name': seller_data.get('first_name', '') if seller_data else '',
             'last_name': seller_data.get('last_name', '') if seller_data else '',
             'email': seller_email,
-            'profile_pic': seller_data.get('profile_pic', '') if seller_data else ''
+            'profile_pic': seller_data.get('profile_pic_url') or seller_data.get('profile_pic', '') if seller_data else ''
         }
-        
+
         return render_template('product_details.html', product=product, seller=seller)
     except Exception as e:
         print(f"Error fetching product details: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('Error loading product', 'error')
         return redirect(url_for('homepage'))
 
-@app.route('/api/product_variants/<int:product_id>')
+@app.route('/api/product_variants/<product_id>')
 def api_product_variants(product_id):
     """API endpoint to get all variants for a product"""
     try:
-        # Use Firestore to get variants
+        # Use Firestore to get variants (product_id is a string)
         variants = firestore_db.get_product_variants(str(product_id))
-        
+
+        print(f"[API] Fetching variants for product_id: {product_id}")
+        print(f"[API] Found {len(variants)} variants")
+
         # Format variants for frontend (ensure consistent field names)
         formatted_variants = []
         for variant in variants:
@@ -2351,10 +2423,12 @@ def api_product_variants(product_id):
                 'size': variant.get('size', ''),
                 'stock': variant.get('stock', 0)
             })
-        
+
         return jsonify({'success': True, 'variants': formatted_variants})
     except Exception as e:
         print(f"Error fetching product variants: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/product_variants/<int:product_id>/update-stock', methods=['POST'])
@@ -2665,11 +2739,37 @@ def api_get_category_products(category):
         # Get products by category from Firestore
         products = firestore_db.get_products_by_category(category)
         
-        # Convert numeric values for JSON
+        # Get all users for seller info
+        all_users = firestore_db.get_all_users()
+        seller_lookup = {u.get('email'): u for u in all_users if u.get('email')}
+        
+        # Convert numeric values for JSON and fix images
         for product in products:
             if product:
                 product['price'] = float(product.get('price', 0))
                 product['quantity'] = int(product.get('quantity', 0))
+                
+                # Add seller info
+                seller_email = product.get('seller_email', '')
+                seller_info = seller_lookup.get(seller_email, {})
+                product['first_name'] = seller_info.get('first_name', 'Unknown')
+                product['last_name'] = seller_info.get('last_name', 'Seller')
+                
+                # Fix image URL handling
+                if 'image_urls' in product and product['image_urls']:
+                    if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                        product['image'] = product['image_urls'][0]
+                    elif isinstance(product['image_urls'], str):
+                        product['image'] = product['image_urls']
+                    else:
+                        product['image'] = '/static/images/defaults/product-default.png'
+                elif not product.get('image'):
+                    product['image'] = '/static/images/defaults/product-default.png'
+                
+                # Ensure stock field exists
+                if 'stock' not in product:
+                    product['stock'] = product.get('quantity', 0)
+                
                 if product.get('created_at'):
                     product['created_at'] = product['created_at'].isoformat() if hasattr(product['created_at'], 'isoformat') else str(product['created_at'])
         
