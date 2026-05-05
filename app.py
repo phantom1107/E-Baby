@@ -57,8 +57,8 @@ app.secret_key = 'secret_key_for_flash_messages'
 
 app.config["MAIL_SERVER"] = 'smtp.gmail.com'
 app.config["MAIL_PORT"] = 465
-app.config["MAIL_USERNAME"] = 'ebabyservices@gmail.com'  
-app.config['MAIL_PASSWORD'] = 'ewsw htoi mogd xvgr'         
+app.config["MAIL_USERNAME"] = os.getenv('MAIL_USERNAME', 'ebabyservices@gmail.com')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')  # Read from environment variable
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
