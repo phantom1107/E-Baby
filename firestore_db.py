@@ -1258,3 +1258,21 @@ def unban_user(user_id: str) -> bool:
         traceback.print_exc()
         return False
 
+
+
+# =============================
+# Generic Helper Functions
+# =============================
+
+def add_document(collection_name: str, data: Dict) -> str:
+    """Generic function to add document to any collection, returns document ID"""
+    try:
+        if 'created_at' not in data:
+            data['created_at'] = datetime.now()
+        
+        doc_ref = db.collection(collection_name).document()
+        doc_ref.set(data)
+        return doc_ref.id
+    except Exception as e:
+        print(f"Error adding document to {collection_name}: {e}")
+        raise

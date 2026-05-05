@@ -4911,7 +4911,7 @@ def confirm_order():
                 }
                 
                 # Add order to Firestore and get the ID
-                order_id = firestore_db.add_document('orders', order_data)
+                order_id = firestore_db.create_order(order_data)
                 print(f"Order created: {order_id}")
 
                 # Reduce stock from product_variants
