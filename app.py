@@ -4981,6 +4981,13 @@ def orders():
             order['size'] = 'N/A'
         if not order.get('color'):
             order['color'] = 'N/A'
+        
+        # Fix image URLs - handle Cloudinary vs local paths
+        image_url = order.get('image', '')
+        if image_url and not image_url.startswith('http'):
+            # It's a local path, prepend static/uploads
+            order['image'] = url_for('static', filename=f'uploads/{image_url}')
+        # Otherwise keep the Cloudinary URL as is
     
     return render_template('orders.html', orders=user_orders)
 
