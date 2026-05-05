@@ -1,323 +1,325 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ seller.first_name }}'s Shop - E-Baby</title>
-    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/view_seller.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/chat.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
-    <meta name="user-email" content="{{ session.get('email','') }}" />
-    <meta name="user-role" content="{{ session.get('user_type','') }}" />
-  </head>
-  <body>
-    <a href="javascript:history.back()" class="back-btn">
-      <i class="fas fa-arrow-left"></i> Back
-    </a>
-
-    <div class="seller-profile" data-seller-email="{{ seller.email }}">
-      <!-- Banner and Profile Section -->
-      <div class="profile-header">
-        <div class="banner-container">
-          {% if seller.banner_image %}
-          <img
-            src="{{ seller.banner_image }}"
-            alt="Shop Banner"
-            class="shop-banner"
-            onerror="this.src='/static/images/defaults/default_banner.jpg'"
-          />
-          {% else %}
-          <img
-            src="/static/images/defaults/default_banner.jpg"
-            alt="Shop Banner"
-            class="shop-banner"
-          />
-          {% endif %}
-          <div class="banner-overlay"></div>
-        </div>
-        <div class="profile-info-container">
-          <div class="profile-pic-container">
-            {% if seller.profile_pic %}
-            <img
-              src="{{ seller.profile_pic }}"
-              alt="Profile Picture"
-              class="profile-pic"
-              onerror="this.src='/static/images/defaults/default_profile.jpg'"
-            />
-            {% else %}
-            <img
-              src="/static/images/defaults/default_profile.jpg"
-              alt="Profile Picture"
-              class="profile-pic"
-            />
-            {% endif %}
-            <div class="profile-badge">
-              <i class="fas fa-store"></i>
-            </div>
-          </div>
-          <div class="seller-details">
-            <h1>{{ seller.first_name }} {{ seller.last_name }}</h1>
-            <p class="shop-subtitle">Verified Seller</p>
-            <div class="contact-info">
-              <div class="contact-item">
-                <i class="fas fa-envelope"></i>
-                <span>{{ seller.email }}</span>
-              </div>
-              <div class="contact-item">
-                <i class="fas fa-phone"></i>
-                <span>{{ seller.phone_number }}</span>
-              </div>
-              <div class="contact-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>{{ seller.address }}</span>
-              </div>
-            </div>
-            <div class="seller-actions">
-              {% if session.get('email') and session.get('email') !=
-              seller.email %}
-              <button
-                class="chat-btn"
-                onclick="startChatWithSeller('{{ seller.email }}')"
-              >
-                <i class="fas fa-comments"></i> Chat with Seller
-              </button>
-              {% endif %}
-              <button class="report-btn" onclick="openReportModal()">
-                <i class="fas fa-flag"></i> Report Seller
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Products Section -->
-      <div class="products-section">
-        <h2>Products by {{ seller.first_name }}</h2>
-        <div class="products-grid">
-          {% for product in products %}
-          <div class="product-card">
-            <div class="product-image">
-              {% if product.is_new %}
-              <div class="new-badge">New</div>
-              {% endif %}
-              <img
-                src="{{ url_for('static', filename='uploads/' ~ product.image) }}"
-                alt="{{ product.name }}"
-              />
-              <div class="quick-view">
-                <a
-                  href="{{ url_for('product_details', product_id=product.id) }}"
-                  class="view-btn"
-                >
-                  <i class="fas fa-eye"></i> Quick View
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seller.first_name }}'s Store - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/view_seller.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="top-header">
+            <div class="header-left">
+                <a href="/" class="logo-link">
+                    <img src="/static/images/logo/E-Baby Logo.png" alt="E-Baby Logo" class="logo">
                 </a>
-              </div>
             </div>
-            <div class="product-info">
-              <h3>{{ product.name }}</h3>
-              <p class="price">₱{{ "%.2f"|format(product.price|float) }}</p>
-              <div class="product-details">
-                <span
-                  ><i class="fas fa-ruler"></i> Size: {{ product.size }}</span
-                >
-                <span
-                  ><i class="fas fa-box"></i> Stock: {{ product.quantity
-                  }}</span
-                >
-              </div>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search in this store..." class="search-bar" id="storeSearchInput">
+                </div>
             </div>
-            <div class="product-actions">
-              <button
-                onclick="addToCart('{{ product.id }}', '{{ product.name }}', '{{ product.price }}', '{{ product.image }}', '{{ product.color }}')"
-              >
-                <i class="fas fa-shopping-cart"></i> Add to Cart
-              </button>
-              <button
-                class="wishlist-btn"
-                onclick="addToWishlist('{{ product.id }}', '{{ product.name }}', '{{ product.price }}', '{{ product.image }}', '{{ product.seller_email }}')"
-              >
-                <i class="fas fa-heart"></i>
-              </button>
+            <div class="header-right">
+                <a href="/" class="header-icon" title="Home">
+                    <i class="fas fa-home"></i>
+                </a>
+                {% if session.get('email') %}
+                <div class="profile-dropdown">
+                    <button class="header-icon dropdown-btn" title="User Menu">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="/profile"><i class="fas fa-user-circle"></i> My Profile</a>
+                        <a href="/orders"><i class="fas fa-box"></i> My Orders</a>
+                        <a href="/wishlist"><i class="fas fa-heart"></i> Wishlist</a>
+                        <hr>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+                {% else %}
+                <a href="/login" class="header-icon" title="Login">
+                    <i class="fas fa-sign-in-alt"></i>
+                </a>
+                {% endif %}
             </div>
-          </div>
-          {% endfor %}
         </div>
-      </div>
+    </header>
+
+    <!-- Store Banner & Info -->
+    <div class="store-header">
+        <div class="store-banner">
+            {% if seller.banner_image %}
+            <img src="{{ seller.banner_image }}" alt="Store Banner" onerror="this.src='/static/images/defaults/default_banner.jpg'">
+            {% else %}
+            <img src="/static/images/defaults/default_banner.jpg" alt="Store Banner">
+            {% endif %}
+            <div class="banner-overlay"></div>
+        </div>
+        
+        <div class="store-info-card">
+            <div class="store-profile">
+                <div class="store-avatar">
+                    {% if seller.profile_pic %}
+                    <img src="{{ seller.profile_pic }}" alt="{{ seller.first_name }}" onerror="this.src='/static/images/defaults/default_profile.jpg'">
+                    {% else %}
+                    <img src="/static/images/defaults/default_profile.jpg" alt="{{ seller.first_name }}">
+                    {% endif %}
+                    <div class="verified-badge">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="store-details">
+                    <h1 class="store-name">{{ seller.first_name }} {{ seller.last_name }}</h1>
+                    <p class="store-tagline"><i class="fas fa-store"></i> Verified Seller</p>
+                    <div class="store-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-box"></i>
+                            <span class="stat-value">{{ products|length }}</span>
+                            <span class="stat-label">Products</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-star"></i>
+                            <span class="stat-value">4.8</span>
+                            <span class="stat-label">Rating</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-users"></i>
+                            <span class="stat-value">1.2k</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="store-actions">
+                {% if session.get('email') and session.get('email') != seller.email %}
+                <button class="btn-primary" onclick="followStore()">
+                    <i class="fas fa-heart"></i> Follow Store
+                </button>
+                <button class="btn-secondary" onclick="chatWithSeller()">
+                    <i class="fas fa-comments"></i> Chat
+                </button>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    <!-- Report Seller Modal -->
-    <div id="reportModal" class="modal" style="display: none">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2><i class="fas fa-flag"></i> Report Seller</h2>
-          <button class="modal-close" onclick="closeReportModal()">
-            <i class="fas fa-times"></i>
-          </button>
+    <!-- Store Navigation -->
+    <div class="store-nav">
+        <div class="container">
+            <button class="nav-tab active" data-tab="all">
+                <i class="fas fa-th"></i> All Products
+            </button>
+            <button class="nav-tab" data-tab="featured">
+                <i class="fas fa-star"></i> Featured
+            </button>
+            <button class="nav-tab" data-tab="new">
+                <i class="fas fa-sparkles"></i> New Arrivals
+            </button>
+            <button class="nav-tab" data-tab="about">
+                <i class="fas fa-info-circle"></i> About Store
+            </button>
         </div>
-        <div class="modal-body">
-          <p>
-            Help us maintain a safe marketplace. Please provide details about
-            your concern.
-          </p>
-          <form id="reportForm" onsubmit="submitReport(event)">
-            <div class="form-group">
-              <label for="reportReason"
-                >Reason for Report <span class="required">*</span></label
-              >
-              <select id="reportReason" name="report_reason" required>
-                <option value="">Select a reason</option>
-                <option value="Fraudulent Activity">Fraudulent Activity</option>
-                <option value="Poor Product Quality">
-                  Poor Product Quality
-                </option>
-                <option value="Unprofessional Behavior">
-                  Unprofessional Behavior
-                </option>
-                <option value="Spam or Scam">Spam or Scam</option>
-                <option value="Inappropriate Content">
-                  Inappropriate Content
-                </option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="reportDescription"
-                >Description <span class="required">*</span></label
-              >
-              <textarea
-                id="reportDescription"
-                name="report_description"
-                rows="5"
-                placeholder="Please provide detailed information about your report..."
-                required
-              ></textarea>
-            </div>
-            <div class="modal-actions">
-              <button type="submit" class="btn-primary">
-                <i class="fas fa-paper-plane"></i> Submit Report
-              </button>
-              <button
-                type="button"
-                class="btn-secondary"
-                onclick="closeReportModal()"
-              >
-                <i class="fas fa-times"></i> Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
 
-    <!-- Chat Panel -->
-    <div id="chatPanel" class="chat-panel" aria-hidden="true">
-      <div class="chat-panel-header" id="chatHeader">
-        <div class="chat-panel-title">Message Center</div>
-        <div class="chat-window-controls">
-          <button
-            id="chatThemeToggle"
-            class="chat-theme-toggle"
-            title="Change Theme"
-          >
-            <i class="fas fa-palette"></i>
-          </button>
-          <button
-            id="chatMinimizeBtn"
-            class="chat-control-btn minimize"
-            title="Minimize"
-          >
-            <i class="fas fa-minus"></i>
-          </button>
-          <button
-            id="chatMaximizeBtn"
-            class="chat-control-btn maximize"
-            title="Maximize"
-          >
-            <i class="fas fa-expand"></i>
-          </button>
-          <button
-            id="chatCloseBtn"
-            class="chat-control-btn close"
-            title="Close"
-          >
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      </div>
-      <div class="chat-panel-inner">
-        <div class="chat-panel-content">
-          <div class="chat-panel-sidebar" id="chatThreads">
-            <div class="threads-header">Conversations</div>
-            <div id="threadsList" class="threads-list">Loading...</div>
-          </div>
-          <div class="chat-panel-main">
-            <div class="chat-panel-top">
-              <div id="chatWith" class="chat-with">Select a conversation</div>
+    <!-- Main Content -->
+    <main class="store-content">
+        <div class="container">
+            <!-- Products Tab -->
+            <div class="tab-content active" id="tab-all">
+                <div class="section-header">
+                    <h2>All Products ({{ products|length }})</h2>
+                    <div class="filter-controls">
+                        <select id="sortSelect" class="sort-select">
+                            <option value="newest">Newest First</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="popular">Most Popular</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="products-grid">
+                    {% for product in products %}
+                    <div class="product-card" data-product-id="{{ product.id }}">
+                        <div class="product-image">
+                            {% if product.category %}
+                            <span class="product-category-badge">{{ product.category }}</span>
+                            {% endif %}
+                            {% if product.image %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.src='/static/images/defaults/product-default.png'">
+                            {% else %}
+                            <img src="/static/images/defaults/product-default.png" alt="{{ product.name }}">
+                            {% endif %}
+                            <div class="product-actions">
+                                <button type="button" class="action-btn add-to-cart" onclick="handleAddToCart(this)" 
+                                    data-product-id="{{ product.id }}"
+                                    data-product-name="{{ product.name }}"
+                                    data-product-price="{{ product.price }}"
+                                    data-product-image="{{ product.image }}"
+                                    data-seller-email="{{ seller.email }}">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button type="button" class="action-btn wishlist" onclick="handleAddToWishlist(this)"
+                                    data-product-id="{{ product.id }}"
+                                    data-product-name="{{ product.name }}"
+                                    data-product-price="{{ product.price }}"
+                                    data-product-image="{{ product.image }}"
+                                    data-seller-email="{{ seller.email }}">
+                                    <i class="fas fa-heart"></i> Wishlist
+                                </button>
+                                <button type="button" class="action-btn view-details" onclick="viewProductDetails('{{ product.id }}')">
+                                    <i class="fas fa-eye"></i> View Details
+                                </button>
+                            </div>
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">{{ product.name }}</h4>
+                            <p class="product-price">₱{{ "%.2f"|format(product.price|float) }}</p>
+                            <div class="product-meta">
+                                <p class="product-stock">
+                                    <i class="fas fa-box"></i> Stock: {{ product.stock or product.quantity or 0 }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if not products %}
+                <div class="no-products">
+                    <i class="fas fa-box-open"></i>
+                    <h3>No Products Yet</h3>
+                    <p>This store hasn't listed any products yet. Check back soon!</p>
+                </div>
+                {% endif %}
             </div>
-            <div id="chatMessages" class="chat-messages-large">
-              No thread selected
-            </div>
-            <div class="chat-input-area">
-              <input
-                id="chatInput"
-                type="text"
-                placeholder="Type a message..."
-              />
-              <button id="chatSendBtn" class="btn-send">Send</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/view_seller.js') }}"></script>
+            <!-- About Tab -->
+            <div class="tab-content" id="tab-about">
+                <div class="about-store">
+                    <h2>About This Store</h2>
+                    <div class="about-content">
+                        <div class="about-section">
+                            <h3><i class="fas fa-info-circle"></i> Store Information</h3>
+                            <p>Welcome to {{ seller.first_name }}'s store! We offer quality baby products with excellent customer service.</p>
+                        </div>
+                        <div class="about-section">
+                            <h3><i class="fas fa-envelope"></i> Contact</h3>
+                            <p><strong>Email:</strong> {{ seller.email }}</p>
+                            {% if seller.phone_number %}
+                            <p><strong>Phone:</strong> {{ seller.phone_number }}</p>
+                            {% endif %}
+                            {% if seller.address %}
+                            <p><strong>Location:</strong> {{ seller.address }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="about-section">
+                            <h3><i class="fas fa-shield-alt"></i> Store Policies</h3>
+                            <ul>
+                                <li><i class="fas fa-check"></i> Authentic products guaranteed</li>
+                                <li><i class="fas fa-check"></i> Fast and secure shipping</li>
+                                <li><i class="fas fa-check"></i> 7-day return policy</li>
+                                <li><i class="fas fa-check"></i> Responsive customer support</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/homepage.js') }}"></script>
     <script>
-      // Function to start chat with seller
-      function startChatWithSeller(sellerEmail) {
-        const currentUser = document
-          .querySelector('meta[name="user-email"]')
-          ?.getAttribute("content");
-        if (!currentUser) {
-          alert("Please login to start a chat");
-          window.location.href = "/login";
-          return;
+        // Tab switching
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                
+                // Update active tab
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update active content
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tab-' + tabName).classList.add('active');
+            });
+        });
+
+        // Store search
+        document.getElementById('storeSearchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('.product-card').forEach(card => {
+                const productName = card.querySelector('.product-name').textContent.toLowerCase();
+                if (productName.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Sort products
+        document.getElementById('sortSelect').addEventListener('change', function(e) {
+            const sortBy = e.target.value;
+            const grid = document.querySelector('.products-grid');
+            const cards = Array.from(grid.querySelectorAll('.product-card'));
+            
+            cards.sort((a, b) => {
+                const priceA = parseFloat(a.querySelector('.product-price').textContent.replace('₱', ''));
+                const priceB = parseFloat(b.querySelector('.product-price').textContent.replace('₱', ''));
+                
+                if (sortBy === 'price-low') return priceA - priceB;
+                if (sortBy === 'price-high') return priceB - priceA;
+                return 0;
+            });
+            
+            cards.forEach(card => grid.appendChild(card));
+        });
+
+        function followStore() {
+            alert('Follow feature coming soon!');
         }
 
-        // Create thread_id by combining emails in sorted order
-        const emails = [currentUser, sellerEmail].sort();
-        const threadId = emails.join("_");
-
-        // Open chat panel
-        const chatPanel = document.getElementById("chatPanel");
-        if (chatPanel) {
-          chatPanel.style.display = "flex";
-          chatPanel.setAttribute("aria-hidden", "false");
-          chatPanel.classList.add("show");
+        function chatWithSeller() {
+            alert('Chat feature coming soon!');
         }
 
-        // Select the thread
-        if (typeof selectThread === "function") {
-          selectThread(threadId);
-        } else {
-          // Wait for chat.js to load
-          setTimeout(() => {
-            if (typeof selectThread === "function") {
-              selectThread(threadId);
+        function viewProductDetails(productId) {
+            window.location.href = `/product_details/${productId}`;
+        }
+
+        function handleAddToCart(button) {
+            const productId = button.dataset.productId;
+            const productName = button.dataset.productName;
+            const productPrice = button.dataset.productPrice;
+            const productImage = button.dataset.productImage;
+            const sellerEmail = button.dataset.sellerEmail;
+            
+            // Use the existing addToCart function from homepage.js
+            if (typeof addToCart === 'function') {
+                addToCart(productId, productName, productPrice, productImage, sellerEmail);
             }
-          }, 500);
         }
-      }
+
+        function handleAddToWishlist(button) {
+            const productId = button.dataset.productId;
+            const productName = button.dataset.productName;
+            const productPrice = button.dataset.productPrice;
+            const productImage = button.dataset.productImage;
+            const sellerEmail = button.dataset.sellerEmail;
+            
+            // Use the existing addToWishlist function from homepage.js
+            if (typeof addToWishlist === 'function') {
+                addToWishlist(productId, productName, productPrice, productImage, sellerEmail);
+            }
+        }
     </script>
-  </body>
+</body>
 </html>
