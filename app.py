@@ -2420,6 +2420,10 @@ def product_details(product_id):
             print(f"[PRODUCT_DETAILS] Product not found, redirecting to home")
             return redirect(url_for('home'))
 
+        # Ensure quantity field exists (Firestore uses 'stock', template uses 'quantity')
+        if 'quantity' not in product:
+            product['quantity'] = product.get('stock', 0)
+
         # Ensure image_urls is properly formatted
         if 'image_urls' in product and product['image_urls']:
             # If it's a list, take the first image
