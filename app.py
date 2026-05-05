@@ -737,10 +737,14 @@ def login():
             session['email'] = email
             session['address'] = user.get('address', '')
             # Check both profile_pic_url (Cloudinary) and profile_pic (local) fields
-            session['profile_pic'] = user.get('profile_pic_url') or user.get('profile_pic') or '/static/images/defaults/default_profile.jpg'
+            profile_pic = user.get('profile_pic_url') or user.get('profile_pic') or '/static/images/defaults/default_profile.jpg'
+            # Force HTTPS for any HTTP URLs
+            if profile_pic.startswith('http://'):
+                profile_pic = profile_pic.replace('http://', 'https://', 1)
+            session['profile_pic'] = profile_pic
 
             if session['user_type'] == 'Buyer':
-                return redirect(url_for('homepage'))
+                return redirect(url_for('home'))
             elif session['user_type'] == 'Seller':
                 return redirect(url_for('seller_dashboard'))
             elif session['user_type'] == 'Rider':
@@ -2402,7 +2406,7 @@ def product_details(product_id):
 
         if not product:
             flash('Product not found', 'error')
-            return redirect(url_for('homepage'))
+            return redirect(url_for('home'))
 
         # Ensure image_urls is properly formatted
         if 'image_urls' in product and product['image_urls']:
@@ -2433,8 +2437,8 @@ def product_details(product_id):
         print(f"Error fetching product details: {e}")
         import traceback
         traceback.print_exc()
-        flash('Error loading product', 'error')
-        return redirect(url_for('homepage'))
+        # Don't flash error - just redirect silently to avoid showing on other pages
+        return redirect(url_for('home'))
 
 @app.route('/api/product_variants/<product_id>')
 def api_product_variants(product_id):
