@@ -736,11 +736,21 @@ def login():
             session['user_type'] = user.get('user_type')
             session['email'] = email
             session['address'] = user.get('address', '')
+            
             # Check both profile_pic_url (Cloudinary) and profile_pic (local) fields
-            profile_pic = user.get('profile_pic_url') or user.get('profile_pic') or '/static/images/defaults/default_profile.jpg'
-            # Force HTTPS for any HTTP URLs
-            if profile_pic.startswith('http://'):
-                profile_pic = profile_pic.replace('http://', 'https://', 1)
+            profile_pic = user.get('profile_pic_url') or user.get('profile_pic')
+            
+            # If profile pic exists and is a local path, use default instead (file doesn't exist on Railway)
+            if profile_pic:
+                if profile_pic.startswith('http://'):
+                    # Force HTTPS for any HTTP URLs
+                    profile_pic = profile_pic.replace('http://', 'https://', 1)
+                elif profile_pic.startswith('/static/uploads/') or profile_pic.startswith('uploads/'):
+                    # Local path - file doesn't exist on Railway, use default
+                    profile_pic = '/static/images/defaults/default_profile.jpg'
+            else:
+                profile_pic = '/static/images/defaults/default_profile.jpg'
+            
             session['profile_pic'] = profile_pic
 
             if session['user_type'] == 'Buyer':
@@ -2400,12 +2410,14 @@ def delete_product(product_id):
 
 @app.route('/product_details/<product_id>')
 def product_details(product_id):
+    print(f"[PRODUCT_DETAILS] Requested product_id: {product_id}")
     try:
         # Get product from Firestore (product_id is a string)
         product = firestore_db.get_product_by_id(str(product_id))
+        print(f"[PRODUCT_DETAILS] Product found: {product is not None}")
 
         if not product:
-            flash('Product not found', 'error')
+            print(f"[PRODUCT_DETAILS] Product not found, redirecting to home")
             return redirect(url_for('home'))
 
         # Ensure image_urls is properly formatted
@@ -2432,12 +2444,13 @@ def product_details(product_id):
             'profile_pic': seller_data.get('profile_pic_url') or seller_data.get('profile_pic', '') if seller_data else ''
         }
 
+        print(f"[PRODUCT_DETAILS] Rendering template for product: {product.get('name')}")
         return render_template('product_details.html', product=product, seller=seller)
     except Exception as e:
-        print(f"Error fetching product details: {e}")
+        print(f"[PRODUCT_DETAILS] ERROR: {e}")
         import traceback
         traceback.print_exc()
-        # Don't flash error - just redirect silently to avoid showing on other pages
+        # Redirect to home without flash to avoid showing errors on other pages
         return redirect(url_for('home'))
 
 @app.route('/api/product_variants/<product_id>')
