@@ -706,26 +706,24 @@ def resend_otp():
         # Get first name from registration data
         first_name = registration_data.get('first_name', 'User')
         
-        # Send OTP email
-        msg = Message(
-            subject='Your E‑Baby OTP Code (Resent)',
-            sender='e-baby0@gmail.com',
-            recipients=[email]
+        # Send OTP via EmailJS
+        success = send_email_via_emailjs(
+            to_email=email,
+            subject='Your E-Baby OTP Code (Resent)',
+            otp_code=new_otp,
+            first_name=first_name
         )
-        # Plain-text fallback
-        msg.body = (
-            f"Hello {first_name},\n\n"
-            f"Your One‑Time Password (OTP) is: {new_otp}\n"
-            "It will expire shortly. If you didn't request this, you can ignore this email."
-        )
-        # HTML version for rich email clients
-        msg.html = build_otp_email_html(new_otp, first_name)
-        mail.send(msg)
         
-        return jsonify({
-            'success': True,
-            'message': 'New OTP code has been sent to your email. Please check your inbox.'
-        })
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'New OTP code has been sent to your email. Please check your inbox.'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Error sending OTP email. Please try again.'
+            })
     except Exception as e:
         print(f"Error resending OTP email: {e}")
         return jsonify({
@@ -826,21 +824,25 @@ def forgot_password():
                 # Generate a password reset code
                 reset_code = randint(100000, 999999)
 
-                # Send the reset email
-                msg = Message(
+                # Send the reset email via EmailJS
+                success = send_email_via_emailjs(
+                    to_email=email,
                     subject="Password Reset Request",
-                    sender=app.config["MAIL_USERNAME"],
-                    recipients=[email]
+                    otp_code=reset_code,
+                    message=f"To reset your password, please use the following code: {reset_code}",
+                    first_name=user.get('first_name', 'User')
                 )
-                msg.body = f"Hello, {user['first_name']}!\n\nTo reset your password, please use the following code:\n\n{reset_code}\n\nIf you didn't request this, please ignore this email."
-                mail.send(msg)
 
-                # Store the reset code and email in the session
-                session['reset_code'] = reset_code
-                session['user_email'] = email
+                if success:
+                    # Store the reset code and email in the session
+                    session['reset_code'] = reset_code
+                    session['user_email'] = email
 
-                flash("A password reset email has been sent to your email address.", "success")
-                return render_template('forgot_password.html', email_sent=True)
+                    flash("A password reset email has been sent to your email address.", "success")
+                    return render_template('forgot_password.html', email_sent=True)
+                else:
+                    flash("Error sending reset email. Please try again.", "error")
+                    return redirect(url_for('forgot_password'))
 
             else:
                 flash("Email not found. Please check and try again.", "error")
