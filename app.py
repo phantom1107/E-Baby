@@ -728,7 +728,8 @@ def login():
             session['user_type'] = user.get('user_type')
             session['email'] = email
             session['address'] = user.get('address', '')
-            session['profile_pic'] = user.get('profile_pic')
+            # Check both profile_pic_url (Cloudinary) and profile_pic (local) fields
+            session['profile_pic'] = user.get('profile_pic_url') or user.get('profile_pic') or '/static/images/defaults/default_profile.jpg'
 
             if session['user_type'] == 'Buyer':
                 return redirect(url_for('homepage'))
@@ -2408,25 +2409,34 @@ def product_details(product_id):
 def api_product_variants(product_id):
     """API endpoint to get all variants for a product"""
     try:
-        # Use Firestore to get variants (product_id is a string)
-        variants = firestore_db.get_product_variants(str(product_id))
-
         print(f"[API] Fetching variants for product_id: {product_id}")
-        print(f"[API] Found {len(variants)} variants")
+
+        # Get product from Firestore
+        product = firestore_db.get_product_by_id(str(product_id))
+
+        if not product:
+            print(f"[API] Product not found: {product_id}")
+            return jsonify({'success': False, 'error': 'Product not found'}), 404
+
+        # Variants are stored INSIDE the product document as an array
+        variants = product.get('variants', [])
+
+        print(f"[API] Found {len(variants)} variants in product document")
 
         # Format variants for frontend (ensure consistent field names)
         formatted_variants = []
-        for variant in variants:
+        for idx, variant in enumerate(variants):
             formatted_variants.append({
-                'id': variant.get('id'),
+                'id': f"{product_id}_{variant.get('color', '')}_{variant.get('size', '')}_{idx}",
                 'color': variant.get('color', ''),
                 'size': variant.get('size', ''),
-                'stock': variant.get('stock', 0)
+                'stock': int(variant.get('stock', 0))
             })
 
+        print(f"[API] Returning formatted variants: {formatted_variants}")
         return jsonify({'success': True, 'variants': formatted_variants})
     except Exception as e:
-        print(f"Error fetching product variants: {e}")
+        print(f"[API] Error fetching product variants: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
