@@ -1077,7 +1077,16 @@ function closeAuthPromptModal() {
 // ============================================================
 
 function viewProductDetails(productId) {
+    console.log('viewProductDetails called with productId:', productId);
+    
+    if (!productId || productId === 'undefined' || productId === 'None') {
+        console.error('Invalid product ID:', productId);
+        alert('Error: Product ID is missing. Please refresh the page and try again.');
+        return;
+    }
+    
     // Allow anyone to view product details (no login required)
+    console.log('Navigating to:', `/product_details/${productId}`);
     window.location.href = `/product_details/${productId}`;
 }
 

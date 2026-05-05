@@ -447,13 +447,21 @@ def auth():
 def backtologin():
     return render_template('auth.html')
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['POST', 'GET'])
 def logout():
     try:
         session.clear()  # Clear all session data
-        return jsonify({'success': True, 'redirect': url_for('homepage')})
+        if request.method == 'GET':
+            # If accessed via GET, redirect to homepage
+            return redirect(url_for('home'))
+        # For POST requests, return JSON
+        return jsonify({'success': True, 'redirect': url_for('home')})
     except Exception as e:
         print("Logout error:", str(e))
+        import traceback
+        traceback.print_exc()
+        if request.method == 'GET':
+            return redirect(url_for('home'))
         return jsonify({'success': False, 'message': str(e)})
 
 #=====================================================================================================================
