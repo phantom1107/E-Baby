@@ -4226,12 +4226,7 @@ def add_to_cart():
         traceback.print_exc()
         print("=== END ERROR ===\n")
         return jsonify({'success': False, 'message': str(e)})
-                conn.close()
-        except Exception as close_err:
-            print(f"Error closing connections: {str(close_err)}")
-        
-        return jsonify({'success': False, 'message': str(e)})
-    
+
 @app.route('/get_cart_count')
 def get_cart_count():
     user_email = session.get('email')
