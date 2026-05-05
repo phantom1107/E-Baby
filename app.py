@@ -6,6 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 from flask_mail import Mail, Message
 from random import randint
+import requests  # For EmailJS API calls
 from io import BytesIO
 import base64
 import json
@@ -72,6 +73,46 @@ os.makedirs(app.config['PROFILE_PICS_FOLDER'], exist_ok=True)
 os.makedirs(app.config['BANNERS_FOLDER'], exist_ok=True)
 
 mail = Mail(app)
+
+# EmailJS Configuration (from mobile app)
+EMAILJS_PUBLIC_KEY = 'HpkmGoJSHy_VNHuqx'
+EMAILJS_PRIVATE_KEY = 'IeHIBlvHW5On0UjX5mA2W'
+EMAILJS_SERVICE_ID = 'service_97ze6i8'
+EMAILJS_TEMPLATE_ID = 'template_46cncd5'  # OTP template
+
+def send_email_via_emailjs(to_email, subject, otp_code=None, message=None, first_name='User'):
+    """
+    Send email using EmailJS API
+    """
+    try:
+        url = 'https://api.emailjs.com/api/v1.0/email/send'
+        
+        params = {
+            'service_id': EMAILJS_SERVICE_ID,
+            'template_id': EMAILJS_TEMPLATE_ID,
+            'user_id': EMAILJS_PUBLIC_KEY,
+            'accessToken': EMAILJS_PRIVATE_KEY,
+            'template_params': {
+                'to_email': to_email,
+                'to_name': first_name,
+                'subject': subject,
+                'otp_code': str(otp_code) if otp_code else '',
+                'message': message or f'Your OTP code is: {otp_code}'
+            }
+        }
+        
+        response = requests.post(url, json=params)
+        
+        if response.status_code == 200:
+            print(f"✓ Email sent successfully to {to_email}")
+            return True
+        else:
+            print(f"✗ EmailJS error: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"✗ Error sending email via EmailJS: {e}")
+        return False
 
 
 def upload_to_cloudinary(file_storage, folder: str, public_id_prefix: str) -> str | None:
@@ -565,16 +606,19 @@ def register():
     session['email'] = email
 
     try:
-        msg = Message(subject='Your E‑Baby OTP Code', sender='ebabyservices@gmail.com', recipients=[email])
-        msg.body = (
-            f"Hello {first_name},\n\n"
-            f"Your One‑Time Password (OTP) is: {otp}\n"
-            "It will expire shortly. If you didn't request this, you can ignore this email."
+        # Send OTP via EmailJS
+        success = send_email_via_emailjs(
+            to_email=email,
+            subject='Your E-Baby OTP Code',
+            otp_code=otp,
+            first_name=first_name
         )
-        msg.html = build_otp_email_html(otp, first_name)
-        mail.send(msg)
-        flash('OTP sent! Please check your email for the verification code.', 'info')
-        return redirect(url_for('otp_verification'))
+        
+        if success:
+            flash('OTP sent! Please check your email for the verification code.', 'info')
+            return redirect(url_for('otp_verification'))
+        else:
+            return render_template('auth.html', error="Error sending OTP email. Please try again.")
     except Exception as e:
         print(f"Error sending email: {e}")
         return render_template('auth.html', error="Error sending OTP email. Please try again.")
