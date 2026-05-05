@@ -4161,6 +4161,15 @@ def cart():
     
     # Fetch cart items from Firestore
     cart_items = firestore_db.get_cart(user_email)
+    
+    # Fix image URLs for cart items
+    for item in cart_items:
+        image_url = item.get('image', '')
+        # If image URL starts with http, it's already a full URL (Cloudinary)
+        if image_url and not image_url.startswith('http'):
+            # It's a local path, prepend static/uploads
+            item['image'] = url_for('static', filename=f'uploads/{image_url}')
+        # Otherwise keep the Cloudinary URL as is
 
     # Calculate pricing breakdown
     subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 0)) for item in cart_items)
@@ -4825,18 +4834,35 @@ def confirm_order():
                 
                 variants = firestore_db.get_product_variants(str(item.get('product_id', item['id'])))
                 variant_match = None
+                current_stock = 0
+                
                 if variants:
                     for variant in variants:
                         if variant.get('color') == color_value and variant.get('size') == size_value:
                             variant_match = variant
+                            current_stock = variant.get('stock', 0)
                             break
                 
+                # If no variants found, check if product has variants array
+                if not variant_match and 'variants' in product:
+                    product_variants = product.get('variants', [])
+                    for variant in product_variants:
+                        if variant.get('color') == color_value and variant.get('size') == size_value:
+                            variant_match = variant
+                            current_stock = variant.get('stock', 0)
+                            break
+                
+                # If still no variant found, use product stock directly
                 if not variant_match:
-                    print(f"Variant not found for product_id={item.get('product_id', item['id'])}, color='{color_value}', size='{size_value}'")
-                    failed_items.append(f"{item['name']} (Color: {color_value}, Size: {size_value})")
-                    continue
-                    
-                current_stock = variant_match.get('stock', 0)
+                    print(f"No variant found, using product stock for product_id={item.get('product_id', item['id'])}")
+                    current_stock = product.get('stock', 0)
+                    # Create a pseudo-variant for processing
+                    variant_match = {
+                        'color': color_value,
+                        'size': size_value,
+                        'stock': current_stock
+                    }
+                
                 order_quantity = item.get('quantity', 1)
                 
                 # Check if stock is sufficient

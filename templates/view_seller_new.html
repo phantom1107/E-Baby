@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seller.first_name }}'s Store - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/view_seller.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="top-header">
+            <div class="header-left">
+                <a href="/" class="logo-link">
+                    <img src="/static/images/logo/E-Baby Logo.png" alt="E-Baby Logo" class="logo">
+                </a>
+            </div>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search in this store..." class="search-bar" id="storeSearchInput">
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/" class="header-icon" title="Home">
+                    <i class="fas fa-home"></i>
+                </a>
+                {% if session.get('email') %}
+                <div class="profile-dropdown">
+                    <button class="header-icon dropdown-btn" title="User Menu">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="/profile"><i class="fas fa-user-circle"></i> My Profile</a>
+                        <a href="/orders"><i class="fas fa-box"></i> My Orders</a>
+                        <a href="/wishlist"><i class="fas fa-heart"></i> Wishlist</a>
+                        <hr>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+                {% else %}
+                <a href="/login" class="header-icon" title="Login">
+                    <i class="fas fa-sign-in-alt"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Store Banner & Info -->
+    <div class="store-header">
+        <div class="store-banner">
+            {% if seller.banner_image %}
+            <img src="{{ seller.banner_image }}" alt="Store Banner" onerror="this.src='/static/images/defaults/default_banner.jpg'">
+            {% else %}
+            <img src="/static/images/defaults/default_banner.jpg" alt="Store Banner">
+            {% endif %}
+            <div class="banner-overlay"></div>
+        </div>
+        
+        <div class="store-info-card">
+            <div class="store-profile">
+                <div class="store-avatar">
+                    {% if seller.profile_pic %}
+                    <img src="{{ seller.profile_pic }}" alt="{{ seller.first_name }}" onerror="this.src='/static/images/defaults/default_profile.jpg'">
+                    {% else %}
+                    <img src="/static/images/defaults/default_profile.jpg" alt="{{ seller.first_name }}">
+                    {% endif %}
+                    <div class="verified-badge">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="store-details">
+                    <h1 class="store-name">{{ seller.first_name }} {{ seller.last_name }}</h1>
+                    <p class="store-tagline"><i class="fas fa-store"></i> Verified Seller</p>
+                    <div class="store-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-box"></i>
+                            <span class="stat-value">{{ products|length }}</span>
+                            <span class="stat-label">Products</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-star"></i>
+                            <span class="stat-value">4.8</span>
+                            <span class="stat-label">Rating</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-users"></i>
+                            <span class="stat-value">1.2k</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="store-actions">
+                {% if session.get('email') and session.get('email') != seller.email %}
+                <button class="btn-primary" onclick="followStore()">
+                    <i class="fas fa-heart"></i> Follow Store
+                </button>
+                <button class="btn-secondary" onclick="chatWithSeller()">
+                    <i class="fas fa-comments"></i> Chat
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Store Navigation -->
+    <div class="store-nav">
+        <div class="container">
+            <button class="nav-tab active" data-tab="all">
+                <i class="fas fa-th"></i> All Products
+            </button>
+            <button class="nav-tab" data-tab="featured">
+                <i class="fas fa-star"></i> Featured
+            </button>
+            <button class="nav-tab" data-tab="new">
+                <i class="fas fa-sparkles"></i> New Arrivals
+            </button>
+            <button class="nav-tab" data-tab="about">
+                <i class="fas fa-info-circle"></i> About Store
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="store-content">
+        <div class="container">
+            <!-- Products Tab -->
+            <div class="tab-content active" id="tab-all">
+                <div class="section-header">
+                    <h2>All Products ({{ products|length }})</h2>
+                    <div class="filter-controls">
+                        <select id="sortSelect" class="sort-select">
+                            <option value="newest">Newest First</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="popular">Most Popular</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="products-grid">
+                    {% for product in products %}
+                    <div class="product-card" data-product-id="{{ product.id }}">
+                        <div class="product-image">
+                            {% if product.category %}
+                            <span class="product-category-badge">{{ product.category }}</span>
+                            {% endif %}
+                            {% if product.image %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.src='/static/images/defaults/product-default.png'">
+                            {% else %}
+                            <img src="/static/images/defaults/product-default.png" alt="{{ product.name }}">
+                            {% endif %}
+                            <div class="product-actions">
+                                <button type="button" class="action-btn add-to-cart" onclick="handleAddToCart(this)" 
+                                    data-product-id="{{ product.id }}"
+                                    data-product-name="{{ product.name }}"
+                                    data-product-price="{{ product.price }}"
+                                    data-product-image="{{ product.image }}"
+                                    data-seller-email="{{ seller.email }}">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                                <button type="button" class="action-btn wishlist" onclick="handleAddToWishlist(this)"
+                                    data-product-id="{{ product.id }}"
+                                    data-product-name="{{ product.name }}"
+                                    data-product-price="{{ product.price }}"
+                                    data-product-image="{{ product.image }}"
+                                    data-seller-email="{{ seller.email }}">
+                                    <i class="fas fa-heart"></i> Wishlist
+                                </button>
+                                <button type="button" class="action-btn view-details" onclick="viewProductDetails('{{ product.id }}')">
+                                    <i class="fas fa-eye"></i> View Details
+                                </button>
+                            </div>
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">{{ product.name }}</h4>
+                            <p class="product-price">₱{{ "%.2f"|format(product.price|float) }}</p>
+                            <div class="product-meta">
+                                <p class="product-stock">
+                                    <i class="fas fa-box"></i> Stock: {{ product.stock or product.quantity or 0 }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if not products %}
+                <div class="no-products">
+                    <i class="fas fa-box-open"></i>
+                    <h3>No Products Yet</h3>
+                    <p>This store hasn't listed any products yet. Check back soon!</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- About Tab -->
+            <div class="tab-content" id="tab-about">
+                <div class="about-store">
+                    <h2>About This Store</h2>
+                    <div class="about-content">
+                        <div class="about-section">
+                            <h3><i class="fas fa-info-circle"></i> Store Information</h3>
+                            <p>Welcome to {{ seller.first_name }}'s store! We offer quality baby products with excellent customer service.</p>
+                        </div>
+                        <div class="about-section">
+                            <h3><i class="fas fa-envelope"></i> Contact</h3>
+                            <p><strong>Email:</strong> {{ seller.email }}</p>
+                            {% if seller.phone_number %}
+                            <p><strong>Phone:</strong> {{ seller.phone_number }}</p>
+                            {% endif %}
+                            {% if seller.address %}
+                            <p><strong>Location:</strong> {{ seller.address }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="about-section">
+                            <h3><i class="fas fa-shield-alt"></i> Store Policies</h3>
+                            <ul>
+                                <li><i class="fas fa-check"></i> Authentic products guaranteed</li>
+                                <li><i class="fas fa-check"></i> Fast and secure shipping</li>
+                                <li><i class="fas fa-check"></i> 7-day return policy</li>
+                                <li><i class="fas fa-check"></i> Responsive customer support</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/homepage.js') }}"></script>
+    <script>
+        // Tab switching
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                
+                // Update active tab
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update active content
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tab-' + tabName).classList.add('active');
+            });
+        });
+
+        // Store search
+        document.getElementById('storeSearchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('.product-card').forEach(card => {
+                const productName = card.querySelector('.product-name').textContent.toLowerCase();
+                if (productName.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Sort products
+        document.getElementById('sortSelect').addEventListener('change', function(e) {
+            const sortBy = e.target.value;
+            const grid = document.querySelector('.products-grid');
+            const cards = Array.from(grid.querySelectorAll('.product-card'));
+            
+            cards.sort((a, b) => {
+                const priceA = parseFloat(a.querySelector('.product-price').textContent.replace('₱', ''));
+                const priceB = parseFloat(b.querySelector('.product-price').textContent.replace('₱', ''));
+                
+                if (sortBy === 'price-low') return priceA - priceB;
+                if (sortBy === 'price-high') return priceB - priceA;
+                return 0;
+            });
+            
+            cards.forEach(card => grid.appendChild(card));
+        });
+
+        function followStore() {
+            alert('Follow feature coming soon!');
+        }
+
+        function chatWithSeller() {
+            alert('Chat feature coming soon!');
+        }
+
+        function viewProductDetails(productId) {
+            window.location.href = `/product_details/${productId}`;
+        }
+
+        function handleAddToCart(button) {
+            const productId = button.dataset.productId;
+            const productName = button.dataset.productName;
+            const productPrice = button.dataset.productPrice;
+            const productImage = button.dataset.productImage;
+            const sellerEmail = button.dataset.sellerEmail;
+            
+            // Add to cart logic here
+            console.log('Add to cart:', {productId, productName, productPrice, productImage, sellerEmail});
+        }
+
+        function handleAddToWishlist(button) {
+            const productId = button.dataset.productId;
+            const productName = button.dataset.productName;
+            const productPrice = button.dataset.productPrice;
+            const productImage = button.dataset.productImage;
+            const sellerEmail = button.dataset.sellerEmail;
+            
+            // Add to wishlist logic here
+            console.log('Add to wishlist:', {productId, productName, productPrice, productImage, sellerEmail});
+        }
+    </script>
+</body>
+</html>
