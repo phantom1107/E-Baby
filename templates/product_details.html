@@ -100,11 +100,19 @@
                                 {% if (product.price|float * 0.2)|int > 0 %}
                                     <div class="sale-badge">-20%</div>
                                 {% endif %}
-                                <img id="productImage" src="{{ url_for('static', filename='uploads/' ~ product.image) }}" alt="{{ product.name }}" class="main-image">
+                                {% if product.primary_image.startswith('http') %}
+                                    <img id="productImage" src="{{ product.primary_image }}" alt="{{ product.name }}" class="main-image" onerror="this.src='/static/images/defaults/product-default.png'">
+                                {% else %}
+                                    <img id="productImage" src="{{ url_for('static', filename='uploads/' ~ product.primary_image) }}" alt="{{ product.name }}" class="main-image" onerror="this.src='/static/images/defaults/product-default.png'">
+                                {% endif %}
                             </div>
                             <div class="image-thumbnails">
                                 <div class="thumbnail active" onclick="changeImage(this)">
-                                    <img src="{{ url_for('static', filename='uploads/' ~ product.image) }}" alt="Thumbnail 1">
+                                    {% if product.primary_image.startswith('http') %}
+                                        <img src="{{ product.primary_image }}" alt="Thumbnail 1" onerror="this.src='/static/images/defaults/product-default.png'">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='uploads/' ~ product.primary_image) }}" alt="Thumbnail 1" onerror="this.src='/static/images/defaults/product-default.png'">
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -209,7 +217,7 @@
                             <input type="hidden" name="product_id" value="{{ product.id }}">
                             <input type="hidden" name="product_name" value="{{ product.name }}">
                             <input type="hidden" name="product_price" value="{{ product.price }}">
-                            <input type="hidden" name="product_image" value="{{ product.image }}">
+                            <input type="hidden" name="product_image" value="{{ product.primary_image }}">
                             <input type="hidden" name="seller_email" value="{{ seller.email if seller else '' }}">
 
                             <div class="action-buttons">

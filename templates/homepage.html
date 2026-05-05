@@ -147,11 +147,11 @@
           <div class="profile-dropdown-container dropdown">
             <button class="user-email" onclick="toggleProfileDropdown(event)">
               {% if session.get('profile_pic') %}
-              <img
-                src="/static/{{ session['profile_pic'] }}"
-                alt="Profile"
-                class="profile-pic"
-              />
+                {% if session['profile_pic'].startswith('http') %}
+                  <img src="{{ session['profile_pic'] }}" alt="Profile" class="profile-pic" onerror="this.src='/static/images/defaults/default_profile.jpg'" />
+                {% else %}
+                  <img src="{{ session['profile_pic'] }}" alt="Profile" class="profile-pic" onerror="this.src='/static/images/defaults/default_profile.jpg'" />
+                {% endif %}
               {% else %}
               <i class="fas fa-user"></i>
               {% endif %}

@@ -1077,11 +1077,7 @@ function closeAuthPromptModal() {
 // ============================================================
 
 function viewProductDetails(productId) {
-    isLoggedIn = checkIfLoggedIn();
-    if (!isLoggedIn) {
-        showAuthPromptModal();
-        return;
-    }
+    // Allow anyone to view product details (no login required)
     window.location.href = `/product_details/${productId}`;
 }
 

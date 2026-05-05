@@ -2239,7 +2239,7 @@ def add_new_product():
 
     return render_template('add_product.html')
 
-@app.route('/update_products/<int:product_id>', methods=['GET', 'POST'])
+@app.route('/update_products/<product_id>', methods=['GET', 'POST'])
 def edit_product(product_id):
     user_email = session.get('email')  # Get logged-in user's email
     
@@ -2343,7 +2343,7 @@ def edit_product(product_id):
 
     return render_template('update_products.html', product=product)
 
-@app.route('/delete_product/<int:product_id>', methods=['DELETE'])
+@app.route('/delete_product/<product_id>', methods=['DELETE'])
 def delete_product(product_id):
     if 'email' not in session:
         return jsonify({'success': False, 'error': 'Not authenticated'}), 401
@@ -2441,7 +2441,7 @@ def api_product_variants(product_id):
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/product_variants/<int:product_id>/update-stock', methods=['POST'])
+@app.route('/api/product_variants/<product_id>/update-stock', methods=['POST'])
 def update_variant_stocks(product_id):
     """API endpoint to update variant stocks"""
     if 'email' not in session:
@@ -2545,7 +2545,7 @@ def add_product_variant():
         print(f"Error adding variant: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/migrate_product_variants/<int:product_id>', methods=['POST'])
+@app.route('/api/migrate_product_variants/<product_id>', methods=['POST'])
 def migrate_product_variants(product_id):
     """Migrate legacy products to new variant system"""
     if 'email' not in session:
@@ -4113,14 +4113,11 @@ def add_to_cart():
     if 'email' not in session:
         return jsonify({'success': False, 'message': 'Please login first'})
     
-    conn = None
-    cursor = None
-    
     try:
         data = request.json
         user_email = session['email']
         
-        print(f"\n=== ADD_TO_CART START ===")
+        print(f"\n=== ADD_TO_CART START (Firestore) ===")
         print(f"User: {user_email}")
         print(f"Data: {data}")
         
@@ -4133,7 +4130,7 @@ def add_to_cart():
         
         # Convert and validate data types
         try:
-            product_id = int(data['product_id'])
+            product_id = str(data['product_id'])  # Firestore IDs are strings
             new_quantity = int(data['quantity'])
             price = float(data['price'])
             print(f"Validated data types: product_id={product_id}, qty={new_quantity}, price={price}")
@@ -4141,100 +4138,86 @@ def add_to_cart():
             print(f"Data type conversion error: {str(e)}")
             return jsonify({'success': False, 'message': f'Invalid data types: {str(e)}'})
         
-        # Connect to database
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        print("Database connection established")
-        
-        # Ensure size is a string, not None
+        # Ensure size and color are strings, not None
         size_value = data.get('size') or ''
         color_value = data.get('color') or ''
         print(f"Color: {color_value}, Size: {size_value}")
         
-        # Check if product and variant exist and have stock
-        cursor.execute('''
-            SELECT pv.stock FROM product_variants pv
-            JOIN products p ON pv.product_id = p.id
-            WHERE p.id = %s AND pv.color = %s AND pv.size = %s
-        ''', (product_id, color_value, size_value))
+        # Get product from Firestore to check stock
+        product = firestore_db.get_product_by_id(product_id)
         
-        variant_stock = cursor.fetchone()
+        if not product:
+            print(f"Product not found: {product_id}")
+            return jsonify({'success': False, 'message': 'Product not found'})
         
-        if not variant_stock:
-            cursor.close()
-            conn.close()
+        # Check variant stock
+        variants = product.get('variants', [])
+        variant = None
+        for v in variants:
+            if v.get('color') == color_value and v.get('size') == size_value:
+                variant = v
+                break
+        
+        if not variant:
             print(f"Variant not found for product {product_id}, color={color_value}, size={size_value}")
             return jsonify({'success': False, 'message': 'This product variant is not available'})
         
-        if variant_stock['stock'] <= 0:
-            cursor.close()
-            conn.close()
+        variant_stock = int(variant.get('stock', 0))
+        
+        if variant_stock <= 0:
             print("Product variant out of stock")
             return jsonify({'success': False, 'outOfStock': True, 'message': 'This product variant is out of stock'})
         
         # Check if requested quantity is available
-        if new_quantity > variant_stock['stock']:
-            cursor.close()
-            conn.close()
-            print(f"Insufficient stock: requested {new_quantity}, available {variant_stock['stock']}")
-            return jsonify({'success': False, 'insufficientStock': True, 'available': variant_stock['stock'], 'message': f'Only {variant_stock["stock"]} items available'})
+        if new_quantity > variant_stock:
+            print(f"Insufficient stock: requested {new_quantity}, available {variant_stock}")
+            return jsonify({'success': False, 'insufficientStock': True, 'available': variant_stock, 'message': f'Only {variant_stock} items available'})
         
         # Check if product already exists in cart
-        cursor.execute('''
-            SELECT * FROM cart 
-            WHERE email = %s AND product_id = %s AND color = %s AND size = %s
-        ''', (user_email, product_id, color_value, size_value))
+        existing_cart = firestore_db.get_cart(user_email)
+        existing_item = None
         
-        existing_item = cursor.fetchone()
+        for item in existing_cart:
+            if (item.get('product_id') == product_id and 
+                item.get('color') == color_value and 
+                item.get('size') == size_value):
+                existing_item = item
+                break
+        
         print(f"Existing item: {existing_item is not None}")
         
         if existing_item:
             # Update quantity if item exists
-            new_qty = existing_item['quantity'] + new_quantity
-            cursor.execute('''
-                UPDATE cart 
-                SET quantity = %s 
-                WHERE email = %s AND product_id = %s AND color = %s AND size = %s
-            ''', (new_qty, user_email, product_id, color_value, size_value))
+            new_qty = existing_item.get('quantity', 0) + new_quantity
+            
+            # Check if new quantity exceeds stock
+            if new_qty > variant_stock:
+                print(f"Cannot add more: cart would have {new_qty}, only {variant_stock} available")
+                return jsonify({'success': False, 'insufficientStock': True, 'available': variant_stock, 'message': f'Only {variant_stock} items available'})
+            
+            firestore_db.update_cart_item(existing_item['id'], {'quantity': new_qty})
             print(f"Updated existing item: qty={new_qty}")
         else:
             # Insert new item if it doesn't exist
             seller_email = data.get('seller_email') or ''
             print(f"Inserting new item. seller_email={seller_email}")
             
-            cursor.execute('''
-                INSERT INTO cart (email, product_id, name, price, image, color, size, quantity, seller_email)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (
-                user_email,
-                product_id,
-                data['name'],
-                price,
-                data['image'],
-                color_value,
-                size_value,
-                new_quantity,
-                seller_email
-            ))
+            cart_item = {
+                'product_id': product_id,
+                'name': data['name'],
+                'price': price,
+                'image': data['image'],
+                'color': color_value,
+                'size': size_value,
+                'quantity': new_quantity,
+                'seller_email': seller_email
+            }
+            
+            firestore_db.add_to_cart(user_email, cart_item)
             print("Inserted new cart item")
         
-        conn.commit()
-        print("Commit successful")
-        cursor.close()
-        conn.close()
-        print("Connections closed")
-        
-        try:
-            print("About to call jsonify")
-            result = jsonify({'success': True})
-            print(f"jsonify returned: {result}")
-            print("About to return result")
-            return result
-        except Exception as jsonify_err:
-            print(f"ERROR in jsonify: {str(jsonify_err)}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({'success': False, 'message': f'Error in jsonify: {str(jsonify_err)}'})
+        print("Cart operation successful")
+        return jsonify({'success': True})
         
     except Exception as e:
         print(f"\n=== ADD_TO_CART ERROR ===")
@@ -4242,12 +4225,7 @@ def add_to_cart():
         import traceback
         traceback.print_exc()
         print("=== END ERROR ===\n")
-        
-        # Close connections if they exist
-        try:
-            if cursor:
-                cursor.close()
-            if conn:
+        return jsonify({'success': False, 'message': str(e)})
                 conn.close()
         except Exception as close_err:
             print(f"Error closing connections: {str(close_err)}")
@@ -4266,19 +4244,67 @@ def get_cart_count():
     
     return jsonify({'count': count})
 
-@app.route('/get_wishlist_preview')
-def get_wishlist_preview():
-    user_email = session.get('email')
-    if not user_email:
-        return jsonify({'items': []})
-    
-    # Get wishlist items from Firestore
-    wishlist_items = firestore_db.get_wishlist(user_email)
-    
-    # Return only first 3 items
-    preview_items = wishlist_items[:3] if wishlist_items else []
-    
-    return jsonify({'items': preview_items})
+@app.route('/wishlist')
+def wishlist():
+    """Display user's wishlist items"""
+    if 'email' not in session:
+        return redirect(url_for('auth'))
+
+    user_email = session['email']
+
+    try:
+        # Get wishlist from Firestore
+        wishlist_items = firestore_db.get_wishlist(user_email)
+
+        # Process items and fix image URLs
+        clean_items = []
+        for item in wishlist_items:
+            try:
+                # Get the actual product to get current image
+                product = firestore_db.get_product_by_id(str(item.get('product_id', '')))
+
+                # Handle image URL
+                image_url = None
+                if product:
+                    if 'image_urls' in product and product['image_urls']:
+                        if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                            image_url = product['image_urls'][0]
+                        elif isinstance(product['image_urls'], str):
+                            image_url = product['image_urls']
+                    elif 'image' in product:
+                        image_url = product['image']
+
+                if not image_url:
+                    image_url = item.get('image') or '/static/images/defaults/product-default.png'
+
+                clean_item = {
+                    'id': item.get('id'),
+                    'product_id': item.get('product_id'),
+                    'name': item.get('name', ''),
+                    'price': float(item.get('price', 0)),
+                    'image': image_url,
+                    'date_added': item.get('date_added'),
+                    'seller_email': item.get('seller_email', '')
+                }
+                clean_items.append(clean_item)
+            except Exception as item_err:
+                print(f"[ERROR] Processing wishlist item: {str(item_err)}")
+                import traceback
+                traceback.print_exc()
+                continue
+
+        total = sum(float(item['price']) for item in clean_items) if clean_items else 0
+
+        print(f"[DEBUG] Sending {len(clean_items)} items to wishlist.html")
+
+        return render_template('wishlist.html', wishlist_items=clean_items, total=total)
+
+    except Exception as e:
+        print(f"[ERROR] Wishlist route error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash('Error loading wishlist', 'error')
+        return render_template('wishlist.html', wishlist_items=[], total=0)
 
 @app.route('/cart/delete_selected', methods=['POST'])
 def delete_selected_items():
@@ -4358,10 +4384,94 @@ def get_cart_preview():
     try:
         # Get cart items from Firestore
         items = firestore_db.get_cart(session['email'])
-        return jsonify({'items': items})
+        
+        # Process items and fix image URLs
+        clean_items = []
+        for item in items:
+            # Get the actual product to get current image
+            product = firestore_db.get_product_by_id(str(item.get('product_id', '')))
+            
+            # Handle image URL
+            image_url = item.get('image')
+            if product:
+                if 'image_urls' in product and product['image_urls']:
+                    if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                        image_url = product['image_urls'][0]
+                    elif isinstance(product['image_urls'], str):
+                        image_url = product['image_urls']
+                elif 'image' in product:
+                    image_url = product['image']
+            
+            if not image_url:
+                image_url = '/static/images/defaults/product-default.png'
+            
+            clean_item = {
+                'id': item.get('id'),
+                'product_id': item.get('product_id'),
+                'name': item.get('name', ''),
+                'price': float(item.get('price', 0)),
+                'image': image_url,
+                'color': item.get('color', ''),
+                'size': item.get('size', ''),
+                'quantity': int(item.get('quantity', 1)),
+                'seller_email': item.get('seller_email', '')
+            }
+            clean_items.append(clean_item)
+        
+        return jsonify({'items': clean_items})
         
     except Exception as e:
         print("Error getting cart preview:", str(e))
+        import traceback
+        traceback.print_exc()
+        return jsonify({'items': []})
+
+
+@app.route('/get_wishlist_preview')
+def get_wishlist_preview():
+    """API endpoint for wishlist dropdown preview"""
+    if 'email' not in session:
+        return jsonify({'items': []})
+    
+    try:
+        # Get wishlist items from Firestore
+        wishlist_items = firestore_db.get_wishlist(session['email'])
+        
+        # Process items and fix image URLs
+        clean_items = []
+        for item in wishlist_items:
+            # Get the actual product to get current image
+            product = firestore_db.get_product_by_id(str(item.get('product_id', '')))
+            
+            # Handle image URL
+            image_url = None
+            if product:
+                if 'image_urls' in product and product['image_urls']:
+                    if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                        image_url = product['image_urls'][0]
+                    elif isinstance(product['image_urls'], str):
+                        image_url = product['image_urls']
+                elif 'image' in product:
+                    image_url = product['image']
+            
+            if not image_url:
+                image_url = item.get('image') or '/static/images/defaults/product-default.png'
+            
+            clean_item = {
+                'id': item.get('id'),
+                'product_id': item.get('product_id'),
+                'name': item.get('name', ''),
+                'price': float(item.get('price', 0)),
+                'image': image_url
+            }
+            clean_items.append(clean_item)
+        
+        return jsonify({'items': clean_items})
+        
+    except Exception as e:
+        print(f"Error getting wishlist preview: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'items': []})
 
 
