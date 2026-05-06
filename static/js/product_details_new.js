@@ -1081,9 +1081,21 @@ function updateReviewSuggestions(rating) {
         btn.textContent = suggestion;
         btn.onclick = (e) => {
             e.preventDefault();
-            reviewText.value = suggestion;
-            document.getElementById('charCount').textContent = suggestion.length;
-            btn.classList.add('selected');
+            const currentText = reviewText.value.trim();
+            // Append suggestion to existing text with a space
+            if (currentText) {
+                reviewText.value = currentText + ' ' + suggestion;
+            } else {
+                reviewText.value = suggestion;
+            }
+            document.getElementById('charCount').textContent = reviewText.value.length;
+            // Visual feedback
+            btn.style.background = '#7c3aed';
+            btn.style.color = 'white';
+            setTimeout(() => {
+                btn.style.background = 'white';
+                btn.style.color = 'black';
+            }, 300);
         };
         btn.style.cssText = `
             padding: 6px 12px;
@@ -1093,6 +1105,7 @@ function updateReviewSuggestions(rating) {
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.2s;
+            color: black;
         `;
         btn.onmouseover = () => btn.style.background = '#f5f5f5';
         btn.onmouseout = () => btn.style.background = 'white';
