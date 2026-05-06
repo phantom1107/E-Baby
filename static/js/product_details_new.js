@@ -212,7 +212,7 @@ function onVariantChange() {
 // ========================================
 
 function toggleCartDropdown(event) {
-  if (event) event.preventDefault();
+  event.preventDefault();
   const dropdown = document.getElementById('cartDropdown');
   const wishlistDropdown = document.getElementById('wishlistDropdown');
   
@@ -263,61 +263,63 @@ function updateCartCount() {
 
 function loadCartPreview() {
   fetch('/get_cart_preview')
-    .then((response) => response.json())
-    .then((data) => {
+    .then(response => response.json())
+    .then(data => {
       const cartItems = document.getElementById('cartItems');
       cartItems.innerHTML = '';
       let total = 0;
 
       if (data.items && data.items.length > 0) {
-        data.items.forEach((item) => {
+        data.items.forEach(item => {
           total += parseFloat(item.price) * parseInt(item.quantity);
           
-          // Build image URL - add /static/uploads/ prefix if it's just a filename
-          let imageUrl = item.image;
-          if (!item.image.startsWith('/')) {
-            imageUrl = `/static/uploads/${item.image}`;
+          // Handle image URL properly
+          let imageSrc;
+          if (item.image && (item.image.startsWith('http://') || item.image.startsWith('https://') || item.image.startsWith('//'))) {
+            imageSrc = item.image;
+          } else if (item.image && item.image.startsWith('/')) {
+            imageSrc = item.image;
+          } else if (item.image) {
+            imageSrc = '/static/uploads/' + item.image;
+          } else {
+            imageSrc = '/static/images/defaults/product-default.png';
           }
           
-          const itemElement = document.createElement('div');
-          itemElement.className = 'cart-item';
-          itemElement.innerHTML = `
-            <img src="${imageUrl}" alt="${item.name}" class="cart-item-image" onerror="this.src='/static/images/defaults/product-default.png'">
-            <div class="cart-item-details">
-              <div class="cart-item-name">${item.name}</div>
-              <div class="cart-item-variant">
-                ${item.color ? `<span class="variant">Color: ${item.color}</span>` : ''}
-                ${item.size ? `<span class="variant">Size: ${item.size}</span>` : ''}
+          cartItems.innerHTML += `
+            <div class="cart-item">
+              <img src="${imageSrc}" alt="${item.name}" onerror="this.src='/static/images/defaults/product-default.png'">
+              <div class="item-details">
+                <h4>${item.name}</h4>
+                <p>₱${parseFloat(item.price).toFixed(2)}</p>
+                <small style="color: #666; font-size: 0.8rem;">
+                  Color: ${item.color}${item.size ? ` | Size: ${item.size}` : ''}
+                </small>
+                <div class="quantity-controls">
+                  <button class="qty-btn" onclick="updateCartQuantity('${item.product_id}', -1, '${item.color}', '${item.size}', '${item.product_id}_${item.color}_${item.size || 'nosize'}')" ${item.quantity <= 1 ? 'disabled' : ''}>
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <span class="quantity">${item.quantity}</span>
+                  <button class="qty-btn" onclick="updateCartQuantity('${item.product_id}', 1, '${item.color}', '${item.size}', '${item.product_id}_${item.color}_${item.size || 'nosize'}')">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
               </div>
-              <div class="cart-item-price">₱${parseFloat(item.price).toFixed(2)}</div>
-              <div class="quantity-controls">
-                <button class="qty-btn" onclick="updateCartQuantity('${item.product_id}', '${item.color}', '${item.size}', -1)">−</button>
-                <span class="qty-display">${item.quantity}</span>
-                <button class="qty-btn" onclick="updateCartQuantity('${item.product_id}', '${item.color}', '${item.size}', 1)">+</button>
-              </div>
+              <button onclick="removeFromCart('${item.product_id}', '${item.color}', '${item.size}', '${item.product_id}_${item.color}_${item.size || 'nosize'}')" class="remove-btn">
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
-            <button class="remove-btn" onclick="removeFromCart('${item.product_id}', '${item.color}', '${item.size}')">
-              <i class="fas fa-trash"></i>
-            </button>
           `;
-          cartItems.appendChild(itemElement);
         });
       } else {
-        cartItems.innerHTML = '<div class="empty-message">Your cart is empty</div>';
+        cartItems.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">Your cart is empty</div>';
       }
 
-      const cartFooter = document.querySelector('.dropdown-footer');
-      if (cartFooter && data.items && data.items.length > 0) {
-        cartFooter.innerHTML = `
-          <div class="cart-total">Subtotal: ₱${total.toFixed(2)}</div>
-          <a href="/cart" class="checkout-btn">View Cart</a>
-        `;
-      }
+      document.getElementById('cartTotal').textContent = '₱' + parseFloat(total).toFixed(2);
     })
-    .catch((error) => console.error('Error loading cart preview:', error));
+    .catch(error => console.error('Error:', error));
 }
 
-function updateCartQuantity(productId, color, size, change) {
+function updateCartQuantity(productId, change, color, size, variantId) {
   fetch('/update-cart-quantity', {
     method: 'POST',
     headers: {
@@ -327,40 +329,53 @@ function updateCartQuantity(productId, color, size, change) {
       product_id: productId,
       color: color,
       size: size,
+      variant_id: variantId,
       change: change
     })
   })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        loadCartPreview();
-        updateCartCount();
-      }
-    })
-    .catch((error) => console.error('Error updating quantity:', error));
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      loadCartPreview();
+      updateCartCount();
+    } else {
+      Toast.error(data.message || 'Error updating quantity');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    Toast.error('Error updating quantity');
+  });
 }
 
-function removeFromCart(productId, color, size) {
-  fetch('/remove-from-cart', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      product_id: productId,
-      color: color,
-      size: size
+function removeFromCart(productId, color, size, variantId) {
+  if (confirm('Remove this item from cart?')) {
+    fetch('/remove-from-cart', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        product_id: productId,
+        color: color,
+        size: size,
+        variant_id: variantId
+      })
     })
-  })
-    .then((response) => response.json())
-    .then((data) => {
+    .then(response => response.json())
+    .then(data => {
       if (data.success) {
-        showNotification('Removed from cart', 'success');
         loadCartPreview();
         updateCartCount();
+      } else {
+        Toast.error(data.message || 'Error removing item');
       }
     })
-    .catch((error) => console.error('Error removing from cart:', error));
+    .catch(error => {
+      console.error('Error:', error);
+      Toast.error('Error removing item');
+    });
+  }
 }
 
 // ========================================
@@ -965,10 +980,13 @@ function loadMoreReviews() {
 
 // Open review modal
 function openReviewModal() {
-    // Check if user is logged in
+    // Check if user is logged in by checking if email is in the page
     const userEmail = document.querySelector('.user-email span');
-    if (!userEmail || userEmail.textContent === 'Guest') {
+    const isLoggedIn = userEmail && userEmail.textContent !== 'Guest';
+    
+    if (!isLoggedIn) {
         Toast.warning('Please login to write a review');
+        window.location.href = '/auth?tab=login';
         return;
     }
     
@@ -1095,3 +1113,219 @@ document.addEventListener('click', function(event) {
         closeReviewModal();
     }
 });
+
+
+/* ============================================================
+   HOMEPAGE HEADER FUNCTIONS (for consistency)
+   ============================================================ */
+
+// Search functionality
+let allProducts = [];
+let searchTimeout;
+
+// Load all products for search
+fetch('/api/products')
+    .then(response => response.json())
+    .then(data => {
+        allProducts = data || [];
+    })
+    .catch(error => console.error('Error loading products:', error));
+
+function handleSearchInput(event) {
+    const query = event.target.value.trim();
+    const dropdown = document.getElementById('searchDropdown');
+    const dropdownContent = document.getElementById('dropdownContent');
+    
+    clearTimeout(searchTimeout);
+    
+    if (!query || query.length < 2) {
+        dropdown.style.display = 'none';
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        performLiveSearch(query, dropdownContent, dropdown);
+    }, 300);
+}
+
+function handleSearchKeypress(event) {
+    if (event.key === 'Enter') {
+        performSearch();
+    }
+}
+
+function performLiveSearch(query, dropdownContent, dropdown) {
+    const lowerQuery = query.toLowerCase();
+    const products = allProducts.filter(p => 
+        p.name.toLowerCase().includes(lowerQuery) || 
+        p.category.toLowerCase().includes(lowerQuery)
+    ).slice(0, 5);
+    
+    let html = '';
+    
+    if (products.length === 0) {
+        html = '<div class="search-dropdown-empty"><i class="fas fa-search" style="font-size: 1.5rem; margin-bottom: 10px; display: block; color: #cbd5e1;"></i>No products found</div>';
+    } else {
+        html += '<div class="search-dropdown-category"><i class="fas fa-box"></i> Products</div>';
+        products.forEach(product => {
+            let imageSrc;
+            if (product.image && (product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('//'))) {
+                imageSrc = product.image;
+            } else if (product.image && product.image.startsWith('/')) {
+                imageSrc = product.image;
+            } else if (product.image) {
+                imageSrc = '/static/uploads/' + product.image;
+            } else {
+                imageSrc = '/static/images/defaults/product-default.png';
+            }
+            
+            html += `
+                <div class="search-dropdown-item product" onclick="goToProduct('${product.id}')">
+                    <div class="search-dropdown-item-image">
+                        <img src="${imageSrc}" alt="${product.name}" onerror="this.src='/static/images/defaults/product-default.png'">
+                    </div>
+                    <div class="search-dropdown-item-content">
+                        <div class="search-dropdown-item-title">${product.name}</div>
+                        <div class="search-dropdown-item-subtitle">${product.category}</div>
+                    </div>
+                    <div class="search-dropdown-item-price">₱${product.price.toFixed(2)}</div>
+                </div>
+            `;
+        });
+    }
+    
+    html += `
+        <div class="search-dropdown-view-all" onclick="performSearch()">
+            <i class="fas fa-arrow-right"></i> View all results for "${query}"
+        </div>
+    `;
+    
+    dropdownContent.innerHTML = html;
+    dropdown.style.display = 'block';
+}
+
+function goToProduct(productId) {
+    window.location.href = `/product_details/${productId}`;
+}
+
+function performSearch() {
+    const query = document.getElementById('search-input').value;
+    if (query) {
+        window.location.href = `/search?query=${encodeURIComponent(query)}`;
+    }
+}
+
+// Dropdown toggles
+function toggleWishlistDropdown(event) {
+    event.preventDefault();
+    const dropdown = document.getElementById('wishlistDropdown');
+    const cartDropdown = document.getElementById('cartDropdown');
+    
+    cartDropdown.classList.remove('show');
+    loadWishlistPreview();
+    dropdown.classList.toggle('show');
+}
+
+function toggleProfileDropdown(event) {
+    event.preventDefault();
+    const dropdown = document.getElementById('profileDropdown');
+    dropdown.classList.toggle('show');
+}
+
+// Load wishlist preview
+function loadWishlistPreview() {
+    fetch('/get_wishlist_preview')
+        .then(response => response.json())
+        .then(data => {
+            const wishlistItems = document.getElementById('wishlistItems');
+            wishlistItems.innerHTML = '';
+
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    let imagePath;
+                    if (item.image && (item.image.startsWith('http://') || item.image.startsWith('https://') || item.image.startsWith('//'))) {
+                        imagePath = item.image;
+                    } else if (item.image && item.image.startsWith('/')) {
+                        imagePath = item.image;
+                    } else if (item.image) {
+                        imagePath = '/static/uploads/' + item.image;
+                    } else {
+                        imagePath = '/static/images/defaults/product-default.png';
+                    }
+                    
+                    wishlistItems.innerHTML += `
+                        <div class="wishlist-item">
+                            <img src="${imagePath}" alt="${item.name}" onerror="this.src='/static/images/defaults/product-default.png'">
+                            <div class="item-details">
+                                <h4>${item.name}</h4>
+                                <p>₱${parseFloat(item.price).toFixed(2)}</p>
+                            </div>
+                            <button class="remove-btn" onclick="removeFromWishlist('${item.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+            } else {
+                wishlistItems.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">Your wishlist is empty</div>';
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function removeFromWishlist(productId) {
+    if (confirm('Remove from wishlist?')) {
+        fetch('/wishlist/remove', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ids: [productId]
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadWishlistPreview();
+                updateWishlistCount();
+            } else {
+                alert(data.message || 'Error removing from wishlist');
+            }
+        });
+    }
+}
+
+function updateWishlistCount() {
+    fetch('/get_wishlist_count')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('wishlistCount').textContent = data.count;
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    const wishlistDropdown = document.getElementById('wishlistDropdown');
+    const cartDropdown = document.getElementById('cartDropdown');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const searchDropdown = document.getElementById('searchDropdown');
+    const searchContainer = document.querySelector('.search-container');
+    
+    if (!event.target.closest('.wishlist-container')) {
+        wishlistDropdown.classList.remove('show');
+    }
+    if (!event.target.closest('.cart-container')) {
+        cartDropdown.classList.remove('show');
+    }
+    if (!event.target.closest('.profile-dropdown-container')) {
+        profileDropdown.classList.remove('show');
+    }
+    if (searchContainer && !searchContainer.contains(event.target)) {
+        searchDropdown.style.display = 'none';
+    }
+});
+
+// Initialize on page load
+updateWishlistCount();

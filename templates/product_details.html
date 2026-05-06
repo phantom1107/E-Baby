@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ product.name }} - E-Baby</title>
     <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/homepage.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/product_details_new.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
@@ -12,73 +13,175 @@
     <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
 </head>
 <body class="product-page">
+    <!-- ===== HEADER & NAVIGATION ===== -->
     <header>
-        <div class="top-header">
-            <div class="header-left">
-                <a href="/" class="logo-link">
-                    <img src="/static/images/logo/E-Baby Logo.png" alt="E-Baby Logo" class="logo">
-                </a>
-            </div>
-            <div class="search-container">
-                <div class="search-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search products..." class="search-bar" id="searchInput">
-                </div>
-            </div>
-            <div class="header-right">
-                <!-- Cart Dropdown -->
-                <div class="dropdown cart-container">
-                    <button class="header-icon" onclick="toggleCartDropdown(event)" title="Shopping Cart">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span class="cart-badge" id="cartCount">0</span>
-                    </button>
-                    <div class="dropdown-content" id="cartDropdown">
-                        <div class="dropdown-header">
-                            <h3>Shopping Cart</h3>
-                        </div>
-                        <div class="dropdown-items" id="cartItems"></div>
-                        <div class="dropdown-footer">
-                            <div class="cart-total">
-                                <span>Total:</span>
-                                <span id="cartTotal">₱0.00</span>
-                            </div>
-                            <a href="/cart" class="checkout-btn">Go to Cart</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Wishlist Dropdown -->
-                <div class="dropdown wishlist-container">
-                    <button class="header-icon" onclick="toggleWishlistDropdown(event)" title="Wishlist">
-                        <i class="fas fa-heart"></i>
-                        <span class="cart-badge" id="wishlistCount">0</span>
-                    </button>
-                    <div class="dropdown-content" id="wishlistDropdown">
-                        <div class="dropdown-header">
-                            <h3>Wishlist</h3>
-                        </div>
-                        <div class="dropdown-items" id="wishlistItems"></div>
-                        <div class="dropdown-footer">
-                            <a href="/wishlist" class="view-all-btn">View Wishlist</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Profile Dropdown -->
-                <div class="profile-dropdown">
-                    <button class="header-icon dropdown-btn" title="User Menu">
-                        <i class="fas fa-user"></i>
-                    </button>
-                    <div class="dropdown-content">
-                        <a href="/profile"><i class="fas fa-user-circle"></i> My Profile</a>
-                        <a href="/orders"><i class="fas fa-box"></i> My Orders</a>
-                        <a href="/wishlist"><i class="fas fa-heart"></i> Wishlist</a>
-                        <hr>
-                        <a href="#" onclick="confirmLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                    </div>
-                </div>
-            </div>
+      <div class="top-header">
+        <!-- Logo -->
+        <div class="logo-container">
+          <a href="/" class="logo-link">
+            <img
+              src="/static/images/logo/E-Baby Logo.png"
+              alt="E-Baby"
+              class="logo-image"
+            />
+          </a>
         </div>
+
+        <!-- Search with Dropdown -->
+        <div class="search-container" style="position: relative;">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search for baby products..."
+            class="search-bar"
+            oninput="handleSearchInput(event)"
+            onkeypress="handleSearchKeypress(event)"
+          />
+          <button onclick="performSearch()" class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+          
+          <!-- Search Dropdown Results -->
+          <div id="searchDropdown" class="search-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 500px; overflow-y: auto; z-index: 1000; margin-top: 8px;">
+            <div id="dropdownContent" style="padding: 10px 0;"></div>
+          </div>
+        </div>
+
+        <!-- User Actions -->
+        <div class="user-actions">
+          <!-- Wishlist -->
+          <div class="wishlist-container dropdown">
+            <button class="icon-btn" onclick="toggleWishlistDropdown(event)">
+              <i class="fas fa-heart"></i>
+              <span class="badge" id="wishlistCount">0</span>
+            </button>
+            <div class="dropdown-content" id="wishlistDropdown">
+              <div class="dropdown-header">
+                <h3>Wishlist</h3>
+              </div>
+              <div class="wishlist-items" id="wishlistItems">
+                <!-- Loaded dynamically -->
+              </div>
+              <div class="dropdown-footer">
+                <a href="/wishlist" class="view-all-btn">View Wishlist</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cart -->
+          <div class="cart-container dropdown">
+            <button class="icon-btn" onclick="toggleCartDropdown(event)">
+              <i class="fas fa-shopping-cart"></i>
+              <span class="badge" id="cartCount">0</span>
+            </button>
+            <div class="dropdown-content" id="cartDropdown">
+              <div class="dropdown-header">
+                <h3>Shopping Cart</h3>
+              </div>
+              <div class="cart-items" id="cartItems">
+                <!-- Loaded dynamically -->
+              </div>
+              <div class="dropdown-footer">
+                <div class="cart-total">
+                  <span>Total:</span>
+                  <span id="cartTotal">₱0.00</span>
+                </div>
+                <a href="/cart" class="checkout-btn">Go to Cart</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile -->
+          <div class="profile-dropdown-container dropdown">
+            <button class="user-email" onclick="toggleProfileDropdown(event)">
+              {% if session.get('profile_pic') %}
+                {% if session['profile_pic'].startswith('http') %}
+                  <img src="{{ session['profile_pic'] }}" alt="Profile" class="profile-pic" onerror="this.src='/static/images/defaults/default_profile.jpg'" />
+                {% else %}
+                  <img src="{{ session['profile_pic'] }}" alt="Profile" class="profile-pic" onerror="this.src='/static/images/defaults/default_profile.jpg'" />
+                {% endif %}
+              {% else %}
+              <i class="fas fa-user"></i>
+              {% endif %}
+              <span>{{ session.get('email', 'Guest') }}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-content" id="profileDropdown">
+              {% if session.get('email') %}
+              <!-- Logged in user menu -->
+              <a href="/profile" class="dropdown-item"
+                ><i class="fas fa-user"></i> Profile</a
+              >
+              <a href="/orders" class="dropdown-item"
+                ><i class="fas fa-box"></i> Orders</a
+              >
+              <a href="/wishlist" class="dropdown-item"
+                ><i class="fas fa-heart"></i> Wishlist</a
+              >
+              <div class="dropdown-divider"></div>
+              <a href="#" onclick="logout()" class="dropdown-item logout"
+                ><i class="fas fa-sign-out-alt"></i> Logout</a
+              >
+              {% else %}
+              <!-- Guest menu -->
+              <a href="/login" class="dropdown-item"
+                ><i class="fas fa-sign-in-alt"></i> Login</a
+              >
+              <a href="/auth" class="dropdown-item"
+                ><i class="fas fa-user-plus"></i> Register</a
+              >
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Bar -->
+      <nav class="main-nav">
+        <ul class="nav-links">
+          <li>
+            <a href="/">
+              <i class="fas fa-home"></i> HOME
+            </a>
+          </li>
+          <li>
+            <a href="/#featured-section">
+              <i class="fas fa-fire"></i> POPULAR
+            </a>
+          </li>
+          <li>
+            <a href="/#new-arrivals-section">
+              <i class="fas fa-shopping-bag"></i> NEW ARRIVALS
+            </a>
+          </li>
+          <li class="dropdown-nav">
+            <a href="#" onclick="return false">
+              <i class="fas fa-th-list"></i> CATEGORIES
+              <i class="fas fa-chevron-down"></i>
+            </a>
+            <div class="nav-dropdown-content" id="categoriesDropdown">
+              <a href="/search?query=Baby+Clothes">
+                <i class="fas fa-baby"></i> Baby Clothes & Accessories
+              </a>
+              <a href="/search?query=Toys">
+                <i class="fas fa-puzzle-piece"></i> Toys & Games
+              </a>
+              <a href="/search?query=Educational">
+                <i class="fas fa-book"></i> Educational Materials
+              </a>
+              <a href="/search?query=Strollers">
+                <i class="fas fa-baby-carriage"></i> Strollers & Gear
+              </a>
+              <a href="/search?query=Nursery">
+                <i class="fas fa-bed"></i> Nursery Furniture
+              </a>
+              <a href="/search?query=Safety">
+                <i class="fas fa-first-aid"></i> Safety and Health
+              </a>
+            </div>
+          </li>
+        </ul>
+      </nav>
     </header>
 
     <main class="main-content">
@@ -86,7 +189,7 @@
             <div class="breadcrumb container">
                 <a href="/"><i class="fas fa-home"></i> Home</a>
                 <span class="separator">/</span>
-                <a href="/{{ product.category.lower() }}">{{ product.category }}</a>
+                <a href="/search?query={{ product.category }}">{{ product.category }}</a>
                 <span class="separator">/</span>
                 <span class="current">{{ product.name }}</span>
             </div>
