@@ -462,6 +462,24 @@ def api_products():
             if not image_url:
                 image_url = '/static/images/defaults/product-default.png'
             
+            # Calculate total stock (including variants)
+            total_stock = 0
+            if 'variants' in product and isinstance(product['variants'], list) and len(product['variants']) > 0:
+                # Sum up stock from all variants
+                for variant in product['variants']:
+                    variant_stock = variant.get('stock', 0) or variant.get('quantity', 0)
+                    try:
+                        total_stock += int(variant_stock)
+                    except (ValueError, TypeError):
+                        pass
+            else:
+                # No variants, use product-level stock
+                total_stock = product.get('stock', 0) or product.get('quantity', 0)
+                try:
+                    total_stock = int(total_stock)
+                except (ValueError, TypeError):
+                    total_stock = 0
+            
             # Only include products (optionally filter by stock if needed)
             product_data = {
                 'id': product.get('id'),
@@ -470,7 +488,7 @@ def api_products():
                 'category': product.get('category'),
                 'image': image_url,
                 'seller_email': product.get('seller_email'),
-                'stock': product.get('stock') or product.get('quantity', 0)
+                'stock': total_stock
             }
             products.append(product_data)
         
@@ -4300,33 +4318,47 @@ def add_to_cart():
             print("Product variant out of stock")
             return jsonify({'success': False, 'outOfStock': True, 'message': 'This product variant is out of stock'})
         
-        # Check if requested quantity is available
-        if new_quantity > variant_stock:
-            print(f"Insufficient stock: requested {new_quantity}, available {variant_stock}")
-            return jsonify({'success': False, 'insufficientStock': True, 'available': variant_stock, 'message': f'Only {variant_stock} items available'})
-        
         # Check if product already exists in cart
         existing_cart = firestore_db.get_cart(user_email)
         existing_item = None
+        current_cart_quantity = 0
         
         for item in existing_cart:
             if (item.get('product_id') == product_id and 
                 item.get('color') == color_value and 
                 item.get('size') == size_value):
                 existing_item = item
+                current_cart_quantity = int(item.get('quantity', 0))
                 break
         
-        print(f"Existing item: {existing_item is not None}")
+        print(f"Existing item: {existing_item is not None}, current cart qty: {current_cart_quantity}")
+        
+        # Calculate total quantity if we add the new items
+        total_quantity_after_add = current_cart_quantity + new_quantity
+        
+        # Check if total quantity would exceed available stock
+        if total_quantity_after_add > variant_stock:
+            remaining_stock = variant_stock - current_cart_quantity
+            if remaining_stock <= 0:
+                print(f"Cart already has maximum stock: {current_cart_quantity}/{variant_stock}")
+                return jsonify({
+                    'success': False, 
+                    'insufficientStock': True, 
+                    'available': 0,
+                    'message': f'You already have {current_cart_quantity} items in cart. Only {variant_stock} available in total.'
+                })
+            else:
+                print(f"Cannot add {new_quantity}: would exceed stock. Can only add {remaining_stock} more")
+                return jsonify({
+                    'success': False, 
+                    'insufficientStock': True, 
+                    'available': remaining_stock,
+                    'message': f'You can only add {remaining_stock} more item(s). You already have {current_cart_quantity} in cart, and only {variant_stock} available in total.'
+                })
         
         if existing_item:
             # Update quantity if item exists
-            new_qty = existing_item.get('quantity', 0) + new_quantity
-            
-            # Check if new quantity exceeds stock
-            if new_qty > variant_stock:
-                print(f"Cannot add more: cart would have {new_qty}, only {variant_stock} available")
-                return jsonify({'success': False, 'insufficientStock': True, 'available': variant_stock, 'message': f'Only {variant_stock} items available'})
-            
+            new_qty = current_cart_quantity + new_quantity
             firestore_db.update_cart_item(existing_item['id'], {'quantity': new_qty})
             print(f"Updated existing item: qty={new_qty}")
         else:

@@ -982,15 +982,35 @@ function filterByCategory(category) {
                     const grid = document.getElementById(gridId);
                     products.forEach(product => {
                         const imagePath = (product.image && (product.image.startsWith('http') || product.image.startsWith('//'))) ? product.image : (product.image ? '/static/uploads/' + product.image : '/static/images/defaults/product-default.png');
-                        const stock = product.quantity || product.stock || 999;
+                        const stock = product.stock || 0;
+                        
+                        // Determine stock status
+                        let stockBadge = '';
+                        let stockClass = '';
+                        let addToCartDisabled = '';
+                        let addToCartText = '<i class="fas fa-shopping-cart"></i> Add to Cart';
+                        
+                        if (stock === 0) {
+                            stockBadge = '<span class="stock-badge out-of-stock">Out of Stock</span>';
+                            stockClass = 'out-of-stock';
+                            addToCartDisabled = 'disabled';
+                            addToCartText = '<i class="fas fa-ban"></i> Out of Stock';
+                        } else if (stock <= 10) {
+                            stockBadge = '<span class="stock-badge low-stock">Low Stock</span>';
+                            stockClass = 'low-stock';
+                        } else {
+                            stockBadge = '<span class="stock-badge in-stock">In Stock</span>';
+                            stockClass = 'in-stock';
+                        }
                         
                         const productHTML = `
-                            <div class="product-card">
+                            <div class="product-card ${stockClass}">
                                 <div class="product-image">
+                                    ${stockBadge}
                                     <img src="${imagePath}" alt="${product.name}" onerror="this.src='/static/images/defaults/product-default.png'">
                                     <div class="product-actions">
-                                        <button type="button" class="action-btn add-to-cart" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${imagePath}" data-product-colors="${product.color || ''}" data-product-sizes="${product.size || ''}" data-product-stock="${stock}" data-seller-email="${product.seller_email}" onclick="handleAddToCart(this)">
-                                            <i class="fas fa-shopping-cart"></i> Add to Cart
+                                        <button type="button" class="action-btn add-to-cart" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${imagePath}" data-product-colors="${product.color || ''}" data-product-sizes="${product.size || ''}" data-product-stock="${stock}" data-seller-email="${product.seller_email}" onclick="handleAddToCart(this)" ${addToCartDisabled}>
+                                            ${addToCartText}
                                         </button>
                                         <button type="button" class="action-btn wishlist" data-product-id="${product.id}" data-product-name="${product.name}" data-product-price="${product.price}" data-product-image="${imagePath}" onclick="handleAddToWishlist(this)">
                                             <i class="fas fa-heart"></i> Wishlist
@@ -1003,7 +1023,10 @@ function filterByCategory(category) {
                                 <div class="product-info">
                                     <h4 class="product-name">${product.name}</h4>
                                     <p class="product-price">₱${formatPrice(product.price)}</p>
-                                    <p class="product-stock"><i class="fas fa-box"></i> Stock: ${stock}</p>
+                                    <div class="product-meta">
+                                        <span class="product-stock"><i class="fas fa-box"></i> ${stock} available</span>
+                                        <span class="product-rating"><i class="fas fa-star"></i> 0.0 (0)</span>
+                                    </div>
                                 </div>
                             </div>
                         `;
