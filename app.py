@@ -74,11 +74,16 @@ os.makedirs(app.config['BANNERS_FOLDER'], exist_ok=True)
 
 mail = Mail(app)
 
-# EmailJS Configuration (from environment variables for security)
-EMAILJS_PUBLIC_KEY = os.getenv('EMAILJS_PUBLIC_KEY', 'HpkmGoJSHy_VNHuqx')
-EMAILJS_PRIVATE_KEY = os.getenv('EMAILJS_PRIVATE_KEY', 'IeHIBlvHW5On0UjX5mA2W')
-EMAILJS_SERVICE_ID = os.getenv('EMAILJS_SERVICE_ID', 'service_97ze6i8')
-EMAILJS_TEMPLATE_ID = os.getenv('EMAILJS_TEMPLATE_ID', 'template_46cncd5')
+# EmailJS Configuration (from environment variables)
+EMAILJS_PUBLIC_KEY = os.getenv('EMAILJS_PUBLIC_KEY')
+EMAILJS_PRIVATE_KEY = os.getenv('EMAILJS_PRIVATE_KEY')
+EMAILJS_SERVICE_ID = os.getenv('EMAILJS_SERVICE_ID')
+EMAILJS_TEMPLATE_ID = os.getenv('EMAILJS_TEMPLATE_ID')
+
+# Validate EmailJS configuration
+if not all([EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY, EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID]):
+    print("⚠️  WARNING: EmailJS not configured. Email sending will fail.")
+    print("   Set EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY, EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID")
 
 def send_email_via_emailjs(to_email, subject, otp_code=None, message=None, first_name='User'):
     """
