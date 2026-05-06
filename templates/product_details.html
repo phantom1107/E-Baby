@@ -494,7 +494,13 @@
                 <!-- Review Text -->
                 <div class="form-group">
                     <label for="reviewText">Your Review <span class="required">*</span></label>
-                    <textarea id="reviewText" name="review" placeholder="Share your thoughts about this product..." required minlength="20" maxlength="1000" rows="6"></textarea>
+                    <div style="margin-bottom: 10px;">
+                        <label style="font-size: 0.9rem; color: #666; display: block; margin-bottom: 8px;">Quick suggestions:</label>
+                        <div id="reviewSuggestions" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <!-- Suggestions will be populated based on rating -->
+                        </div>
+                    </div>
+                    <textarea id="reviewText" name="review" placeholder="Share your thoughts about this product..." minlength="20" maxlength="1000" rows="6"></textarea>
                     <small class="char-count"><span id="charCount">0</span>/1000 characters</small>
                 </div>
 

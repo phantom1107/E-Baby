@@ -1014,7 +1014,91 @@ function resetReviewForm() {
     });
 }
 
-// Set rating
+// Update review suggestions based on rating
+function updateReviewSuggestions(rating) {
+    const suggestionsContainer = document.getElementById('reviewSuggestions');
+    const reviewText = document.getElementById('reviewText');
+    
+    let suggestions = [];
+    
+    if (rating === 5) {
+        suggestions = [
+            'Excellent product!',
+            'Highly recommended',
+            'Perfect quality',
+            'Worth every peso',
+            'Best purchase ever',
+            'Amazing quality',
+            'Very satisfied'
+        ];
+    } else if (rating === 4) {
+        suggestions = [
+            'Great product',
+            'Very good quality',
+            'Highly satisfied',
+            'Good value',
+            'Recommended',
+            'Really nice',
+            'Exceeded expectations'
+        ];
+    } else if (rating === 3) {
+        suggestions = [
+            'Good product',
+            'Average quality',
+            'Decent value',
+            'Meets expectations',
+            'Okay quality',
+            'Fair price',
+            'Acceptable'
+        ];
+    } else if (rating === 2) {
+        suggestions = [
+            'Below expectations',
+            'Quality issues',
+            'Not satisfied',
+            'Could be better',
+            'Disappointed',
+            'Poor quality',
+            'Not recommended'
+        ];
+    } else if (rating === 1) {
+        suggestions = [
+            'Very poor quality',
+            'Waste of money',
+            'Defective product',
+            'Not as described',
+            'Terrible experience',
+            'Do not buy',
+            'Completely disappointed'
+        ];
+    }
+    
+    suggestionsContainer.innerHTML = '';
+    suggestions.forEach(suggestion => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'suggestion-btn';
+        btn.textContent = suggestion;
+        btn.onclick = (e) => {
+            e.preventDefault();
+            reviewText.value = suggestion;
+            document.getElementById('charCount').textContent = suggestion.length;
+            btn.classList.add('selected');
+        };
+        btn.style.cssText = `
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        `;
+        btn.onmouseover = () => btn.style.background = '#f5f5f5';
+        btn.onmouseout = () => btn.style.background = 'white';
+        suggestionsContainer.appendChild(btn);
+    });
+}
 function setRating(rating) {
     currentRating = rating;
     document.getElementById('ratingValue').value = rating;
@@ -1028,6 +1112,9 @@ function setRating(rating) {
             star.className = 'far fa-star';
         }
     });
+    
+    // Update review suggestions based on rating
+    updateReviewSuggestions(rating);
 }
 
 // Submit review
@@ -1039,11 +1126,19 @@ async function submitReview(event) {
         return;
     }
     
+    const reviewText = document.getElementById('reviewText').value.trim();
+    
+    // Allow empty review if user just wants to rate
+    if (!reviewText) {
+        Toast.warning('Please write a review or select a suggestion');
+        return;
+    }
+    
     const formData = {
         product_id: productId,
         rating: currentRating,
         title: document.getElementById('reviewTitle').value,
-        review_text: document.getElementById('reviewText').value
+        review_text: reviewText
     };
     
     try {
