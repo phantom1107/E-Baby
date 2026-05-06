@@ -544,7 +544,7 @@ function handleAddToCart(button) {
     if (isNaN(productStock)) {
         const stockElement = button.closest('.product-card')?.querySelector('.product-stock');
         if (stockElement) {
-            const stockMatch = stockElement.textContent.match(/Stock: (\d+)/);
+            const stockMatch = stockElement.textContent.match(/(?:Total )?Stock: (\d+)/);
             productStock = stockMatch ? parseInt(stockMatch[1]) : 0;
         } else {
             productStock = 0;
@@ -553,7 +553,6 @@ function handleAddToCart(button) {
     
     const sellerEmail = button.dataset.sellerEmail;
     
-    console.log('Product stock value:', productStock);
     openAddToCartModal(productId, productName, productPrice, productImage, productColors, productSizes, productStock, sellerEmail);
 }
 
@@ -983,8 +982,6 @@ function filterByCategory(category) {
                     products.forEach(product => {
                         const imagePath = (product.image && (product.image.startsWith('http') || product.image.startsWith('//'))) ? product.image : (product.image ? '/static/uploads/' + product.image : '/static/images/defaults/product-default.png');
                         const stock = product.stock || 0;
-                        
-                        console.log(`Product: ${product.name}, Stock: ${stock}`); // Debug log
                         
                         // Determine stock status
                         let stockBadge = '';

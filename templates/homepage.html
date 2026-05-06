@@ -477,14 +477,12 @@
                     ₱{{ "%.2f"|format(product.price) }}
                   </p>
                   <div class="product-meta">
-                    <p class="product-stock">
-                      <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
-                    </p>
-                    {% if product.seller_first_name %}
-                    <p class="product-seller">
-                      <i class="fas fa-store"></i> {{ product.seller_first_name }} {{ product.seller_last_name }}
-                    </p>
-                    {% endif %}
+                    <span class="product-stock">
+                      <i class="fas fa-box"></i> Total Stock: {{ product.quantity or 0 }}
+                    </span>
+                    <span class="product-rating">
+                      <i class="fas fa-star"></i> 0.0 (0)
+                    </span>
                   </div>
                 </div>
               </div>
@@ -584,14 +582,12 @@
                     ₱{{ "%.2f"|format(product.price) }}
                   </p>
                   <div class="product-meta">
-                    <p class="product-stock">
-                      <i class="fas fa-box"></i> Stock: {{ product.quantity or 0 }}
-                    </p>
-                    {% if product.seller_first_name %}
-                    <p class="product-seller">
-                      <i class="fas fa-store"></i> {{ product.seller_first_name }} {{ product.seller_last_name }}
-                    </p>
-                    {% endif %}
+                    <span class="product-stock">
+                      <i class="fas fa-box"></i> Total Stock: {{ product.quantity or 0 }}
+                    </span>
+                    <span class="product-rating">
+                      <i class="fas fa-star"></i> 0.0 (0)
+                    </span>
                   </div>
                 </div>
               </div>

@@ -935,6 +935,27 @@ def get_featured_products(limit: int = 10) -> List[Dict]:
                 product_data = doc.to_dict()
                 product_data['id'] = doc.id
                 
+                # Calculate total stock from variants
+                total_stock = 0
+                if 'variants' in product_data and isinstance(product_data['variants'], list) and len(product_data['variants']) > 0:
+                    # Sum up stock from all variants
+                    for variant in product_data['variants']:
+                        variant_stock = variant.get('stock', 0) or variant.get('quantity', 0)
+                        try:
+                            total_stock += int(variant_stock)
+                        except (ValueError, TypeError):
+                            pass
+                else:
+                    # No variants, use product-level stock
+                    total_stock = product_data.get('stock', 0) or product_data.get('quantity', 0)
+                    try:
+                        total_stock = int(total_stock)
+                    except (ValueError, TypeError):
+                        total_stock = 0
+                
+                # Set the calculated total stock as 'quantity' for template compatibility
+                product_data['quantity'] = total_stock
+                
                 # Add seller info
                 if product_data.get('seller_email'):
                     try:
@@ -978,6 +999,27 @@ def get_new_arrivals(limit: int = 10, days: int = 30) -> List[Dict]:
             for doc in query.stream(timeout=10.0):  # Add timeout
                 product_data = doc.to_dict()
                 product_data['id'] = doc.id
+                
+                # Calculate total stock from variants
+                total_stock = 0
+                if 'variants' in product_data and isinstance(product_data['variants'], list) and len(product_data['variants']) > 0:
+                    # Sum up stock from all variants
+                    for variant in product_data['variants']:
+                        variant_stock = variant.get('stock', 0) or variant.get('quantity', 0)
+                        try:
+                            total_stock += int(variant_stock)
+                        except (ValueError, TypeError):
+                            pass
+                else:
+                    # No variants, use product-level stock
+                    total_stock = product_data.get('stock', 0) or product_data.get('quantity', 0)
+                    try:
+                        total_stock = int(total_stock)
+                    except (ValueError, TypeError):
+                        total_stock = 0
+                
+                # Set the calculated total stock as 'quantity' for template compatibility
+                product_data['quantity'] = total_stock
                 
                 # Add seller info
                 if product_data.get('seller_email'):
