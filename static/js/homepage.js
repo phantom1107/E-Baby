@@ -138,16 +138,28 @@ function performLiveSearch(query, dropdownContent, dropdown) {
     } else {
         html += '<div class="search-dropdown-category"><i class="fas fa-box"></i> Products</div>';
         products.forEach(product => {
+            // Handle image URL properly
+            let imageSrc;
+            if (product.image && (product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('//'))) {
+                imageSrc = product.image;
+            } else if (product.image && product.image.startsWith('/')) {
+                imageSrc = product.image;
+            } else if (product.image) {
+                imageSrc = '/static/uploads/' + product.image;
+            } else {
+                imageSrc = '/static/images/defaults/product-default.png';
+            }
+            
             html += `
-                <div class="search-dropdown-item product" onclick="goToProduct(${product.id})">
-                    <div class="search-dropdown-item-icon">
-                        <i class="fas fa-box"></i>
+                <div class="search-dropdown-item product" onclick="goToProduct('${product.id}')">
+                    <div class="search-dropdown-item-image">
+                        <img src="${imageSrc}" alt="${product.name}" onerror="this.src='/static/images/defaults/product-default.png'">
                     </div>
                     <div class="search-dropdown-item-content">
                         <div class="search-dropdown-item-title">${product.name}</div>
                         <div class="search-dropdown-item-subtitle">${product.category}</div>
                     </div>
-                    <div class="search-dropdown-item-price">₱${product.price}</div>
+                    <div class="search-dropdown-item-price">₱${product.price.toFixed(2)}</div>
                 </div>
             `;
         });

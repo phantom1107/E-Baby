@@ -433,7 +433,7 @@
                     <img src="/static/images/logo/E-Baby Logo.png" alt="E-Baby" style="height: 40px; width: auto;">
                 </a>
                 <div style="flex: 1; max-width: 400px;">
-                    <input type="text" id="search-input" placeholder="Search products..." class="search-input" style="width: 100%; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <input type="text" id="search-input" placeholder="Search products..." value="{{ query }}" class="search-input" style="width: 100%; padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px;">
                 </div>
                 <button onclick="performSearch()" style="padding: 10px 20px; background: #7c3aed; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                     <i class="fas fa-search"></i>
@@ -452,27 +452,26 @@
 
         <!-- Search Controls -->
         <div class="search-controls">
-            <button class="filter-btn active" onclick="filterResults('all')">
+            <button class="filter-btn active" onclick="filterResults('all')" data-filter="all">
                 <i class="fas fa-list"></i> All
             </button>
-            <button class="filter-btn" onclick="filterResults('products')">
-                <i class="fas fa-box"></i> Products
+            <button class="filter-btn" onclick="filterByCategory('all')" data-category="all">
+                <i class="fas fa-th"></i> All Categories
             </button>
-            <button class="filter-btn" onclick="filterResults('sellers')">
-                <i class="fas fa-store"></i> Sellers
+            <button class="filter-btn" onclick="filterByCategory('Baby Clothes & Accessories')" data-category="Baby Clothes & Accessories">
+                <i class="fas fa-baby"></i> Clothes
+            </button>
+            <button class="filter-btn" onclick="filterByCategory('Toys & Games')" data-category="Toys & Games">
+                <i class="fas fa-puzzle-piece"></i> Toys
+            </button>
+            <button class="filter-btn" onclick="filterByCategory('Educational Materials')" data-category="Educational Materials">
+                <i class="fas fa-book"></i> Educational
+            </button>
+            <button class="filter-btn" onclick="filterByCategory('Safety and Health')" data-category="Safety and Health">
+                <i class="fas fa-first-aid"></i> Safety
             </button>
             <span class="results-info" id="resultsInfo"></span>
         </div>
-
-        <!-- Guest Login Prompt -->
-        {% if not session.get('email') %}
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
-            <div class="guest-login-prompt">
-                <i class="fas fa-info-circle"></i> You are viewing as a guest. 
-                <a href="/auth">Login or Register</a> to view product details and make purchases.
-            </div>
-        </div>
-        {% endif %}
 
         <!-- Products Section -->
         <div class="products-section" id="productsSection" style="display: block;">
@@ -484,9 +483,17 @@
                     {% for product in products %}
                     <div class="product-card" data-type="product">
                         <div class="product-image">
-                            <img src="{% if product.image and not product.image.startswith('/') %}/static/uploads/{{ product.image }}{% else %}{{ product.image or '/static/images/defaults/product-default.png' }}{% endif %}" 
-                                 alt="{{ product.name }}"
-                                 onerror="this.src='/static/images/defaults/product-default.png'">
+                            {% if product.image %}
+                                {% if product.image.startswith('http') or product.image.startswith('//') %}
+                                    <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.src='/static/images/defaults/product-default.png'">
+                                {% elif product.image.startswith('/') %}
+                                    <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.src='/static/images/defaults/product-default.png'">
+                                {% else %}
+                                    <img src="/static/uploads/{{ product.image }}" alt="{{ product.name }}" onerror="this.src='/static/images/defaults/product-default.png'">
+                                {% endif %}
+                            {% else %}
+                                <img src="/static/images/defaults/product-default.png" alt="{{ product.name }}">
+                            {% endif %}
                             {% if product.quantity <= 5 and product.quantity > 0 %}
                             <span class="product-badge"><i class="fas fa-exclamation"></i> Low Stock</span>
                             {% elif product.quantity == 0 %}
@@ -500,16 +507,13 @@
                                 <i class="fas fa-user-circle"></i>
                                 <span class="seller-name">{{ product.first_name }} {{ product.last_name }}</span>
                             </div>
+                            <div class="product-stock-info" style="font-size: 0.85rem; color: {% if product.quantity > 10 %}#10b981{% elif product.quantity > 0 %}#f59e0b{% else %}#ef4444{% endif %}; margin-bottom: 10px; font-weight: 600;">
+                                <i class="fas fa-box"></i> Stock: {{ product.quantity }}
+                            </div>
                             <div class="product-actions">
-                                {% if session.get('email') %}
-                                    <a href="{{ url_for('product_details', product_id=product.id) }}" class="action-btn view-details-btn">
-                                        <i class="fas fa-eye"></i> View Details
-                                    </a>
-                                {% else %}
-                                    <button class="action-btn view-details-btn" disabled title="Login to view details">
-                                        <i class="fas fa-lock"></i> Login to View
-                                    </button>
-                                {% endif %}
+                                <a href="{{ url_for('product_details', product_id=product.id) }}" class="action-btn view-details-btn">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
                                 <a href="{{ url_for('view_seller', seller_email=product.seller_email) }}" class="action-btn visit-store-btn">
                                     <i class="fas fa-store"></i> Visit Store
                                 </a>
@@ -529,78 +533,118 @@
                 {% endif %}
             </div>
         </div>
-
-        <!-- Sellers Section -->
-        <div class="sellers-section" id="sellersSection" style="display: none; max-width: 1200px; margin: 0 auto; padding: 0 20px;">
-            <h2><i class="fas fa-store"></i> Sellers</h2>
-            <div class="sellers-grid" id="sellersGrid">
-                <!-- Sellers will be populated via JavaScript -->
-            </div>
-        </div>
     </div>
 
     <script>
-        let allProducts = {{ products|tojson if products else 'null' }};
-        let uniqueSellers = {};
-
-        // Extract unique sellers from products
-        if (allProducts) {
-            allProducts.forEach(product => {
-                const sellerId = product.seller_email;
-                if (!uniqueSellers[sellerId]) {
-                    uniqueSellers[sellerId] = {
-                        email: product.seller_email,
-                        name: product.first_name + ' ' + product.last_name,
-                        profile_pic: product.profile_pic || null
-                    };
-                }
-            });
-        }
+        let allProducts = {{ products|tojson if products else '[]' }};
+        let filteredProducts = allProducts;
+        let currentCategory = 'all';
 
         // Update results info
         function updateResultsInfo() {
-            const productCount = allProducts ? allProducts.length : 0;
-            const sellerCount = Object.keys(uniqueSellers).length;
+            const productCount = filteredProducts.length;
             document.getElementById('resultsInfo').textContent = 
-                `${productCount} product${productCount !== 1 ? 's' : ''} • ${sellerCount} seller${sellerCount !== 1 ? 's' : ''}`;
+                `${productCount} product${productCount !== 1 ? 's' : ''} found`;
         }
 
         updateResultsInfo();
 
         function filterResults(type) {
-            // Update active button
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            // Update active button for type filter
+            document.querySelectorAll('[data-filter]').forEach(btn => btn.classList.remove('active'));
             event.target.closest('.filter-btn').classList.add('active');
-
-            // Show/hide sections
-            document.getElementById('productsSection').style.display = type === 'all' || type === 'products' ? 'block' : 'none';
-            document.getElementById('sellersSection').style.display = type === 'all' || type === 'sellers' ? 'block' : 'none';
-
-            // Populate sellers section if needed
-            if ((type === 'all' || type === 'sellers') && document.getElementById('sellersGrid').innerHTML === '') {
-                populateSellers();
-            }
         }
 
-        function populateSellers() {
-            const sellersGrid = document.getElementById('sellersGrid');
-            if (Object.keys(uniqueSellers).length === 0) {
-                sellersGrid.innerHTML = '<div class="no-results" style="grid-column: 1 / -1;"><i class="fas fa-store"></i><h3>No Sellers Found</h3><p>No sellers matched your search</p></div>';
+        function filterByCategory(category) {
+            currentCategory = category;
+            
+            // Update active button for category filter
+            document.querySelectorAll('[data-category]').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.filter-btn').classList.add('active');
+            
+            // Filter products
+            if (category === 'all') {
+                filteredProducts = allProducts;
+            } else {
+                filteredProducts = allProducts.filter(p => p.category === category);
+            }
+            
+            // Re-render products
+            renderProducts();
+            updateResultsInfo();
+        }
+
+        function renderProducts() {
+            const productsGrid = document.getElementById('productsGrid');
+            
+            if (filteredProducts.length === 0) {
+                productsGrid.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-box-open"></i>
+                        <h3>No Products Found</h3>
+                        <p>No products match your filters</p>
+                        <button onclick="filterByCategory('all')" class="back-home-btn">
+                            <i class="fas fa-redo"></i> Reset Filters
+                        </button>
+                    </div>
+                `;
                 return;
             }
-
-            sellersGrid.innerHTML = Object.values(uniqueSellers).map(seller => `
-                <div class="seller-card">
-                    <div class="seller-avatar">
-                        ${seller.profile_pic ? `<img src="/static/${seller.profile_pic}" alt="${seller.name}">` : `<i class="fas fa-user"></i>`}
+            
+            productsGrid.innerHTML = filteredProducts.map(product => {
+                // Handle image URL
+                let imageSrc;
+                if (product.image) {
+                    if (product.image.startsWith('http') || product.image.startsWith('//')) {
+                        imageSrc = product.image;
+                    } else if (product.image.startsWith('/')) {
+                        imageSrc = product.image;
+                    } else {
+                        imageSrc = '/static/uploads/' + product.image;
+                    }
+                } else {
+                    imageSrc = '/static/images/defaults/product-default.png';
+                }
+                
+                // Stock badge
+                let stockBadge = '';
+                if (product.quantity <= 5 && product.quantity > 0) {
+                    stockBadge = '<span class="product-badge"><i class="fas fa-exclamation"></i> Low Stock</span>';
+                } else if (product.quantity == 0) {
+                    stockBadge = '<span class="product-badge" style="background: #ef4444;"><i class="fas fa-times-circle"></i> Out of Stock</span>';
+                }
+                
+                // Stock color
+                let stockColor = product.quantity > 10 ? '#10b981' : (product.quantity > 0 ? '#f59e0b' : '#ef4444');
+                
+                return `
+                    <div class="product-card" data-type="product">
+                        <div class="product-image">
+                            <img src="${imageSrc}" alt="${product.name}" onerror="this.src='/static/images/defaults/product-default.png'">
+                            ${stockBadge}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-price">₱${parseFloat(product.price).toFixed(2)}</div>
+                            <div class="product-seller">
+                                <i class="fas fa-user-circle"></i>
+                                <span class="seller-name">${product.first_name} ${product.last_name}</span>
+                            </div>
+                            <div class="product-stock-info" style="font-size: 0.85rem; color: ${stockColor}; margin-bottom: 10px; font-weight: 600;">
+                                <i class="fas fa-box"></i> Stock: ${product.quantity}
+                            </div>
+                            <div class="product-actions">
+                                <a href="/product_details/${product.id}" class="action-btn view-details-btn">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                                <a href="/view_seller?email=${encodeURIComponent(product.seller_email)}" class="action-btn visit-store-btn">
+                                    <i class="fas fa-store"></i> Visit Store
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="seller-name">${seller.name}</div>
-                    <div class="seller-email">${seller.email}</div>
-                    <a href="/view_seller?email=${encodeURIComponent(seller.email)}" class="seller-action-btn">
-                        <i class="fas fa-store"></i> View Store
-                    </a>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function performSearch() {

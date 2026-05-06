@@ -2721,25 +2721,55 @@ def search():
     
     if not query:
         flash('Please enter a search term', 'warning')
-        return redirect(url_for('homepage'))
+        return redirect(url_for('home'))
     
     try:
         # Search products in Firestore
         products = firestore_db.search_products(query)
         
-        # Enrich products with seller information
+        # Enrich products with seller information and calculate stock
         for product in products:
+            # Calculate total stock from variants
+            total_stock = 0
+            if 'variants' in product and isinstance(product['variants'], list) and len(product['variants']) > 0:
+                for variant in product['variants']:
+                    variant_stock = variant.get('stock', 0) or variant.get('quantity', 0)
+                    try:
+                        total_stock += int(variant_stock)
+                    except (ValueError, TypeError):
+                        pass
+            else:
+                total_stock = product.get('stock', 0) or product.get('quantity', 0)
+                try:
+                    total_stock = int(total_stock)
+                except (ValueError, TypeError):
+                    total_stock = 0
+            
+            product['quantity'] = total_stock
+            
+            # Handle image URLs
+            if 'image_urls' in product and product['image_urls']:
+                if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
+                    product['image'] = product['image_urls'][0]
+                elif isinstance(product['image_urls'], str):
+                    product['image'] = product['image_urls']
+            
+            # Get seller information
             seller_email = product.get('seller_email')
             if seller_email:
                 seller_data = firestore_db.get_user_by_email(seller_email)
                 if seller_data:
+                    product['first_name'] = seller_data.get('first_name', '')
+                    product['last_name'] = seller_data.get('last_name', '')
                     product['seller_name'] = f"{seller_data.get('first_name', '')} {seller_data.get('last_name', '')}"
+                    product['profile_pic'] = seller_data.get('profile_pic')
         
         return render_template('search_results.html', query=query, products=products)
     
     except Exception as err:
+        print(f"Search error: {err}")
         flash(f'Error searching products: {err}', 'error')
-        return redirect(url_for('homepage'))
+        return redirect(url_for('home'))
 
 @app.route('/get_product/<product_id>')
 def get_product_api(product_id):
