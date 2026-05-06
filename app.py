@@ -7045,6 +7045,7 @@ def submit_product_review():
             'seller_email': product.get('seller_email', ''),
             'order_id': data.get('order_id', ''),
             'rating': int(data['rating']),
+            'title': data.get('title', ''),
             'review_text': data['review_text'],
             'images': data.get('images', []),
             'verified_purchase': verified_purchase
