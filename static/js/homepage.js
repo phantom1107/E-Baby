@@ -315,12 +315,12 @@ function updateCartQuantity(productId, change, color, size, variantId) {
             loadCartPreview();
             updateCartCount();
         } else {
-            alert(data.message || 'Error updating quantity');
+            Toast.error(data.message || 'Error updating quantity');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating quantity');
+        Toast.error('Error updating quantity');
     });
 }
 
@@ -344,12 +344,12 @@ function removeFromCart(productId, color, size, variantId) {
                 loadCartPreview();
                 updateCartCount();
             } else {
-                alert(data.message || 'Error removing item');
+                Toast.error(data.message || 'Error removing item');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error removing item');
+            Toast.error('Error removing item');
         });
     }
 }
@@ -383,21 +383,21 @@ function addToCart(productId, name, price, image, color, size, quantity, sellerE
     .then(response => response.json())
     .then(data => {
         if (data.outOfStock) {
-            alert('❌ This product is out of stock and cannot be added to your cart. Please choose another product.');
+            Toast.error('This product is out of stock. Please choose another product.');
         } else if (data.insufficientStock) {
-            alert(`❌ Not enough stock available.\n\nOnly ${data.available} item(s) available. Please reduce your quantity.`);
+            Toast.warning(`Only ${data.available} item(s) available. Please reduce your quantity.`);
         } else if (data.success) {
-            alert('✅ Product added to cart!');
+            Toast.success('Product added to cart!');
             loadCartPreview();
             updateCartCount();
             closeAddToCartModal();
         } else {
-            alert(data.message || 'Error adding to cart');
+            Toast.error(data.message || 'Error adding to cart');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error adding to cart');
+        Toast.error('Error adding to cart');
     });
 }
 
@@ -482,16 +482,16 @@ function addToWishlist(productId, name, price, image, sellerEmail) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Added to wishlist!');
+            Toast.success('Added to wishlist!');
             updateWishlistCount();
             loadWishlistPreview();
         } else {
-            alert(data.message || 'Error adding to wishlist');
+            Toast.error(data.message || 'Error adding to wishlist');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error adding to wishlist');
+        Toast.error('Error adding to wishlist');
     });
 }
 
@@ -823,18 +823,18 @@ function confirmAddToCart() {
     const quantity = parseInt(document.getElementById('quantityInput').value);
 
     if (!color || !quantity) {
-        alert('Please select a color and quantity');
+        Toast.warning('Please select a color and quantity');
         return;
     }
 
     if (quantity > currentProduct.stock) {
-        alert(`Only ${currentProduct.stock} items available in stock`);
+        Toast.warning(`Only ${currentProduct.stock} items available in stock`);
         document.getElementById('quantityInput').value = currentProduct.stock;
         return;
     }
 
     if (currentProduct.hasSizes && !size) {
-        alert('Please select a size');
+        Toast.warning('Please select a size');
         return;
     }
 
@@ -1097,7 +1097,7 @@ function startGuestChat() {
     const guestName = document.getElementById('guestName').value.trim();
     
     if (!guestName) {
-        alert('Please enter your name');
+        Toast.warning('Please enter your name');
         return;
     }
 
@@ -1135,7 +1135,7 @@ function viewProductDetails(productId) {
     
     if (!productId || productId === 'undefined' || productId === 'None') {
         console.error('Invalid product ID:', productId);
-        alert('Error: Product ID is missing. Please refresh the page and try again.');
+        Toast.error('Product ID is missing. Please refresh the page and try again.');
         return;
     }
     
