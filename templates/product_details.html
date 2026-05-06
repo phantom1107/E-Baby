@@ -7,6 +7,8 @@
     <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/product_details_new.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
     <script src="{{ url_for('static', filename='js/logout.js') }}"></script>
 </head>
 <body class="product-page">
@@ -257,9 +259,152 @@
                         <p>{{ product.description }}</p>
                     </div>
                 </div>
+
+                <!-- Reviews Section -->
+                <div class="reviews-section">
+                    <div class="reviews-container">
+                        <!-- Reviews Header -->
+                        <div class="reviews-header">
+                            <h2><i class="fas fa-star"></i> Customer Reviews</h2>
+                        </div>
+
+                        <!-- Rating Summary -->
+                        <div class="rating-summary">
+                            <div class="rating-overview">
+                                <div class="average-rating">
+                                    <div class="rating-number" id="averageRating">0.0</div>
+                                    <div class="rating-stars" id="averageStars">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <div class="rating-count" id="totalReviews">0 reviews</div>
+                                </div>
+                                <div class="rating-breakdown">
+                                    <div class="rating-bar-item">
+                                        <span class="star-label">5 <i class="fas fa-star"></i></span>
+                                        <div class="rating-bar">
+                                            <div class="rating-bar-fill" id="bar5" style="width: 0%"></div>
+                                        </div>
+                                        <span class="rating-percentage" id="percent5">0%</span>
+                                    </div>
+                                    <div class="rating-bar-item">
+                                        <span class="star-label">4 <i class="fas fa-star"></i></span>
+                                        <div class="rating-bar">
+                                            <div class="rating-bar-fill" id="bar4" style="width: 0%"></div>
+                                        </div>
+                                        <span class="rating-percentage" id="percent4">0%</span>
+                                    </div>
+                                    <div class="rating-bar-item">
+                                        <span class="star-label">3 <i class="fas fa-star"></i></span>
+                                        <div class="rating-bar">
+                                            <div class="rating-bar-fill" id="bar3" style="width: 0%"></div>
+                                        </div>
+                                        <span class="rating-percentage" id="percent3">0%</span>
+                                    </div>
+                                    <div class="rating-bar-item">
+                                        <span class="star-label">2 <i class="fas fa-star"></i></span>
+                                        <div class="rating-bar">
+                                            <div class="rating-bar-fill" id="bar2" style="width: 0%"></div>
+                                        </div>
+                                        <span class="rating-percentage" id="percent2">0%</span>
+                                    </div>
+                                    <div class="rating-bar-item">
+                                        <span class="star-label">1 <i class="fas fa-star"></i></span>
+                                        <div class="rating-bar">
+                                            <div class="rating-bar-fill" id="bar1" style="width: 0%"></div>
+                                        </div>
+                                        <span class="rating-percentage" id="percent1">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="write-review-section">
+                                <button class="write-review-btn" onclick="openReviewModal()">
+                                    <i class="fas fa-edit"></i> Write a Review
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Review Sorting -->
+                        <div class="review-controls">
+                            <div class="sort-options">
+                                <label><i class="fas fa-sort"></i> Sort by:</label>
+                                <select id="reviewSort" onchange="sortReviews(this.value)">
+                                    <option value="recent">Most Recent</option>
+                                    <option value="helpful">Most Helpful</option>
+                                    <option value="highest">Highest Rating</option>
+                                    <option value="lowest">Lowest Rating</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Reviews List -->
+                        <div class="reviews-list" id="reviewsList">
+                            <!-- Reviews will be loaded here dynamically -->
+                            <div class="no-reviews" id="noReviews">
+                                <i class="fas fa-comment-slash"></i>
+                                <p>No reviews yet. Be the first to review this product!</p>
+                            </div>
+                        </div>
+
+                        <!-- Load More Button -->
+                        <div class="load-more-section" id="loadMoreSection" style="display: none;">
+                            <button class="load-more-btn" onclick="loadMoreReviews()">
+                                <i class="fas fa-chevron-down"></i> Load More Reviews
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
+
+    <!-- Write Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content review-modal">
+            <button class="modal-close" onclick="closeReviewModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2><i class="fas fa-star"></i> Write a Review</h2>
+            <form id="reviewForm" onsubmit="submitReview(event)">
+                <!-- Star Rating -->
+                <div class="form-group">
+                    <label>Your Rating <span class="required">*</span></label>
+                    <div class="star-rating-input" id="starRatingInput">
+                        <i class="far fa-star" data-rating="1" onclick="setRating(1)"></i>
+                        <i class="far fa-star" data-rating="2" onclick="setRating(2)"></i>
+                        <i class="far fa-star" data-rating="3" onclick="setRating(3)"></i>
+                        <i class="far fa-star" data-rating="4" onclick="setRating(4)"></i>
+                        <i class="far fa-star" data-rating="5" onclick="setRating(5)"></i>
+                    </div>
+                    <input type="hidden" id="ratingValue" name="rating" required>
+                </div>
+
+                <!-- Review Title -->
+                <div class="form-group">
+                    <label for="reviewTitle">Review Title <span class="required">*</span></label>
+                    <input type="text" id="reviewTitle" name="title" placeholder="Sum up your experience" required maxlength="100">
+                </div>
+
+                <!-- Review Text -->
+                <div class="form-group">
+                    <label for="reviewText">Your Review <span class="required">*</span></label>
+                    <textarea id="reviewText" name="review" placeholder="Share your thoughts about this product..." required minlength="20" maxlength="1000" rows="6"></textarea>
+                    <small class="char-count"><span id="charCount">0</span>/1000 characters</small>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeReviewModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit Review
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Simple Footer -->
     <footer class="site-footer">
