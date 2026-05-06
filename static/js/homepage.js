@@ -984,6 +984,8 @@ function filterByCategory(category) {
                         const imagePath = (product.image && (product.image.startsWith('http') || product.image.startsWith('//'))) ? product.image : (product.image ? '/static/uploads/' + product.image : '/static/images/defaults/product-default.png');
                         const stock = product.stock || 0;
                         
+                        console.log(`Product: ${product.name}, Stock: ${stock}`); // Debug log
+                        
                         // Determine stock status
                         let stockBadge = '';
                         let stockClass = '';

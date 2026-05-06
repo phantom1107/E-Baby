@@ -94,15 +94,15 @@ function adjustQuantity(button, isIncrease) {
   const color = itemCard.getAttribute("data-color") || '';
   const size = itemCard.getAttribute("data-size") || '';
   let quantity = parseInt(quantityDisplay.textContent) || 1;
+  
+  // Disable button to prevent spam clicking
+  button.disabled = true;
+  button.style.opacity = '0.5';
 
-  if (isIncrease) {
-    quantity += 1;
-  } else if (quantity > 1) {
-    quantity -= 1;
-  }
-
-  // Update quantity in DOM
-  quantityDisplay.textContent = quantity;
+  const newQuantity = isIncrease ? quantity + 1 : Math.max(1, quantity - 1);
+  
+  // Optimistically update UI
+  quantityDisplay.textContent = newQuantity;
   
   // Send update to backend
   fetch("/update-cart-quantity", {
@@ -121,12 +121,37 @@ function adjustQuantity(button, isIncrease) {
     .then((data) => {
       if (data.stockLimit) {
         Toast.warning(`Only ${data.available} items available in stock`);
-        // Revert the change
-        quantityDisplay.textContent = isIncrease ? quantity - 1 : quantity + 1;
+        // Revert to available stock
+        quantityDisplay.textContent = data.available;
+        // Disable the + button since we're at max
+        const plusBtn = itemCard.querySelector('.qty-btn-plus');
+        if (plusBtn) {
+          plusBtn.disabled = true;
+          plusBtn.style.opacity = '0.3';
+          plusBtn.style.cursor = 'not-allowed';
+        }
       } else if (!data.success) {
         Toast.error(data.message || "Failed to update quantity");
         // Revert the change
-        quantityDisplay.textContent = isIncrease ? quantity - 1 : quantity + 1;
+        quantityDisplay.textContent = quantity;
+      } else {
+        // Success - check if we should enable/disable buttons
+        const plusBtn = itemCard.querySelector('.qty-btn-plus');
+        const minusBtn = itemCard.querySelector('.qty-btn-minus');
+        
+        // Re-enable plus button if we're not at max
+        if (plusBtn && newQuantity < 999) {
+          plusBtn.disabled = false;
+          plusBtn.style.opacity = '1';
+          plusBtn.style.cursor = 'pointer';
+        }
+        
+        // Enable/disable minus button based on quantity
+        if (minusBtn) {
+          minusBtn.disabled = newQuantity <= 1;
+          minusBtn.style.opacity = newQuantity <= 1 ? '0.3' : '1';
+          minusBtn.style.cursor = newQuantity <= 1 ? 'not-allowed' : 'pointer';
+        }
       }
       updateTotalPrice();
     })
@@ -134,8 +159,14 @@ function adjustQuantity(button, isIncrease) {
       console.error("Error:", error);
       Toast.error("Error updating quantity");
       // Revert the change
-      quantityDisplay.textContent = isIncrease ? quantity - 1 : quantity + 1;
-      updateTotalPrice();
+      quantityDisplay.textContent = quantity;
+    })
+    .finally(() => {
+      // Re-enable button after request completes
+      setTimeout(() => {
+        button.disabled = false;
+        button.style.opacity = '1';
+      }, 300);
     });
 }
 
