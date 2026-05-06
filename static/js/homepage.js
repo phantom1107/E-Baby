@@ -815,6 +815,27 @@ function closeAddToCartModal() {
     document.getElementById('addToCartModal').classList.remove('show');
 }
 
+function increaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    let currentValue = parseInt(input.value) || 1;
+    const maxStock = parseInt(input.max) || 20;
+    
+    if (currentValue < maxStock) {
+        input.value = currentValue + 1;
+    } else {
+        Toast.warning(`Maximum ${maxStock} items available`);
+    }
+}
+
+function decreaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    let currentValue = parseInt(input.value) || 1;
+    
+    if (currentValue > 1) {
+        input.value = currentValue - 1;
+    }
+}
+
 function confirmAddToCart() {
     const color = document.getElementById('colorSelect').value;
     const sizeEl = document.getElementById('sizeSelect');
