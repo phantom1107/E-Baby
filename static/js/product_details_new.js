@@ -388,7 +388,18 @@ function loadWishlistPreview() {
 
       if (data.items && data.items.length > 0) {
         data.items.forEach((item) => {
-          const imagePath = item.image && !item.image.startsWith('/') ? '/static/uploads/' + item.image : (item.image || '/static/images/defaults/product-default.png');
+          // Handle image URL properly
+          let imagePath;
+          if (item.image && (item.image.startsWith('http://') || item.image.startsWith('https://') || item.image.startsWith('//'))) {
+            imagePath = item.image;
+          } else if (item.image && item.image.startsWith('/')) {
+            imagePath = item.image;
+          } else if (item.image) {
+            imagePath = '/static/uploads/' + item.image;
+          } else {
+            imagePath = '/static/images/defaults/product-default.png';
+          }
+          
           const itemElement = document.createElement('div');
           itemElement.className = 'wishlist-item';
           itemElement.innerHTML = `

@@ -249,9 +249,21 @@ function loadCartPreview() {
                     total += parseFloat(item.price) * parseInt(item.quantity);
                     const variantId = generateVariantId(item.product_id, item.color, item.size);
                     
+                    // Handle image URL properly
+                    let imageSrc;
+                    if (item.image && (item.image.startsWith('http://') || item.image.startsWith('https://') || item.image.startsWith('//'))) {
+                        imageSrc = item.image;
+                    } else if (item.image && item.image.startsWith('/')) {
+                        imageSrc = item.image;
+                    } else if (item.image) {
+                        imageSrc = '/static/uploads/' + item.image;
+                    } else {
+                        imageSrc = '/static/images/defaults/product-default.png';
+                    }
+                    
                     cartItems.innerHTML += `
                         <div class="cart-item">
-                            <img src="${item.image && item.image.startsWith('/') ? item.image : '/static/uploads/' + (item.image || 'default.png')}" alt="${item.name}" onerror="this.src='/static/images/defaults/product-default.png'">
+                            <img src="${imageSrc}" alt="${item.name}" onerror="this.src='/static/images/defaults/product-default.png'">
                             <div class="item-details">
                                 <h4>${item.name}</h4>
                                 <p>₱${formatPrice(item.price)}</p>
@@ -415,7 +427,18 @@ function loadWishlistPreview() {
 
             if (data.items && data.items.length > 0) {
                 data.items.forEach(item => {
-                    const imagePath = item.image && !item.image.startsWith('/') ? '/static/uploads/' + item.image : (item.image || '/static/images/defaults/product-default.png');
+                    // Handle image URL properly
+                    let imagePath;
+                    if (item.image && (item.image.startsWith('http://') || item.image.startsWith('https://') || item.image.startsWith('//'))) {
+                        imagePath = item.image;
+                    } else if (item.image && item.image.startsWith('/')) {
+                        imagePath = item.image;
+                    } else if (item.image) {
+                        imagePath = '/static/uploads/' + item.image;
+                    } else {
+                        imagePath = '/static/images/defaults/product-default.png';
+                    }
+                    
                     wishlistItems.innerHTML += `
                         <div class="wishlist-item">
                             <img src="${imagePath}" alt="${item.name}" onerror="this.src='/static/images/defaults/product-default.png'">
@@ -583,10 +606,18 @@ function openAddToCartModal(productId, name, price, image, colors, sizes, stock,
 
     // Display product image in modal with proper path handling
     const imageElement = document.getElementById('modalProductImage');
-    if (image && !image.startsWith('/')) {
+    if (image && (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('//'))) {
+        // Cloudinary or external URL - use as-is
+        imageElement.src = image;
+    } else if (image && image.startsWith('/')) {
+        // Already has leading slash - use as-is
+        imageElement.src = image;
+    } else if (image) {
+        // Local file without leading slash - add prefix
         imageElement.src = '/static/uploads/' + image;
     } else {
-        imageElement.src = image || '/static/images/defaults/product-default.png';
+        // No image - use default
+        imageElement.src = '/static/images/defaults/product-default.png';
     }
     imageElement.onerror = function() {
         this.src = '/static/images/defaults/product-default.png';

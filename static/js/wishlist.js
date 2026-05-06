@@ -158,10 +158,18 @@ function showAddToCartModalForProduct(product, wishlistId, isQueued = false, que
 
   // Display product image in modal
   const imageElement = document.getElementById('modalProductImage');
-  if (product.image && !product.image.startsWith('/')) {
+  if (product.image && (product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('//'))) {
+    // Cloudinary or external URL - use as-is
+    imageElement.src = product.image;
+  } else if (product.image && product.image.startsWith('/')) {
+    // Already has leading slash - use as-is
+    imageElement.src = product.image;
+  } else if (product.image) {
+    // Local file without leading slash - add prefix
     imageElement.src = '/static/uploads/' + product.image;
   } else {
-    imageElement.src = product.image || '/static/images/defaults/product-default.png';
+    // No image - use default
+    imageElement.src = '/static/images/defaults/product-default.png';
   }
   imageElement.onerror = function() {
     this.src = '/static/images/defaults/product-default.png';

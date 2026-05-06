@@ -540,29 +540,31 @@ function updateProductsGrid(products) {
 
   container.innerHTML = products
     .map(
-      (product) => `
+      (product) => {
+        // Handle image URL properly
+        let imageSrc;
+        if (product.image && (product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('//'))) {
+          imageSrc = product.image;
+        } else if (product.image && product.image.startsWith('/')) {
+          imageSrc = product.image;
+        } else if (product.image) {
+          imageSrc = '/static/uploads/' + product.image;
+        } else {
+          imageSrc = '/static/images/defaults/product-default.png';
+        }
+        
+        return `
         <div class="product-card">
             <div class="product-image">
-                <img src="/static/uploads/${product.image}" alt="${
-        product.name
-      }">
+                <img src="${imageSrc}" alt="${product.name}" onerror="this.src='/static/images/defaults/product-default.png'">
                 <div class="product-actions">
-                    <button class="action-btn view-btn" onclick="viewProduct('${
-                      product.id
-                    }')">
+                    <button class="action-btn view-btn" onclick="viewProduct('${product.id}')">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="action-btn edit-btn" onclick="openEditModal('${
-                      product.id
-                    }', '${product.name}', '${product.description}', '${
-        product.price
-      }', '${product.quantity}', '${product.category}', '${product.size}', '${
-        product.color
-      }', '${product.image}')">
+                    <button class="action-btn edit-btn" onclick="openEditModal('${product.id}', '${product.name}', '${product.description}', '${product.price}', '${product.quantity}', '${product.category}', '${product.size}', '${product.color}', '${product.image}')">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete-btn" onclick="confirmDelete('${
-                      product.id
+                    <button class="action-btn delete-btn" onclick="confirmDelete('${product.id}
                     }')">
                         <i class="fas fa-trash"></i>
                     </button>

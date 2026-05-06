@@ -1780,16 +1780,22 @@ function showProductDetails(button) {
         product.image !== "" &&
         product.image !== "null"
       ) {
-        // Add /static prefix if image path doesn't already have it
-        let imageSrc = product.image;
-        if (!imageSrc.startsWith("/")) {
-          imageSrc = "/" + imageSrc;
+        // Handle image URL properly
+        let imageSrc;
+        if (product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('//')) {
+          // Cloudinary or external URL - use as-is
+          imageSrc = product.image;
+        } else if (product.image.startsWith('/static/')) {
+          // Already has /static/ prefix - use as-is
+          imageSrc = product.image;
+        } else if (product.image.startsWith('/')) {
+          // Has leading slash but no /static/ - add /static/uploads/
+          imageSrc = '/static/uploads' + product.image;
+        } else {
+          // No leading slash - add full prefix
+          imageSrc = '/static/uploads/' + product.image;
         }
-        if (!imageSrc.startsWith("/static/")) {
-          imageSrc =
-            "/static/uploads/" +
-            imageSrc.replace(/^\/uploads\//, "").replace(/^uploads\//, "");
-        }
+        
         console.log("Setting image to:", imageSrc);
         imageElement.src = imageSrc;
         imageElement.style.background = "transparent";
