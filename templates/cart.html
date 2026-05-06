@@ -150,7 +150,11 @@
             <!-- Items List -->
             <div class="items-list-wrapper">
               {% for item in cart_items %}
-              <div class="item-card-modern" data-item-id="{{ item['id'] }}" data-product-id="{{ item.get('product_id', '') }}">
+              <div class="item-card-modern" 
+                   data-item-id="{{ item['id'] }}" 
+                   data-product-id="{{ item.get('product_id', '') }}"
+                   data-color="{{ item.get('color', '') }}"
+                   data-size="{{ item.get('size', '') }}">
                 <!-- Checkbox -->
                 <div class="item-card-select">
                   <input type="checkbox" class="item-checkbox" />
@@ -159,7 +163,7 @@
                 <!-- Image -->
                 <div class="item-card-image">
                   <img
-                    src="{% if item['image'].startswith('/') %}{{ item['image'] }}{% else %}/static/uploads/{{ item['image'] }}{% endif %}"
+                    src="{{ item['image'] }}"
                     alt="{{ item['name'] }}"
                     class="product-img"
                     onerror="this.src='/static/images/defaults/product-default.png'"

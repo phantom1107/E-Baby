@@ -1024,7 +1024,7 @@ function filterByCategory(category) {
                                     <h4 class="product-name">${product.name}</h4>
                                     <p class="product-price">₱${formatPrice(product.price)}</p>
                                     <div class="product-meta">
-                                        <span class="product-stock"><i class="fas fa-box"></i> ${stock} available</span>
+                                        <span class="product-stock"><i class="fas fa-box"></i> Total Stock: ${stock}</span>
                                         <span class="product-rating"><i class="fas fa-star"></i> 0.0 (0)</span>
                                     </div>
                                 </div>

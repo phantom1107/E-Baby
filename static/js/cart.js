@@ -91,6 +91,8 @@ function adjustQuantity(button, isIncrease) {
   const itemCard = button.closest(".item-card-modern");
   const quantityDisplay = itemCard.querySelector(".qty-display");
   const productId = itemCard.getAttribute("data-product-id");
+  const color = itemCard.getAttribute("data-color") || '';
+  const size = itemCard.getAttribute("data-size") || '';
   let quantity = parseInt(quantityDisplay.textContent) || 1;
 
   if (isIncrease) {
@@ -110,13 +112,19 @@ function adjustQuantity(button, isIncrease) {
     },
     body: JSON.stringify({
       product_id: productId,
+      color: color,
+      size: size,
       change: isIncrease ? 1 : -1
     }),
   })
     .then((response) => response.json())
     .then((data) => {
-      if (!data.success) {
-        showNotification(data.message || "Failed to update quantity", "error");
+      if (data.stockLimit) {
+        Toast.warning(`Only ${data.available} items available in stock`);
+        // Revert the change
+        quantityDisplay.textContent = isIncrease ? quantity - 1 : quantity + 1;
+      } else if (!data.success) {
+        Toast.error(data.message || "Failed to update quantity");
         // Revert the change
         quantityDisplay.textContent = isIncrease ? quantity - 1 : quantity + 1;
       }
@@ -124,7 +132,7 @@ function adjustQuantity(button, isIncrease) {
     })
     .catch((error) => {
       console.error("Error:", error);
-      showNotification("Error updating quantity", "error");
+      Toast.error("Error updating quantity");
       // Revert the change
       quantityDisplay.textContent = isIncrease ? quantity - 1 : quantity + 1;
       updateTotalPrice();

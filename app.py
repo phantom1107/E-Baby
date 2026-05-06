@@ -4489,11 +4489,19 @@ def update_cart_quantity():
         data = request.json
         user_email = session['email']
         product_id = str(data['product_id'])
+        color = data.get('color', '')
+        size = data.get('size', '')
         change = int(data['change'])
         
         # Get current quantity from cart
         cart_items = firestore_db.get_cart(user_email)
-        current_item = next((item for item in cart_items if str(item.get('product_id')) == product_id), None)
+        current_item = None
+        for item in cart_items:
+            if (str(item.get('product_id')) == product_id and 
+                item.get('color') == color and 
+                item.get('size') == size):
+                current_item = item
+                break
         
         if not current_item:
             return jsonify({'success': False, 'message': 'Item not found'})
@@ -4503,13 +4511,42 @@ def update_cart_quantity():
         if new_quantity < 1:
             return jsonify({'success': False, 'message': 'Quantity cannot be less than 1'})
         
+        # Get product to check stock
+        product = firestore_db.get_product_by_id(product_id)
+        if not product:
+            return jsonify({'success': False, 'message': 'Product not found'})
+        
+        # Check variant stock
+        variants = product.get('variants', [])
+        variant = None
+        for v in variants:
+            if v.get('color') == color and v.get('size') == size:
+                variant = v
+                break
+        
+        if not variant:
+            return jsonify({'success': False, 'message': 'Variant not found'})
+        
+        variant_stock = int(variant.get('stock', 0))
+        
+        # Check if new quantity exceeds stock
+        if new_quantity > variant_stock:
+            return jsonify({
+                'success': False, 
+                'stockLimit': True,
+                'available': variant_stock,
+                'message': f'Only {variant_stock} items available in stock'
+            })
+        
         # Update quantity in Firestore
         firestore_db.update_cart_item(current_item['id'], {'quantity': new_quantity})
         
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'new_quantity': new_quantity})
         
     except Exception as e:
         print("Error updating cart:", str(e))
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': 'Error updating cart'})
 
 @app.route('/remove-from-cart', methods=['POST'])
