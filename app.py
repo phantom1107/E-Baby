@@ -6931,3 +6931,303 @@ def api_admin_order_report():
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
+
+
+# =============================
+# REVIEW & COMMENT SYSTEM ROUTES
+# =============================
+
+@app.route('/api/product_review/submit', methods=['POST'])
+def submit_product_review():
+    """Submit a product review"""
+    if 'email' not in session:
+        return jsonify({'success': False, 'message': 'Please login first'}), 401
+    
+    try:
+        data = request.json
+        user_email = session['email']
+        
+        # Validate required fields
+        required_fields = ['product_id', 'rating', 'review_text']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
+        
+        # Check if user already reviewed this product
+        existing_review = firestore_db.get_user_review_for_product(user_email, data['product_id'])
+        if existing_review:
+            return jsonify({'success': False, 'message': 'You have already reviewed this product'}), 400
+        
+        # Check if user purchased the product
+        verified_purchase = firestore_db.check_user_purchased_product(user_email, data['product_id'])
+        
+        # Get user info
+        user = firestore_db.get_user_by_email(user_email)
+        buyer_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+        
+        # Get product info
+        product = firestore_db.get_product_by_id(data['product_id'])
+        if not product:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+        
+        review_data = {
+            'product_id': data['product_id'],
+            'product_name': product.get('name', ''),
+            'buyer_email': user_email,
+            'buyer_name': buyer_name,
+            'seller_email': product.get('seller_email', ''),
+            'order_id': data.get('order_id', ''),
+            'rating': int(data['rating']),
+            'review_text': data['review_text'],
+            'images': data.get('images', []),
+            'verified_purchase': verified_purchase
+        }
+        
+        review_id = firestore_db.create_product_review(review_data)
+        
+        # Update product rating
+        firestore_db.update_product_rating(data['product_id'])
+        
+        return jsonify({'success': True, 'review_id': review_id})
+        
+    except Exception as e:
+        print(f"Error submitting review: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/product_review/<product_id>', methods=['GET'])
+def get_product_reviews_api(product_id):
+    """Get all reviews for a product"""
+    try:
+        reviews = firestore_db.get_product_reviews(product_id)
+        
+        # Get replies for each review
+        for review in reviews:
+            review['replies'] = firestore_db.get_review_replies(review['id'])
+        
+        return jsonify({'success': True, 'reviews': reviews})
+        
+    except Exception as e:
+        print(f"Error getting reviews: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/product_review/<review_id>/reply', methods=['POST'])
+def reply_to_review(review_id):
+    """Reply to a review (seller only)"""
+    if 'email' not in session:
+        return jsonify({'success': False, 'message': 'Please login first'}), 401
+    
+    try:
+        data = request.json
+        user_email = session['email']
+        
+        # Get review to verify seller
+        review_doc = firestore_db.db.collection('product_reviews').document(review_id).get()
+        if not review_doc.exists:
+            return jsonify({'success': False, 'message': 'Review not found'}), 404
+        
+        review = review_doc.to_dict()
+        if review.get('seller_email') != user_email:
+            return jsonify({'success': False, 'message': 'Only the seller can reply to this review'}), 403
+        
+        reply_data = {
+            'review_id': review_id,
+            'review_type': 'product',
+            'seller_email': user_email,
+            'reply_text': data.get('reply_text', '')
+        }
+        
+        reply_id = firestore_db.create_review_reply(reply_data)
+        
+        return jsonify({'success': True, 'reply_id': reply_id})
+        
+    except Exception as e:
+        print(f"Error replying to review: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/product_review/<review_id>/helpful', methods=['POST'])
+def mark_review_helpful(review_id):
+    """Mark a review as helpful"""
+    if 'email' not in session:
+        return jsonify({'success': False, 'message': 'Please login first'}), 401
+    
+    try:
+        user_email = session['email']
+        success = firestore_db.vote_review_helpful(review_id, user_email, 'helpful')
+        
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to vote'}), 500
+            
+    except Exception as e:
+        print(f"Error marking review helpful: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/product_comment/submit', methods=['POST'])
+def submit_product_comment():
+    """Submit a product comment/question"""
+    if 'email' not in session:
+        return jsonify({'success': False, 'message': 'Please login first'}), 401
+    
+    try:
+        data = request.json
+        user_email = session['email']
+        
+        # Validate required fields
+        if 'product_id' not in data or 'comment_text' not in data:
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        
+        # Get user info
+        user = firestore_db.get_user_by_email(user_email)
+        user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+        
+        # Get product info
+        product = firestore_db.get_product_by_id(data['product_id'])
+        if not product:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+        
+        comment_data = {
+            'product_id': data['product_id'],
+            'product_name': product.get('name', ''),
+            'user_email': user_email,
+            'user_name': user_name,
+            'user_type': user.get('user_type', 'buyer'),
+            'comment_text': data['comment_text'],
+            'images': data.get('images', []),
+            'is_question': data.get('is_question', False)
+        }
+        
+        comment_id = firestore_db.create_product_comment(comment_data)
+        
+        return jsonify({'success': True, 'comment_id': comment_id})
+        
+    except Exception as e:
+        print(f"Error submitting comment: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/product_comment/<product_id>', methods=['GET'])
+def get_product_comments_api(product_id):
+    """Get all comments for a product"""
+    try:
+        is_question = request.args.get('is_question')
+        if is_question is not None:
+            is_question = is_question.lower() == 'true'
+        
+        comments = firestore_db.get_product_comments(product_id, is_question)
+        
+        # Get replies for each comment
+        for comment in comments:
+            comment['replies'] = firestore_db.get_comment_replies(comment['id'])
+        
+        return jsonify({'success': True, 'comments': comments})
+        
+    except Exception as e:
+        print(f"Error getting comments: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/product_comment/<comment_id>/reply', methods=['POST'])
+def reply_to_comment(comment_id):
+    """Reply to a comment"""
+    if 'email' not in session:
+        return jsonify({'success': False, 'message': 'Please login first'}), 401
+    
+    try:
+        data = request.json
+        user_email = session['email']
+        
+        # Get user info
+        user = firestore_db.get_user_by_email(user_email)
+        user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+        
+        # Get comment to check if user is seller
+        comment_doc = firestore_db.db.collection('product_comments').document(comment_id).get()
+        if not comment_doc.exists:
+            return jsonify({'success': False, 'message': 'Comment not found'}), 404
+        
+        comment = comment_doc.to_dict()
+        product = firestore_db.get_product_by_id(comment.get('product_id'))
+        is_seller = product.get('seller_email') == user_email if product else False
+        
+        reply_data = {
+            'comment_id': comment_id,
+            'user_email': user_email,
+            'user_name': user_name,
+            'user_type': user.get('user_type', 'buyer'),
+            'reply_text': data.get('reply_text', ''),
+            'images': data.get('images', []),
+            'is_seller_answer': is_seller
+        }
+        
+        reply_id = firestore_db.create_comment_reply(reply_data)
+        
+        return jsonify({'success': True, 'reply_id': reply_id})
+        
+    except Exception as e:
+        print(f"Error replying to comment: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/seller_review/submit', methods=['POST'])
+def submit_seller_review():
+    """Submit a seller review"""
+    if 'email' not in session:
+        return jsonify({'success': False, 'message': 'Please login first'}), 401
+    
+    try:
+        data = request.json
+        user_email = session['email']
+        
+        # Validate required fields
+        required_fields = ['seller_email', 'order_id', 'rating', 'review_text']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
+        
+        # Get user info
+        user = firestore_db.get_user_by_email(user_email)
+        buyer_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip()
+        
+        # Get seller info
+        seller = firestore_db.get_user_by_email(data['seller_email'])
+        if not seller:
+            return jsonify({'success': False, 'message': 'Seller not found'}), 404
+        
+        seller_name = f"{seller.get('first_name', '')} {seller.get('last_name', '')}".strip()
+        
+        review_data = {
+            'seller_email': data['seller_email'],
+            'seller_name': seller_name,
+            'buyer_email': user_email,
+            'buyer_name': buyer_name,
+            'order_id': data['order_id'],
+            'rating': int(data['rating']),
+            'review_text': data['review_text'],
+            'categories': data.get('categories', {})
+        }
+        
+        review_id = firestore_db.create_seller_review(review_data)
+        
+        # Update seller rating
+        firestore_db.update_seller_rating(data['seller_email'])
+        
+        return jsonify({'success': True, 'review_id': review_id})
+        
+    except Exception as e:
+        print(f"Error submitting seller review: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/seller_review/<seller_email>', methods=['GET'])
+def get_seller_reviews_api(seller_email):
+    """Get all reviews for a seller"""
+    try:
+        reviews = firestore_db.get_seller_reviews(seller_email)
+        return jsonify({'success': True, 'reviews': reviews})
+        
+    except Exception as e:
+        print(f"Error getting seller reviews: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500

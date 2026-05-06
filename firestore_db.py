@@ -1276,3 +1276,302 @@ def add_document(collection_name: str, data: Dict) -> str:
     except Exception as e:
         print(f"Error adding document to {collection_name}: {e}")
         raise
+
+
+# =============================
+# REVIEW & COMMENT SYSTEM FUNCTIONS
+# =============================
+
+def create_product_review(review_data: Dict) -> str:
+    """Create a new product review"""
+    review_data['created_at'] = firestore.SERVER_TIMESTAMP
+    review_data['updated_at'] = firestore.SERVER_TIMESTAMP
+    review_data['status'] = review_data.get('status', 'active')
+    review_data['helpful_count'] = 0
+    review_data['verified_purchase'] = review_data.get('verified_purchase', False)
+    
+    doc_ref = db.collection('product_reviews').document()
+    doc_ref.set(review_data)
+    return doc_ref.id
+
+def get_product_reviews(product_id: str, status: str = 'active') -> List[Dict]:
+    """Get all reviews for a product"""
+    query = db.collection('product_reviews')\
+        .where('product_id', '==', product_id)\
+        .where('status', '==', status)\
+        .order_by('created_at', direction=firestore.Query.DESCENDING)
+    
+    reviews = []
+    for doc in query.stream():
+        review = doc.to_dict()
+        review['id'] = doc.id
+        reviews.append(review)
+    return reviews
+
+def update_product_review(review_id: str, update_data: Dict) -> bool:
+    """Update a product review"""
+    try:
+        update_data['updated_at'] = firestore.SERVER_TIMESTAMP
+        db.collection('product_reviews').document(review_id).update(update_data)
+        return True
+    except Exception as e:
+        print(f"Error updating review: {e}")
+        return False
+
+def delete_product_review(review_id: str) -> bool:
+    """Delete a product review"""
+    try:
+        db.collection('product_reviews').document(review_id).delete()
+        return True
+    except Exception as e:
+        print(f"Error deleting review: {e}")
+        return False
+
+def create_seller_review(review_data: Dict) -> str:
+    """Create a new seller review"""
+    review_data['created_at'] = firestore.SERVER_TIMESTAMP
+    review_data['status'] = review_data.get('status', 'active')
+    
+    doc_ref = db.collection('seller_reviews').document()
+    doc_ref.set(review_data)
+    return doc_ref.id
+
+def get_seller_reviews(seller_email: str, status: str = 'active') -> List[Dict]:
+    """Get all reviews for a seller"""
+    query = db.collection('seller_reviews')\
+        .where('seller_email', '==', seller_email)\
+        .where('status', '==', status)\
+        .order_by('created_at', direction=firestore.Query.DESCENDING)
+    
+    reviews = []
+    for doc in query.stream():
+        review = doc.to_dict()
+        review['id'] = doc.id
+        reviews.append(review)
+    return reviews
+
+def create_review_reply(reply_data: Dict) -> str:
+    """Create a reply to a review"""
+    reply_data['created_at'] = firestore.SERVER_TIMESTAMP
+    
+    doc_ref = db.collection('review_replies').document()
+    doc_ref.set(reply_data)
+    return doc_ref.id
+
+def get_review_replies(review_id: str) -> List[Dict]:
+    """Get all replies for a review"""
+    query = db.collection('review_replies')\
+        .where('review_id', '==', review_id)\
+        .order_by('created_at', direction=firestore.Query.ASCENDING)
+    
+    replies = []
+    for doc in query.stream():
+        reply = doc.to_dict()
+        reply['id'] = doc.id
+        replies.append(reply)
+    return replies
+
+def vote_review_helpful(review_id: str, voter_email: str, vote_type: str = 'helpful') -> bool:
+    """Vote a review as helpful or not helpful"""
+    try:
+        # Check if user already voted
+        existing_vote = db.collection('review_votes')\
+            .where('review_id', '==', review_id)\
+            .where('voter_email', '==', voter_email)\
+            .limit(1).stream()
+        
+        existing_vote_doc = None
+        for doc in existing_vote:
+            existing_vote_doc = doc
+            break
+        
+        if existing_vote_doc:
+            # Update existing vote
+            db.collection('review_votes').document(existing_vote_doc.id).update({
+                'vote_type': vote_type,
+                'created_at': firestore.SERVER_TIMESTAMP
+            })
+        else:
+            # Create new vote
+            vote_data = {
+                'review_id': review_id,
+                'voter_email': voter_email,
+                'vote_type': vote_type,
+                'created_at': firestore.SERVER_TIMESTAMP
+            }
+            db.collection('review_votes').document().set(vote_data)
+        
+        # Update helpful count on review
+        helpful_count = db.collection('review_votes')\
+            .where('review_id', '==', review_id)\
+            .where('vote_type', '==', 'helpful')\
+            .stream()
+        
+        count = sum(1 for _ in helpful_count)
+        db.collection('product_reviews').document(review_id).update({'helpful_count': count})
+        
+        return True
+    except Exception as e:
+        print(f"Error voting review: {e}")
+        return False
+
+def create_product_comment(comment_data: Dict) -> str:
+    """Create a new product comment/question"""
+    comment_data['created_at'] = firestore.SERVER_TIMESTAMP
+    comment_data['updated_at'] = firestore.SERVER_TIMESTAMP
+    comment_data['status'] = comment_data.get('status', 'active')
+    comment_data['helpful_count'] = 0
+    comment_data['is_question'] = comment_data.get('is_question', False)
+    comment_data['parent_comment_id'] = comment_data.get('parent_comment_id', None)
+    
+    doc_ref = db.collection('product_comments').document()
+    doc_ref.set(comment_data)
+    return doc_ref.id
+
+def get_product_comments(product_id: str, is_question: Optional[bool] = None, status: str = 'active') -> List[Dict]:
+    """Get all comments/questions for a product"""
+    query = db.collection('product_comments')\
+        .where('product_id', '==', product_id)\
+        .where('status', '==', status)
+    
+    if is_question is not None:
+        query = query.where('is_question', '==', is_question)
+    
+    query = query.order_by('created_at', direction=firestore.Query.DESCENDING)
+    
+    comments = []
+    for doc in query.stream():
+        comment = doc.to_dict()
+        comment['id'] = doc.id
+        comments.append(comment)
+    return comments
+
+def create_comment_reply(reply_data: Dict) -> str:
+    """Create a reply to a comment"""
+    reply_data['created_at'] = firestore.SERVER_TIMESTAMP
+    reply_data['status'] = reply_data.get('status', 'active')
+    reply_data['is_seller_answer'] = reply_data.get('is_seller_answer', False)
+    
+    doc_ref = db.collection('comment_replies').document()
+    doc_ref.set(reply_data)
+    return doc_ref.id
+
+def get_comment_replies(comment_id: str, status: str = 'active') -> List[Dict]:
+    """Get all replies for a comment"""
+    query = db.collection('comment_replies')\
+        .where('comment_id', '==', comment_id)\
+        .where('status', '==', status)\
+        .order_by('created_at', direction=firestore.Query.ASCENDING)
+    
+    replies = []
+    for doc in query.stream():
+        reply = doc.to_dict()
+        reply['id'] = doc.id
+        replies.append(reply)
+    return replies
+
+def update_product_rating(product_id: str) -> bool:
+    """Recalculate and update product average rating"""
+    try:
+        reviews = get_product_reviews(product_id)
+        
+        if not reviews:
+            db.collection('products').document(product_id).update({
+                'average_rating': 0.0,
+                'total_reviews': 0,
+                'rating_distribution': {'5': 0, '4': 0, '3': 0, '2': 0, '1': 0}
+            })
+            return True
+        
+        total_rating = sum(review.get('rating', 0) for review in reviews)
+        average_rating = total_rating / len(reviews)
+        
+        # Calculate rating distribution
+        distribution = {'5': 0, '4': 0, '3': 0, '2': 0, '1': 0}
+        for review in reviews:
+            rating = str(review.get('rating', 0))
+            if rating in distribution:
+                distribution[rating] += 1
+        
+        db.collection('products').document(product_id).update({
+            'average_rating': round(average_rating, 1),
+            'total_reviews': len(reviews),
+            'rating_distribution': distribution
+        })
+        
+        return True
+    except Exception as e:
+        print(f"Error updating product rating: {e}")
+        return False
+
+def update_seller_rating(seller_email: str) -> bool:
+    """Recalculate and update seller average rating"""
+    try:
+        reviews = get_seller_reviews(seller_email)
+        
+        if not reviews:
+            db.collection('users').document(seller_email).update({
+                'seller_rating': 0.0,
+                'total_seller_reviews': 0,
+                'seller_rating_distribution': {'5': 0, '4': 0, '3': 0, '2': 0, '1': 0}
+            })
+            return True
+        
+        total_rating = sum(review.get('rating', 0) for review in reviews)
+        average_rating = total_rating / len(reviews)
+        
+        # Calculate rating distribution
+        distribution = {'5': 0, '4': 0, '3': 0, '2': 0, '1': 0}
+        for review in reviews:
+            rating = str(review.get('rating', 0))
+            if rating in distribution:
+                distribution[rating] += 1
+        
+        db.collection('users').document(seller_email).update({
+            'seller_rating': round(average_rating, 1),
+            'total_seller_reviews': len(reviews),
+            'seller_rating_distribution': distribution
+        })
+        
+        return True
+    except Exception as e:
+        print(f"Error updating seller rating: {e}")
+        return False
+
+def check_user_purchased_product(user_email: str, product_id: str) -> bool:
+    """Check if user has purchased a product (for verified purchase badge)"""
+    try:
+        orders = db.collection('orders')\
+            .where('email', '==', user_email)\
+            .where('status', '==', 'Delivered')\
+            .stream()
+        
+        for order in orders:
+            order_data = order.to_dict()
+            items = order_data.get('items', [])
+            for item in items:
+                if item.get('product_id') == product_id:
+                    return True
+        
+        return False
+    except Exception as e:
+        print(f"Error checking purchase: {e}")
+        return False
+
+def get_user_review_for_product(user_email: str, product_id: str) -> Optional[Dict]:
+    """Check if user already reviewed a product"""
+    try:
+        query = db.collection('product_reviews')\
+            .where('buyer_email', '==', user_email)\
+            .where('product_id', '==', product_id)\
+            .limit(1).stream()
+        
+        for doc in query:
+            review = doc.to_dict()
+            review['id'] = doc.id
+            return review
+        
+        return None
+    except Exception as e:
+        print(f"Error getting user review: {e}")
+        return None
