@@ -7002,7 +7002,8 @@ if __name__ == '__main__':
 
 # =============================
 # REVIEW & COMMENT SYSTEM ROUTES
-# =============================
+# ===== PRODUCT REVIEW SYSTEM =====
+# Product review endpoints for Phase 1
 
 @app.route('/api/product_review/submit', methods=['POST'])
 def submit_product_review():
