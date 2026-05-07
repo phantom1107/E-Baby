@@ -35,12 +35,10 @@ function filterOrdersByDateAndStatus() {
         
         // Check date filter
         if (selectedDate) {
-            const selectedDateObj = new Date(selectedDate);
-            const selectedDateStr = selectedDateObj.toDateString();
             const orderDateStr = orderCard.getAttribute('data-order-date');
-            const orderDate = new Date(orderDateStr).toDateString();
             
-            if (orderDate !== selectedDateStr) {
+            // Compare dates in YYYY-MM-DD format
+            if (orderDateStr !== selectedDate) {
                 shouldShow = false;
             }
         }
@@ -344,20 +342,49 @@ function showNotification(message, type = 'info') {
 
 function checkEmptyOrders() {
     const ordersGrid = document.querySelector('.orders-grid');
-    const orderCards = ordersGrid.querySelectorAll('.order-card');
+    const visibleOrderCards = Array.from(ordersGrid.querySelectorAll('.order-card')).filter(card => card.style.display !== 'none');
+    const emptyState = ordersGrid.querySelector('.empty-state');
     
-    if (orderCards.length === 0) {
-        // Remove the grid and show empty state
-        ordersGrid.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h2>No Orders Yet</h2>
-                <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
-                <a href="/" class="btn-primary">
-                    <i class="fas fa-shopping-bag"></i> Start Shopping
-                </a>
-            </div>
-        `;
+    if (visibleOrderCards.length === 0) {
+        // Check if there are any orders at all (hidden or not)
+        const allOrderCards = ordersGrid.querySelectorAll('.order-card');
+        
+        if (allOrderCards.length === 0) {
+            // No orders at all - show permanent empty state
+            if (!emptyState) {
+                ordersGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h2>No Orders Yet</h2>
+                        <p>You haven't placed any orders yet. Start shopping to see your orders here!</p>
+                        <a href="/" class="btn-primary">
+                            <i class="fas fa-shopping-bag"></i> Start Shopping
+                        </a>
+                    </div>
+                `;
+            }
+        } else {
+            // Orders exist but are filtered out - show filtered empty state
+            if (!emptyState) {
+                const tempEmptyState = document.createElement('div');
+                tempEmptyState.className = 'empty-state filtered-empty';
+                tempEmptyState.innerHTML = `
+                    <i class="fas fa-filter"></i>
+                    <h2>No Orders Match Your Filters</h2>
+                    <p>Try adjusting your date or status filters to see more orders.</p>
+                    <button onclick="clearAllFilters()" class="btn-primary">
+                        <i class="fas fa-times"></i> Clear All Filters
+                    </button>
+                `;
+                ordersGrid.appendChild(tempEmptyState);
+            }
+        }
+    } else {
+        // Remove filtered empty state if it exists
+        const filteredEmpty = ordersGrid.querySelector('.filtered-empty');
+        if (filteredEmpty) {
+            filteredEmpty.remove();
+        }
     }
 }
 
@@ -366,8 +393,16 @@ function checkEmptyOrders() {
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Set today's date as default in the date input if needed
-    // (user can still use it to filter)
+    // Set today's date as default and filter to show today's orders
+    const dateInput = document.getElementById('dateFilter');
+    if (dateInput) {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        dateInput.value = todayStr;
+        
+        // Apply filter to show today's orders by default
+        filterOrdersByDateAndStatus();
+    }
     
     // Search functionality
     const searchBtn = document.querySelector('.search-button');
