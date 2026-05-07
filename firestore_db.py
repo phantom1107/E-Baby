@@ -383,11 +383,15 @@ def get_orders_by_seller(seller_email: str) -> List[Dict]:
     """Get all orders for a seller"""
     try:
         orders = []
-        query = db.collection(COLLECTIONS['orders']).where("seller_email", "==", seller_email).order_by("date", direction=firestore.Query.DESCENDING)
+        # Fetch without ordering to avoid index requirement
+        query = db.collection(COLLECTIONS['orders']).where("seller_email", "==", seller_email)
         for doc in query.stream():
             order_data = doc.to_dict()
             order_data['id'] = doc.id
             orders.append(order_data)
+        
+        # Sort by date in Python instead of Firestore
+        orders.sort(key=lambda x: x.get('date', ''), reverse=True)
         return orders
     except Exception as e:
         print(f"Error fetching seller orders: {e}")
@@ -398,11 +402,15 @@ def get_orders_by_rider(rider_email: str) -> List[Dict]:
     """Get all orders for a rider"""
     try:
         orders = []
-        query = db.collection(COLLECTIONS['orders']).where("rider_email", "==", rider_email).order_by("date", direction=firestore.Query.DESCENDING)
+        # Fetch without ordering to avoid index requirement
+        query = db.collection(COLLECTIONS['orders']).where("rider_email", "==", rider_email)
         for doc in query.stream():
             order_data = doc.to_dict()
             order_data['id'] = doc.id
             orders.append(order_data)
+        
+        # Sort by date in Python instead of Firestore
+        orders.sort(key=lambda x: x.get('date', ''), reverse=True)
         return orders
     except Exception as e:
         print(f"Error fetching rider orders: {e}")
@@ -818,11 +826,15 @@ def get_seller_commissions(seller_email: str) -> List[Dict]:
     """Get commissions for a seller"""
     try:
         commissions = []
-        query = db.collection(COLLECTIONS['seller_commissions']).where("seller_email", "==", seller_email).order_by("date", direction=firestore.Query.DESCENDING)
+        # Fetch without ordering to avoid index requirement
+        query = db.collection(COLLECTIONS['seller_commissions']).where("seller_email", "==", seller_email)
         for doc in query.stream():
             comm_data = doc.to_dict()
             comm_data['id'] = doc.id
             commissions.append(comm_data)
+        
+        # Sort by date in Python instead of Firestore
+        commissions.sort(key=lambda x: x.get('date', ''), reverse=True)
         return commissions
     except Exception as e:
         print(f"Error fetching seller commissions: {e}")
