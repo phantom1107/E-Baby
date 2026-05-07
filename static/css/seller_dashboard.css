@@ -1958,6 +1958,30 @@ select option:checked {
     color: var(--white);
 }
 
+/* Variant Info Styling */
+.variant-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85rem;
+}
+
+.variant-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: 4px;
+    color: #a78bfa;
+    font-size: 0.8rem;
+}
+
+.variant-item i {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
 .product-variants {
     display: flex;
     gap: 6px;
