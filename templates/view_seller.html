@@ -380,6 +380,47 @@
         </div>
     </div>
 
+    <!-- Add to Cart Modal -->
+    <div id="addToCartModal" class="modal">
+        <div class="modal-content cart-modal">
+            <button class="modal-close" onclick="closeAddToCartModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2><i class="fas fa-shopping-cart"></i> Add to Cart</h2>
+            
+            <div class="cart-modal-product">
+                <img id="cartModalImage" src="" alt="Product">
+                <div class="cart-modal-info">
+                    <h3 id="cartModalName"></h3>
+                    <p class="cart-modal-price" id="cartModalPrice"></p>
+                </div>
+            </div>
+
+            <div class="quantity-selector">
+                <label><i class="fas fa-boxes"></i> Quantity</label>
+                <div class="quantity-controls">
+                    <button type="button" class="qty-btn" onclick="decreaseQuantity()">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <input type="number" id="cartQuantity" value="1" min="1" max="999" readonly>
+                    <button type="button" class="qty-btn" onclick="increaseQuantity()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <p class="stock-info" id="stockInfo"></p>
+            </div>
+
+            <div class="cart-modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeAddToCartModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn-submit" onclick="confirmAddToCart()">
+                    <i class="fas fa-cart-plus"></i> Add to Cart
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/homepage.js') }}"></script>
     <script src="{{ url_for('static', filename='js/view_seller.js') }}"></script>
     <script src="{{ url_for('static', filename='js/toast.js') }}"></script>

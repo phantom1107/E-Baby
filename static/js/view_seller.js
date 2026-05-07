@@ -524,3 +524,208 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+
+// ===================================
+// PRODUCT ACTIONS - ADD TO CART & WISHLIST
+// ===================================
+
+let currentCartProduct = null;
+
+// Handle Add to Cart - Open Modal
+function handleAddToCart(button) {
+    const productId = button.dataset.productId;
+    const productName = button.dataset.productName;
+    const productPrice = button.dataset.productPrice;
+    const productImage = button.dataset.productImage;
+    const sellerEmail = button.dataset.sellerEmail;
+    
+    // Check if user is logged in
+    const userEmail = document.querySelector('.dropdown-content');
+    if (!userEmail) {
+        showToast('Please login to add items to cart', 'warning');
+        window.location.href = '/auth?tab=login';
+        return;
+    }
+    
+    // Get stock from the product card
+    const productCard = button.closest('.product-card');
+    const stockElement = productCard.querySelector('.product-stock');
+    let stock = 0;
+    if (stockElement) {
+        const stockMatch = stockElement.textContent.match(/Stock: (\d+)/);
+        stock = stockMatch ? parseInt(stockMatch[1]) : 0;
+    }
+    
+    openAddToCartModal(productId, productName, productPrice, productImage, sellerEmail, stock);
+}
+
+// Open Add to Cart Modal
+function openAddToCartModal(productId, name, price, image, sellerEmail, stock) {
+    currentCartProduct = {
+        id: productId,
+        name: name,
+        price: price,
+        image: image,
+        seller_email: sellerEmail,
+        stock: stock
+    };
+    
+    // Set product info in modal
+    document.getElementById('cartModalImage').src = image || '/static/images/defaults/product-default.png';
+    document.getElementById('cartModalName').textContent = name;
+    document.getElementById('cartModalPrice').textContent = '₱' + parseFloat(price).toFixed(2);
+    
+    // Set stock info
+    const stockInfo = document.getElementById('stockInfo');
+    if (stock === 0) {
+        stockInfo.textContent = 'Out of Stock';
+        stockInfo.style.color = '#e74c3c';
+        document.querySelector('.btn-submit').disabled = true;
+    } else if (stock <= 5) {
+        stockInfo.textContent = `Only ${stock} left in stock`;
+        stockInfo.style.color = '#e67e22';
+        document.querySelector('.btn-submit').disabled = false;
+    } else {
+        stockInfo.textContent = `${stock} available`;
+        stockInfo.style.color = '#27ae60';
+        document.querySelector('.btn-submit').disabled = false;
+    }
+    
+    // Reset quantity
+    const quantityInput = document.getElementById('cartQuantity');
+    quantityInput.value = 1;
+    quantityInput.max = Math.min(stock, 999);
+    
+    // Show modal
+    document.getElementById('addToCartModal').classList.add('show');
+}
+
+// Close Add to Cart Modal
+function closeAddToCartModal() {
+    document.getElementById('addToCartModal').classList.remove('show');
+    currentCartProduct = null;
+}
+
+// Increase Quantity
+function increaseQuantity() {
+    const input = document.getElementById('cartQuantity');
+    let currentValue = parseInt(input.value) || 1;
+    const maxStock = parseInt(input.max) || 999;
+    
+    if (currentValue < maxStock) {
+        input.value = currentValue + 1;
+    } else {
+        showToast(`Maximum ${maxStock} items available`, 'warning');
+    }
+}
+
+// Decrease Quantity
+function decreaseQuantity() {
+    const input = document.getElementById('cartQuantity');
+    let currentValue = parseInt(input.value) || 1;
+    
+    if (currentValue > 1) {
+        input.value = currentValue - 1;
+    }
+}
+
+// Confirm Add to Cart
+function confirmAddToCart() {
+    if (!currentCartProduct) {
+        showToast('Product information missing', 'error');
+        return;
+    }
+    
+    const quantity = parseInt(document.getElementById('cartQuantity').value);
+    
+    if (!quantity || quantity < 1) {
+        showToast('Please enter a valid quantity', 'warning');
+        return;
+    }
+    
+    if (quantity > currentCartProduct.stock) {
+        showToast(`Only ${currentCartProduct.stock} items available`, 'warning');
+        return;
+    }
+    
+    // Add to cart via API
+    fetch('/add_to_cart', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: currentCartProduct.id,
+            name: currentCartProduct.name,
+            price: currentCartProduct.price,
+            image: currentCartProduct.image,
+            color: 'Default',
+            size: '',
+            quantity: quantity,
+            variant_id: `${currentCartProduct.id}_Default_nosize`,
+            seller_email: currentCartProduct.seller_email
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.outOfStock) {
+            showToast('This product is out of stock', 'error');
+        } else if (data.insufficientStock) {
+            showToast(`Only ${data.available} item(s) available`, 'warning');
+        } else if (data.success) {
+            showToast('Product added to cart!', 'success');
+            closeAddToCartModal();
+        } else {
+            showToast(data.message || 'Error adding to cart', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error adding to cart', 'error');
+    });
+}
+
+// Handle Add to Wishlist
+function handleAddToWishlist(button) {
+    const productId = button.dataset.productId;
+    const productName = button.dataset.productName;
+    const productPrice = button.dataset.productPrice;
+    const productImage = button.dataset.productImage;
+    const sellerEmail = button.dataset.sellerEmail;
+    
+    // Check if user is logged in
+    const userEmail = document.querySelector('.dropdown-content');
+    if (!userEmail) {
+        showToast('Please login to add items to wishlist', 'warning');
+        window.location.href = '/auth?tab=login';
+        return;
+    }
+    
+    // Add to wishlist via API
+    fetch('/add-to-wishlist', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            name: productName,
+            price: productPrice,
+            image: productImage,
+            seller_email: sellerEmail
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Added to wishlist!', 'success');
+        } else {
+            showToast(data.message || 'Error adding to wishlist', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error adding to wishlist', 'error');
+    });
+}
