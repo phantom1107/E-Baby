@@ -113,6 +113,13 @@ function removeFromWishlist(itemId) {
  * Handle add to cart button click - fetch product and show modal
  */
 function handleAddToCart(button, productId, wishlistId) {
+  // Validate productId
+  if (!productId || productId === 'undefined' || productId === undefined) {
+    console.error('Invalid product ID:', productId);
+    showNotification("Product ID is missing", "error");
+    return;
+  }
+  
   // Get seller_email from button data attribute as fallback
   const sellerEmailFromButton = button.dataset.sellerEmail;
   console.log(`Adding product ${productId} with seller_email from button: ${sellerEmailFromButton}`);

@@ -103,12 +103,21 @@
           <div class="profile-menu-container">
             <button class="profile-btn">
               {% if session.get('profile_pic') %}
-              <img
-                src="/static/{{ session['profile_pic'] }}"
-                alt="Profile"
-                class="profile-avatar"
-                onerror="this.src='/static/images/defaults/product-default.png'"
-              />
+                {% if session['profile_pic'].startswith('http://') or session['profile_pic'].startswith('https://') or session['profile_pic'].startswith('//') %}
+                  <img
+                    src="{{ session['profile_pic'] }}"
+                    alt="Profile"
+                    class="profile-avatar"
+                    onerror="this.src='/static/images/defaults/default_profile.jpg'"
+                  />
+                {% else %}
+                  <img
+                    src="/static/{{ session['profile_pic'] }}"
+                    alt="Profile"
+                    class="profile-avatar"
+                    onerror="this.src='/static/images/defaults/default_profile.jpg'"
+                  />
+                {% endif %}
               {% else %}
               <i class="fas fa-user-circle"></i>
               {% endif %}
@@ -209,7 +218,7 @@
               <div
                 class="item-card-modern"
                 data-item-id="{{ item['id'] }}"
-                data-product-id="{{ item['product_id'] }}"
+                data-product-id="{{ item.get('product_id', item.get('id', '')) }}"
               >
                 <!-- Checkbox -->
                 <div class="item-card-select">
@@ -219,7 +228,7 @@
                 <!-- Image -->
                 <div class="item-card-image">
                   <img
-                    src="{% if item['image'] %}{% if item['image'].startswith('/') %}{{ item['image'] }}{% else %}/static/uploads/{{ item['image'] }}{% endif %}{% else %}/static/images/defaults/product-default.png{% endif %}"
+                    src="{% if item['image'] %}{% if item['image'].startswith('http://') or item['image'].startswith('https://') or item['image'].startswith('//') %}{{ item['image'] }}{% elif item['image'].startswith('/') %}{{ item['image'] }}{% else %}/static/uploads/{{ item['image'] }}{% endif %}{% else %}/static/images/defaults/product-default.png{% endif %}"
                     alt="{{ item['name'] }}"
                     class="product-img"
                     onerror="this.src='/static/images/defaults/product-default.png'"
@@ -252,10 +261,10 @@
                 <div class="wishlist-actions">
                   <button
                     class="btn-primary btn-add-to-cart"
-                    onclick="handleAddToCart(this, {{ item['product_id'] }}, {{ item['id'] }})"
-                    data-product-id="{{ item['product_id'] }}"
+                    onclick="handleAddToCart(this, '{{ item.get('product_id', item.get('id', '')) }}', {{ item['id'] }})"
+                    data-product-id="{{ item.get('product_id', item.get('id', '')) }}"
                     data-wishlist-id="{{ item['id'] }}"
-                    data-seller-email="{{ item['seller_email'] }}">
+                    data-seller-email="{{ item.get('seller_email', '') }}">
                     <i class="fas fa-shopping-cart"></i> Add to Cart
                   </button>
                   <button
