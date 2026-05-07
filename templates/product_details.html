@@ -463,6 +463,40 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Q&A Section -->
+                <div class="qa-section">
+                    <div class="qa-container">
+                        <!-- Q&A Header -->
+                        <div class="qa-header">
+                            <h2><i class="fas fa-question-circle"></i> Questions & Answers</h2>
+                            <p class="qa-subtitle">Have a question? Ask the seller or other buyers!</p>
+                        </div>
+
+                        <!-- Ask Question Button -->
+                        <div class="ask-question-section">
+                            <button class="ask-question-btn" id="askQuestionBtn" onclick="openQuestionModal()">
+                                <i class="fas fa-plus-circle"></i> Ask a Question
+                            </button>
+                        </div>
+
+                        <!-- Q&A List -->
+                        <div class="qa-list" id="qaList">
+                            <!-- Questions will be loaded here dynamically -->
+                            <div class="no-questions" id="noQuestions">
+                                <i class="fas fa-comments"></i>
+                                <p>No questions yet. Be the first to ask!</p>
+                            </div>
+                        </div>
+
+                        <!-- Load More Questions Button -->
+                        <div class="load-more-section" id="loadMoreQASection" style="display: none;">
+                            <button class="load-more-btn" onclick="loadMoreQuestions()">
+                                <i class="fas fa-chevron-down"></i> Load More Questions
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -512,6 +546,41 @@
                     <button type="button" class="btn-cancel" onclick="closeReviewModal()">Cancel</button>
                     <button type="submit" class="btn-submit">
                         <i class="fas fa-paper-plane"></i> Submit Review
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ask Question Modal -->
+    <div id="questionModal" class="modal">
+        <div class="modal-content question-modal">
+            <button class="modal-close" onclick="closeQuestionModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2><i class="fas fa-question-circle"></i> Ask a Question</h2>
+            <form id="questionForm" onsubmit="submitQuestion(event)">
+                <!-- Question Text -->
+                <div class="form-group">
+                    <label for="questionText">Your Question <span class="required">*</span></label>
+                    <textarea 
+                        id="questionText" 
+                        name="questionText" 
+                        rows="4" 
+                        placeholder="Ask anything about this product..."
+                        maxlength="500"
+                        required
+                    ></textarea>
+                    <div class="char-counter">
+                        <span id="questionCharCount">0</span>/500 characters
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeQuestionModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit Question
                     </button>
                 </div>
             </form>

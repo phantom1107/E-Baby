@@ -1506,3 +1506,297 @@ document.addEventListener('click', function(event) {
 
 // Initialize on page load
 updateWishlistCount();
+
+
+// ===================================
+// Q&A SECTION FUNCTIONALITY
+// ===================================
+
+let displayedQuestions = 0;
+const questionsPerPage = 10;
+let allQuestions = [];
+
+// Load questions on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadQuestions();
+    
+    // Character counter for question text
+    const questionText = document.getElementById('questionText');
+    if (questionText) {
+        questionText.addEventListener('input', function() {
+            document.getElementById('questionCharCount').textContent = this.value.length;
+        });
+    }
+});
+
+// Load questions from API
+async function loadQuestions() {
+    try {
+        const response = await fetch(`/api/product_comment/${productId}?is_question=true`);
+        const data = await response.json();
+        
+        if (data.success) {
+            allQuestions = data.comments || [];
+            displayedQuestions = 0;
+            displayQuestions();
+        }
+    } catch (error) {
+        console.error('Error loading questions:', error);
+    }
+}
+
+// Display questions
+function displayQuestions() {
+    const qaList = document.getElementById('qaList');
+    const noQuestions = document.getElementById('noQuestions');
+    const loadMoreSection = document.getElementById('loadMoreQASection');
+    
+    if (allQuestions.length === 0) {
+        noQuestions.style.display = 'block';
+        loadMoreSection.style.display = 'none';
+        return;
+    }
+    
+    noQuestions.style.display = 'none';
+    
+    // Clear existing questions if starting fresh
+    if (displayedQuestions === 0) {
+        qaList.innerHTML = '';
+    }
+    
+    // Display next batch of questions
+    const questionsToShow = allQuestions.slice(displayedQuestions, displayedQuestions + questionsPerPage);
+    questionsToShow.forEach(question => {
+        qaList.appendChild(createQuestionCard(question));
+    });
+    
+    displayedQuestions += questionsToShow.length;
+    
+    // Show/hide load more button
+    if (displayedQuestions < allQuestions.length) {
+        loadMoreSection.style.display = 'block';
+    } else {
+        loadMoreSection.style.display = 'none';
+    }
+}
+
+// Create question card HTML
+function createQuestionCard(question) {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.id = `question-${question.id}`;
+    
+    const userName = question.user_name || 'Anonymous';
+    const userInitial = userName.charAt(0).toUpperCase();
+    const questionDate = question.created_at ? new Date(question.created_at.seconds * 1000).toLocaleDateString() : 'Recently';
+    
+    let repliesHTML = '';
+    if (question.replies && question.replies.length > 0) {
+        repliesHTML = `
+            <div class="replies-section">
+                ${question.replies.map(reply => createReplyHTML(reply)).join('')}
+            </div>
+        `;
+    }
+    
+    card.innerHTML = `
+        <div class="question-header">
+            <div class="question-user-info">
+                <div class="question-avatar">${userInitial}</div>
+                <div class="question-user-details">
+                    <h4>${userName}</h4>
+                    <span class="question-date">${questionDate}</span>
+                </div>
+            </div>
+        </div>
+        <div class="question-text">${escapeHtml(question.comment_text)}</div>
+        <div class="question-actions">
+            <button class="reply-btn" onclick="showReplyForm('${question.id}')">
+                <i class="fas fa-reply"></i> Reply
+            </button>
+        </div>
+        ${repliesHTML}
+        <div id="reply-form-${question.id}" style="display: none;"></div>
+    `;
+    
+    return card;
+}
+
+// Create reply HTML
+function createReplyHTML(reply) {
+    const userName = reply.user_name || 'Anonymous';
+    const userInitial = userName.charAt(0).toUpperCase();
+    const replyDate = reply.created_at ? new Date(reply.created_at.seconds * 1000).toLocaleDateString() : 'Recently';
+    const sellerBadge = reply.is_seller_answer ? '<span class="seller-badge"><i class="fas fa-store"></i> Seller</span>' : '';
+    
+    return `
+        <div class="reply-card">
+            <div class="reply-header">
+                <div class="reply-user-info">
+                    <div class="reply-avatar">${userInitial}</div>
+                    <div class="reply-user-details">
+                        <h5>${userName} ${sellerBadge}</h5>
+                    </div>
+                </div>
+                <span class="reply-date">${replyDate}</span>
+            </div>
+            <div class="reply-text">${escapeHtml(reply.reply_text)}</div>
+        </div>
+    `;
+}
+
+// Show reply form
+function showReplyForm(questionId) {
+    // Check if user is logged in
+    const userEmail = document.querySelector('.user-email span');
+    const isLoggedIn = userEmail && userEmail.textContent !== 'Guest';
+    
+    if (!isLoggedIn) {
+        Toast.warning('Please login to reply');
+        window.location.href = '/auth?tab=login';
+        return;
+    }
+    
+    const formContainer = document.getElementById(`reply-form-${questionId}`);
+    
+    // Toggle form visibility
+    if (formContainer.style.display === 'block') {
+        formContainer.style.display = 'none';
+        return;
+    }
+    
+    formContainer.style.display = 'block';
+    formContainer.innerHTML = `
+        <div class="reply-form">
+            <textarea id="reply-text-${questionId}" placeholder="Write your answer..." maxlength="500"></textarea>
+            <div class="reply-form-actions">
+                <button class="btn-cancel" onclick="hideReplyForm('${questionId}')">Cancel</button>
+                <button class="btn-submit" onclick="submitReply('${questionId}')">
+                    <i class="fas fa-paper-plane"></i> Submit Reply
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Hide reply form
+function hideReplyForm(questionId) {
+    const formContainer = document.getElementById(`reply-form-${questionId}`);
+    formContainer.style.display = 'none';
+    formContainer.innerHTML = '';
+}
+
+// Submit reply
+async function submitReply(questionId) {
+    const replyText = document.getElementById(`reply-text-${questionId}`).value.trim();
+    
+    if (!replyText) {
+        Toast.warning('Please write a reply');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/product_comment/${questionId}/reply`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reply_text: replyText
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            Toast.success('Reply submitted successfully!');
+            hideReplyForm(questionId);
+            loadQuestions(); // Reload questions to show new reply
+        } else {
+            Toast.error(data.message || 'Failed to submit reply');
+        }
+    } catch (error) {
+        console.error('Error submitting reply:', error);
+        Toast.error('Error submitting reply');
+    }
+}
+
+// Load more questions
+function loadMoreQuestions() {
+    displayQuestions();
+}
+
+// Open question modal
+function openQuestionModal() {
+    // Check if user is logged in
+    const userEmail = document.querySelector('.user-email span');
+    const isLoggedIn = userEmail && userEmail.textContent !== 'Guest';
+    
+    if (!isLoggedIn) {
+        Toast.warning('Please login to ask a question');
+        window.location.href = '/auth?tab=login';
+        return;
+    }
+    
+    document.getElementById('questionModal').classList.add('show');
+    resetQuestionForm();
+}
+
+// Close question modal
+function closeQuestionModal() {
+    document.getElementById('questionModal').classList.remove('show');
+}
+
+// Reset question form
+function resetQuestionForm() {
+    document.getElementById('questionForm').reset();
+    document.getElementById('questionCharCount').textContent = '0';
+}
+
+// Submit question
+async function submitQuestion(event) {
+    event.preventDefault();
+    
+    const questionText = document.getElementById('questionText').value.trim();
+    
+    if (!questionText) {
+        Toast.warning('Please write a question');
+        return;
+    }
+    
+    const formData = {
+        product_id: productId,
+        comment_text: questionText,
+        is_question: true
+    };
+    
+    try {
+        const response = await fetch('/api/product_comment/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            Toast.success('Question submitted successfully!');
+            closeQuestionModal();
+            loadQuestions(); // Reload questions
+        } else {
+            Toast.error(data.message || 'Failed to submit question');
+        }
+    } catch (error) {
+        console.error('Error submitting question:', error);
+        Toast.error('Error submitting question');
+    }
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
