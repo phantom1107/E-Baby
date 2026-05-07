@@ -915,7 +915,7 @@
                     </td>
                     <td>{{ order.email }}</td>
                     <td>{{ order.quantity }}</td>
-                    <td>₱{{ '%.2f'|format(order.total_price|float) }}</td>
+                    <td>₱{{ '%.2f'|format((order.total_price if order.total_price else order.total if order.total else 0)|float) }}</td>
                     <td>{{ order.payment_method }}</td>
                     <td>
                       <span

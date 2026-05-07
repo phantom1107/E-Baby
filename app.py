@@ -1440,8 +1440,12 @@ def get_seller_stats():
                     order_date = datetime.fromisoformat(order_date.replace('Z', '+00:00')).replace(tzinfo=None)
                 except:
                     continue
-            if isinstance(order_date, datetime) and order_date >= cutoff_date:
-                filtered_orders.append(order)
+            # Ensure order_date is timezone-naive for comparison
+            if isinstance(order_date, datetime):
+                if order_date.tzinfo is not None:
+                    order_date = order_date.replace(tzinfo=None)
+                if order_date >= cutoff_date:
+                    filtered_orders.append(order)
         
         # Calculate stats for completed orders only
         received_orders = [o for o in filtered_orders if o.get('status') == 'Received']
