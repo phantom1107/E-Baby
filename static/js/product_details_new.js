@@ -754,6 +754,15 @@ const productId = window.location.pathname.split('/').pop();
 // Initialize reviews on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadReviews();
+    checkReviewEligibility(); // Check if user can write a review
+    
+    // Check if we should auto-open review modal (from orders page)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openReview') === 'true') {
+        setTimeout(() => {
+            openReviewModal();
+        }, 500); // Wait for page to fully load
+    }
     
     // Character counter for review text
     const reviewText = document.getElementById('reviewText');
@@ -994,6 +1003,61 @@ function openReviewModal() {
     resetReviewForm();
 }
 
+// Check if user can review this product (must have purchased it)
+async function checkReviewEligibility() {
+    try {
+        const response = await fetch(`/api/product_review/${productId}/can-review`);
+        const data = await response.json();
+        
+        const writeReviewBtn = document.getElementById('writeReviewBtn');
+        const reviewNotEligible = document.getElementById('reviewNotEligible');
+        const reviewNotEligibleText = document.getElementById('reviewNotEligibleText');
+        
+        if (data.can_review) {
+            // User can review
+            writeReviewBtn.style.display = 'block';
+            reviewNotEligible.style.display = 'none';
+        } else {
+            // User cannot review
+            writeReviewBtn.style.display = 'none';
+            reviewNotEligible.style.display = 'block';
+            
+            // Set appropriate message based on reason
+            switch(data.reason) {
+                case 'not_logged_in':
+                    reviewNotEligibleText.textContent = 'Please login to write a review';
+                    break;
+                case 'not_purchased':
+                    reviewNotEligibleText.textContent = '⭐ You can only review products you have purchased and received. Complete your order first!';
+                    break;
+                case 'already_reviewed':
+                    reviewNotEligibleText.textContent = '✓ You have already reviewed this product';
+                    break;
+                default:
+                    reviewNotEligibleText.textContent = 'Unable to write review at this time';
+            }
+        }
+    } catch (error) {
+        console.error('Error checking review eligibility:', error);
+    }
+}
+
+// Open review modal from orders page (product_id passed as parameter)
+function openReviewModalFromOrder(productId, productName) {
+    // Check if user is logged in
+    const userEmail = document.querySelector('.user-email span');
+    const isLoggedIn = userEmail && userEmail.textContent !== 'Guest';
+    
+    if (!isLoggedIn) {
+        Toast.warning('Please login to write a review');
+        window.location.href = '/auth?tab=login';
+        return;
+    }
+    
+    // Navigate to product page with review modal open
+    window.location.href = `/product/${productId}?openReview=true`;
+}
+
 // Close review modal
 function closeReviewModal() {
     document.getElementById('reviewModal').classList.remove('show');
@@ -1169,8 +1233,13 @@ async function submitReview(event) {
             Toast.success('Review submitted successfully!');
             closeReviewModal();
             loadReviews(); // Reload reviews
+            checkReviewEligibility(); // Update button visibility
         } else {
-            Toast.error(data.message || 'Failed to submit review');
+            if (response.status === 403) {
+                Toast.error('⭐ You can only review products you have purchased and received');
+            } else {
+                Toast.error(data.message || 'Failed to submit review');
+            }
         }
     } catch (error) {
         console.error('Error submitting review:', error);

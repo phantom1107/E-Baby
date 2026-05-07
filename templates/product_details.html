@@ -424,9 +424,12 @@
                                 </div>
                             </div>
                             <div class="write-review-section">
-                                <button class="write-review-btn" onclick="openReviewModal()">
+                                <button class="write-review-btn" id="writeReviewBtn" onclick="openReviewModal()" style="display: none;">
                                     <i class="fas fa-edit"></i> Write a Review
                                 </button>
+                                <div id="reviewNotEligible" style="display: none; padding: 15px; background: #fff3cd; border-radius: 8px; text-align: center;">
+                                    <p id="reviewNotEligibleText" style="margin: 0; color: #856404;"></p>
+                                </div>
                             </div>
                         </div>
 

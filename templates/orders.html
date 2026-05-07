@@ -323,6 +323,13 @@
               <button type="button" class="btn-action" disabled>
                 <i class="fas fa-check-circle"></i> Order Completed
               </button>
+              <button
+                type="button"
+                class="btn-action btn-primary"
+                onclick="openReviewModalFromOrder('{{ order.product_id }}', '{{ order.name }}')"
+              >
+                <i class="fas fa-star"></i> Write Review
+              </button>
               {% if order.rider_email %}
               <a
                 href="{{ url_for('view_rider', rider_email=order.rider_email) }}"
