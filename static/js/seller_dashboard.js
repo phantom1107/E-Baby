@@ -564,8 +564,7 @@ function updateProductsGrid(products) {
                     <button class="action-btn edit-btn" onclick="openEditModal('${product.id}', '${product.name}', '${product.description}', '${product.price}', '${product.quantity}', '${product.category}', '${product.size}', '${product.color}', '${product.image}')">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete-btn" onclick="confirmDelete('${product.id}
-                    }')">
+                    <button class="action-btn delete-btn" onclick="confirmDelete('${product.id}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -590,7 +589,8 @@ function updateProductsGrid(products) {
                 </div>
             </div>
         </div>
-    `
+    `;
+      }
     )
     .join("");
 }
