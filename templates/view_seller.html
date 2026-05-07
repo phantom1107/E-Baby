@@ -122,6 +122,9 @@
             <button class="nav-tab" data-tab="new">
                 <i class="fas fa-sparkles"></i> New Arrivals
             </button>
+            <button class="nav-tab" data-tab="reviews">
+                <i class="fas fa-star-half-alt"></i> Reviews
+            </button>
             <button class="nav-tab" data-tab="about">
                 <i class="fas fa-info-circle"></i> About Store
             </button>
@@ -201,6 +204,67 @@
                 {% endif %}
             </div>
 
+            <!-- Reviews Tab -->
+            <div class="tab-content" id="tab-reviews">
+                <div class="seller-reviews-section">
+                    <!-- Reviews Header -->
+                    <div class="reviews-header">
+                        <h2><i class="fas fa-star-half-alt"></i> Seller Reviews</h2>
+                        <p class="reviews-subtitle">See what buyers say about this seller</p>
+                    </div>
+
+                    <!-- Rating Summary -->
+                    <div class="rating-summary-card">
+                        <div class="overall-rating">
+                            <div class="rating-number" id="sellerRatingNumber">0.0</div>
+                            <div class="rating-stars" id="sellerRatingStars"></div>
+                            <div class="rating-count" id="sellerRatingCount">0 reviews</div>
+                        </div>
+                        <div class="rating-breakdown">
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">Communication</span>
+                                <div class="breakdown-bar">
+                                    <div class="breakdown-fill" id="communicationBar" style="width: 0%"></div>
+                                </div>
+                                <span class="breakdown-value" id="communicationValue">0.0</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">Shipping Speed</span>
+                                <div class="breakdown-bar">
+                                    <div class="breakdown-fill" id="shippingBar" style="width: 0%"></div>
+                                </div>
+                                <span class="breakdown-value" id="shippingValue">0.0</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">Product Quality</span>
+                                <div class="breakdown-bar">
+                                    <div class="breakdown-fill" id="qualityBar" style="width: 0%"></div>
+                                </div>
+                                <span class="breakdown-value" id="qualityValue">0.0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Write Review Button -->
+                    <div class="write-seller-review-section">
+                        <button class="write-seller-review-btn" id="writeSellerReviewBtn" onclick="openSellerReviewModal()" style="display: none;">
+                            <i class="fas fa-edit"></i> Write a Review
+                        </button>
+                        <div id="sellerReviewNotEligible" style="display: none; padding: 15px; background: #fff3cd; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                            <p id="sellerReviewNotEligibleText" style="margin: 0; color: #856404;"></p>
+                        </div>
+                    </div>
+
+                    <!-- Reviews List -->
+                    <div class="seller-reviews-list" id="sellerReviewsList">
+                        <div class="no-reviews" id="noSellerReviews">
+                            <i class="fas fa-comment-slash"></i>
+                            <p>No reviews yet. Be the first to review this seller!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- About Tab -->
             <div class="tab-content" id="tab-about">
                 <div class="about-store">
@@ -235,7 +299,90 @@
         </div>
     </main>
 
+    <!-- Write Seller Review Modal -->
+    <div id="sellerReviewModal" class="modal">
+        <div class="modal-content seller-review-modal">
+            <button class="modal-close" onclick="closeSellerReviewModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2><i class="fas fa-star-half-alt"></i> Review This Seller</h2>
+            <form id="sellerReviewForm" onsubmit="submitSellerReview(event)">
+                <!-- Overall Rating -->
+                <div class="form-group">
+                    <label>Overall Rating <span class="required">*</span></label>
+                    <div class="star-rating-input" id="sellerStarRating">
+                        <i class="fas fa-star" data-rating="1"></i>
+                        <i class="fas fa-star" data-rating="2"></i>
+                        <i class="fas fa-star" data-rating="3"></i>
+                        <i class="fas fa-star" data-rating="4"></i>
+                        <i class="fas fa-star" data-rating="5"></i>
+                    </div>
+                </div>
+
+                <!-- Category Ratings -->
+                <div class="category-ratings">
+                    <div class="form-group">
+                        <label>Communication</label>
+                        <div class="star-rating-input" id="communicationRating">
+                            <i class="fas fa-star" data-rating="1"></i>
+                            <i class="fas fa-star" data-rating="2"></i>
+                            <i class="fas fa-star" data-rating="3"></i>
+                            <i class="fas fa-star" data-rating="4"></i>
+                            <i class="fas fa-star" data-rating="5"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Shipping Speed</label>
+                        <div class="star-rating-input" id="shippingRating">
+                            <i class="fas fa-star" data-rating="1"></i>
+                            <i class="fas fa-star" data-rating="2"></i>
+                            <i class="fas fa-star" data-rating="3"></i>
+                            <i class="fas fa-star" data-rating="4"></i>
+                            <i class="fas fa-star" data-rating="5"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Product Quality</label>
+                        <div class="star-rating-input" id="qualityRating">
+                            <i class="fas fa-star" data-rating="1"></i>
+                            <i class="fas fa-star" data-rating="2"></i>
+                            <i class="fas fa-star" data-rating="3"></i>
+                            <i class="fas fa-star" data-rating="4"></i>
+                            <i class="fas fa-star" data-rating="5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review Text -->
+                <div class="form-group">
+                    <label for="sellerReviewText">Your Review <span class="required">*</span></label>
+                    <textarea 
+                        id="sellerReviewText" 
+                        name="sellerReviewText" 
+                        rows="5" 
+                        placeholder="Share your experience with this seller..."
+                        maxlength="1000"
+                        required
+                    ></textarea>
+                    <div class="char-counter">
+                        <span id="sellerReviewCharCount">0</span>/1000 characters
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeSellerReviewModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Submit Review
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/homepage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/view_seller.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
     <script>
         // Tab switching
         document.querySelectorAll('.nav-tab').forEach(tab => {

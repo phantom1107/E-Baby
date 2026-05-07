@@ -1617,3 +1617,40 @@ def get_user_review_for_product(user_email: str, product_id: str) -> Optional[Di
     except Exception as e:
         print(f"Error getting user review: {e}")
         return None
+
+
+def check_user_purchased_from_seller(user_email: str, seller_email: str) -> bool:
+    """Check if user has purchased from a specific seller (for seller review verification)"""
+    try:
+        orders = db.collection('orders')\
+            .where('email', '==', user_email)\
+            .where('seller_email', '==', seller_email)\
+            .where('status', '==', 'Delivered')\
+            .limit(1).stream()
+        
+        for order in orders:
+            return True
+        
+        return False
+    except Exception as e:
+        print(f"Error checking seller purchase: {e}")
+        return False
+
+
+def get_user_seller_review(user_email: str, seller_email: str) -> Optional[Dict]:
+    """Check if user already reviewed a seller"""
+    try:
+        query = db.collection('seller_reviews')\
+            .where('buyer_email', '==', user_email)\
+            .where('seller_email', '==', seller_email)\
+            .limit(1).stream()
+        
+        for doc in query:
+            review = doc.to_dict()
+            review['id'] = doc.id
+            return review
+        
+        return None
+    except Exception as e:
+        print(f"Error getting user seller review: {e}")
+        return None
