@@ -1612,7 +1612,12 @@ function confirmFinishOrder(orderId, productName) {
  * Update order status to Preparing via AJAX
  */
 function prepareOrder(orderId) {
-  if (!orderId) return;
+  if (!orderId) {
+    console.error('prepareOrder: No order ID provided');
+    return;
+  }
+
+  console.log(`Preparing order ${orderId}...`);
 
   // Find and disable the button
   const prepareBtn = document.querySelector(
@@ -1629,8 +1634,12 @@ function prepareOrder(orderId) {
       "Content-Type": "application/json",
     },
   })
-    .then((response) => response.json())
+    .then((response) => {
+      console.log(`Prepare order response status: ${response.status}`);
+      return response.json();
+    })
     .then((data) => {
+      console.log('Prepare order response:', data);
       if (data.success) {
         // Update the status badge in the table
         updateOrderStatusInUI(orderId, "Preparing");
@@ -1647,7 +1656,7 @@ function prepareOrder(orderId) {
       }
     })
     .catch((error) => {
-      console.error("Error:", error);
+      console.error("Error preparing order:", error);
       showErrorMessage("An error occurred while updating the order");
       // Re-enable the button on error
       if (prepareBtn) {
@@ -1661,7 +1670,12 @@ function prepareOrder(orderId) {
  * Update order status to Prepared via AJAX
  */
 function finishOrder(orderId) {
-  if (!orderId) return;
+  if (!orderId) {
+    console.error('finishOrder: No order ID provided');
+    return;
+  }
+
+  console.log(`Finishing order ${orderId}...`);
 
   // Find and disable the button
   const finishBtn = document.querySelector(
@@ -1678,8 +1692,12 @@ function finishOrder(orderId) {
       "Content-Type": "application/json",
     },
   })
-    .then((response) => response.json())
+    .then((response) => {
+      console.log(`Finish order response status: ${response.status}`);
+      return response.json();
+    })
     .then((data) => {
+      console.log('Finish order response:', data);
       if (data.success) {
         // Update the status badge in the table
         updateOrderStatusInUI(orderId, "Prepared");
@@ -1696,7 +1714,7 @@ function finishOrder(orderId) {
       }
     })
     .catch((error) => {
-      console.error("Error:", error);
+      console.error("Error finishing order:", error);
       showErrorMessage("An error occurred while updating the order");
       // Re-enable the button on error
       if (finishBtn) {
@@ -1710,43 +1728,46 @@ function finishOrder(orderId) {
  * Update the order status in the UI without page reload
  */
 function updateOrderStatusInUI(orderId, newStatus) {
-  // Find the row with this order ID
-  const rows = document.querySelectorAll(".orders-table tbody tr");
+  // Find the row by looking for buttons with matching order ID
+  const prepareBtn = document.querySelector(`.prepare-btn[data-order-id="${orderId}"]`);
+  const finishBtn = document.querySelector(`.finish-btn[data-order-id="${orderId}"]`);
+  
+  // Get the row from either button
+  const row = prepareBtn ? prepareBtn.closest('tr') : (finishBtn ? finishBtn.closest('tr') : null);
+  
+  if (!row) {
+    console.warn(`Could not find row for order ${orderId}`);
+    return;
+  }
 
-  rows.forEach((row) => {
-    const orderIdCell = row.querySelector("td:first-child");
-    if (orderIdCell && orderIdCell.textContent.includes(`#${orderId}`)) {
-      // Find the status badge
-      const statusBadge = row.querySelector(".status-badge");
-      if (statusBadge) {
-        // Remove old status class
-        statusBadge.className = `status-badge status-${newStatus.toLowerCase()}`;
-        statusBadge.textContent = newStatus;
-      }
+  // Find the status badge
+  const statusBadge = row.querySelector(".status-badge");
+  if (statusBadge) {
+    // Remove old status classes
+    statusBadge.className = `status-badge status-${newStatus.toLowerCase()}`;
+    statusBadge.textContent = newStatus;
+  }
 
-      // Update button states
-      const prepareBtn = row.querySelector(".prepare-btn");
-      const finishBtn = row.querySelector(".finish-btn");
-
-      if (prepareBtn) {
-        if (newStatus === "Pending") {
-          prepareBtn.disabled = false;
-          prepareBtn.innerHTML = '<i class="fas fa-play"></i> Prepare';
-        } else {
-          prepareBtn.disabled = true;
-        }
-      }
-
-      if (finishBtn) {
-        if (newStatus === "Preparing") {
-          finishBtn.disabled = false;
-          finishBtn.innerHTML = '<i class="fas fa-check"></i> Finish';
-        } else {
-          finishBtn.disabled = true;
-        }
-      }
+  // Update button states based on new status
+  if (prepareBtn) {
+    if (newStatus === "Pending") {
+      prepareBtn.disabled = false;
+      prepareBtn.innerHTML = '<i class="fas fa-play"></i> Prepare';
+    } else {
+      prepareBtn.disabled = true;
+      prepareBtn.innerHTML = '<i class="fas fa-play"></i> Prepare';
     }
-  });
+  }
+
+  if (finishBtn) {
+    if (newStatus === "Preparing") {
+      finishBtn.disabled = false;
+      finishBtn.innerHTML = '<i class="fas fa-check"></i> Finish';
+    } else {
+      finishBtn.disabled = true;
+      finishBtn.innerHTML = '<i class="fas fa-check"></i> Finish';
+    }
+  }
 }
 
 // ============================================================

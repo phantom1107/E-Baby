@@ -372,10 +372,23 @@ def get_orders_by_email(email: str) -> List[Dict]:
 def update_order(order_id: str, update_data: Dict) -> bool:
     """Update order"""
     try:
-        db.collection(COLLECTIONS['orders']).document(order_id).update(update_data)
+        print(f"[UPDATE_ORDER] Updating order {order_id} with data: {update_data}")
+        doc_ref = db.collection(COLLECTIONS['orders']).document(order_id)
+        
+        # Check if document exists first
+        doc = doc_ref.get()
+        if not doc.exists:
+            print(f"[UPDATE_ORDER] Order {order_id} does not exist")
+            return False
+        
+        # Update the document
+        doc_ref.update(update_data)
+        print(f"[UPDATE_ORDER] Successfully updated order {order_id}")
         return True
     except Exception as e:
-        print(f"Error updating order: {e}")
+        print(f"[UPDATE_ORDER] Error updating order {order_id}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 

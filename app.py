@@ -5279,16 +5279,35 @@ def seller_mark_preparing(order_id):
         return jsonify({'success': False, 'error': 'Not authorized'}), 401
 
     try:
+        print(f"[PREPARE ORDER] Seller {seller_email} preparing order {order_id}")
+        
         # Get order from Firestore
         order = firestore_db.get_order_by_id(str(order_id))
         
-        if not order or order.get('seller_email') != seller_email:
-            return jsonify({'success': False, 'error': 'Order not found or unauthorized'}), 404
+        if not order:
+            print(f"[PREPARE ORDER] Order {order_id} not found")
+            return jsonify({'success': False, 'error': 'Order not found'}), 404
+            
+        if order.get('seller_email') != seller_email:
+            print(f"[PREPARE ORDER] Unauthorized: order seller is {order.get('seller_email')}, current seller is {seller_email}")
+            return jsonify({'success': False, 'error': 'Unauthorized - this is not your order'}), 403
+        
+        current_status = order.get('status')
+        if current_status != 'Pending':
+            print(f"[PREPARE ORDER] Invalid status: {current_status}, expected Pending")
+            return jsonify({'success': False, 'error': f'Order status is {current_status}, can only prepare Pending orders'}), 400
         
         customer_email = order.get('email')
         
         # Update order status to Preparing
-        firestore_db.update_order(str(order_id), {'status': 'Preparing'})
+        print(f"[PREPARE ORDER] Updating order {order_id} to Preparing")
+        success = firestore_db.update_order(str(order_id), {'status': 'Preparing'})
+        
+        if not success:
+            print(f"[PREPARE ORDER] Failed to update order in database")
+            return jsonify({'success': False, 'error': 'Failed to update order in database'}), 500
+        
+        print(f"[PREPARE ORDER] Successfully updated order {order_id} to Preparing")
         
         # Send email notification to customer
         try:
@@ -5310,12 +5329,15 @@ def seller_mark_preparing(order_id):
                 """
             )
             mail.send(msg)
+            print(f"[PREPARE ORDER] Email sent to {customer_email}")
         except Exception as email_err:
-            print(f"Error sending email: {email_err}")
+            print(f"[PREPARE ORDER] Error sending email: {email_err}")
         
         return jsonify({'success': True, 'message': 'Order marked as Preparing'})
     except Exception as err:
-        print(f"Error: {err}")
+        print(f"[PREPARE ORDER] Error: {err}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(err)}), 500
 
 
@@ -5326,16 +5348,35 @@ def seller_finish_preparing(order_id):
         return jsonify({'success': False, 'error': 'Not authorized'}), 401
 
     try:
+        print(f"[FINISH ORDER] Seller {seller_email} finishing order {order_id}")
+        
         # Get order from Firestore
         order = firestore_db.get_order_by_id(str(order_id))
         
-        if not order or order.get('seller_email') != seller_email:
-            return jsonify({'success': False, 'error': 'Order not found or unauthorized'}), 404
+        if not order:
+            print(f"[FINISH ORDER] Order {order_id} not found")
+            return jsonify({'success': False, 'error': 'Order not found'}), 404
+            
+        if order.get('seller_email') != seller_email:
+            print(f"[FINISH ORDER] Unauthorized: order seller is {order.get('seller_email')}, current seller is {seller_email}")
+            return jsonify({'success': False, 'error': 'Unauthorized - this is not your order'}), 403
+        
+        current_status = order.get('status')
+        if current_status != 'Preparing':
+            print(f"[FINISH ORDER] Invalid status: {current_status}, expected Preparing")
+            return jsonify({'success': False, 'error': f'Order status is {current_status}, can only finish Preparing orders'}), 400
         
         customer_email = order.get('email')
         
         # Update status to Prepared
-        firestore_db.update_order(str(order_id), {'status': 'Prepared'})
+        print(f"[FINISH ORDER] Updating order {order_id} to Prepared")
+        success = firestore_db.update_order(str(order_id), {'status': 'Prepared'})
+        
+        if not success:
+            print(f"[FINISH ORDER] Failed to update order in database")
+            return jsonify({'success': False, 'error': 'Failed to update order in database'}), 500
+        
+        print(f"[FINISH ORDER] Successfully updated order {order_id} to Prepared")
         
         # Send email notification to customer
         try:
@@ -5357,12 +5398,15 @@ def seller_finish_preparing(order_id):
                 """
             )
             mail.send(msg)
+            print(f"[FINISH ORDER] Email sent to {customer_email}")
         except Exception as email_err:
-            print(f"Error sending email: {email_err}")
+            print(f"[FINISH ORDER] Error sending email: {email_err}")
         
         return jsonify({'success': True, 'message': 'Order marked as Prepared'})
     except Exception as err:
-        print(f"Error: {err}")
+        print(f"[FINISH ORDER] Error: {err}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(err)}), 500
 
 
