@@ -946,6 +946,11 @@
                       >
                         {{ order.status }}
                       </span>
+                      {% if (order.status == 'Delivered' or order.status == 'Received') and order.delivery_photo %}
+                      <button type="button" onclick="window.open('{{ order.delivery_photo }}', '_blank')" style="margin-top: 4px; padding: 4px 8px; background: #10B981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75em;">
+                        <i class="fas fa-camera"></i> View Proof
+                      </button>
+                      {% endif %}
                     </td>
                     <td>
                       <div class="order-actions">

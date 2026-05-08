@@ -5507,14 +5507,30 @@ def rider_complete_order(order_id):
         if not order or order.get('rider_email') != rider_email:
             return jsonify({'success': False, 'error': 'Order not found or unauthorized'}), 404
         
-        # Calculate rider commission: ₱5 per ₱2000 of order value
+        # Handle delivery proof photo
+        delivery_photo_url = None
+        if request.files and 'delivery_photo' in request.files:
+            photo = request.files['delivery_photo']
+            if photo and photo.filename:
+                # Upload to Cloudinary
+                delivery_photo_url = upload_to_cloudinary(photo, 'ebaby/delivery_proofs', f'delivery_{order_id}')
+        elif request.is_json and request.json.get('delivery_photo_url'):
+            # Mobile app already uploaded to Cloudinary
+            delivery_photo_url = request.json.get('delivery_photo_url')
+        
+        # Calculate rider commission
         order_total = order.get('total', 0)
         commission = (order_total / 2000) * 5
         shipping_fee = order.get('shipping', 0)
         rider_earnings = commission + shipping_fee
         
-        # Update order to Delivered
-        firestore_db.update_order(order_id, {'status': 'Delivered'})
+        # Update order to Delivered with photo
+        update_data = {'status': 'Delivered'}
+        if delivery_photo_url:
+            update_data['delivery_photo'] = delivery_photo_url
+            update_data['delivery_photo_timestamp'] = datetime.now()
+        
+        firestore_db.update_order(order_id, update_data)
         
         # Create rider earnings record
         earnings_data = {
@@ -5555,7 +5571,8 @@ def rider_complete_order(order_id):
         return jsonify({
             'success': True, 
             'message': f'Delivery completed! Earnings: ₱{commission:.2f} (commission) + ₱{shipping_fee:.2f} (shipping) = ₱{rider_earnings:.2f}',
-            'earnings': rider_earnings
+            'earnings': rider_earnings,
+            'delivery_photo': delivery_photo_url
         })
     except Exception as err:
         print(f"Error: {err}")
