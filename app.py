@@ -5149,7 +5149,7 @@ def orders():
     
     return render_template('orders.html', orders=user_orders)
 
-@app.route('/mark_as_received/<int:order_id>', methods=['POST'])
+@app.route('/mark_as_received/<order_id>', methods=['POST'])
 def mark_as_received(order_id):
     if 'email' not in session:
         return jsonify({'success': False, 'error': 'Please login first'})
@@ -5157,14 +5157,14 @@ def mark_as_received(order_id):
     user_email = session.get('email')
     
     try:
-        # Get order from Firestore
-        order = firestore_db.get_order_by_id(str(order_id))
+        # Get order from Firestore (order_id is already a string)
+        order = firestore_db.get_order_by_id(order_id)
         
         if not order or order.get('email') != user_email:
             return jsonify({'success': False, 'error': 'Order not found'}), 404
         
         # Update order status to "Received"
-        firestore_db.update_order(str(order_id), {'status': 'Received'})
+        firestore_db.update_order(order_id, {'status': 'Received'})
         
         # Increment sales count for the product
         if order.get('product_id'):
@@ -5199,7 +5199,7 @@ def send_cancellation_email(seller_email, order_name, reason, customer_email):
         print(f"Error sending email: {e}")
 
 
-@app.route('/delete_order/<int:order_id>', methods=['POST'])
+@app.route('/delete_order/<order_id>', methods=['POST'])
 def delete_order(order_id):
     user_email = session.get('email')
     
@@ -5213,8 +5213,8 @@ def delete_order(order_id):
         return jsonify({'success': False, 'error': 'Cancellation reason is required'})
     
     try:
-        # Get order from Firestore
-        order = firestore_db.get_order_by_id(str(order_id))
+        # Get order from Firestore (order_id is already a string)
+        order = firestore_db.get_order_by_id(order_id)
         
         if not order or order.get('email') != user_email:
             return jsonify({'success': False, 'error': 'Order not found or unauthorized'}), 404
@@ -5235,7 +5235,7 @@ def delete_order(order_id):
         
         # Update order status to Cancelled
         cancellation_entry = f"[CANCELLED] {reason} (Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
-        firestore_db.update_order(str(order_id), {
+        firestore_db.update_order(order_id, {
             'status': 'Cancelled',
             'action_history': (order.get('action_history', '') or '') + '\n' + cancellation_entry,
             'cancellation_reason': reason
@@ -5256,15 +5256,15 @@ def delete_order(order_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/update_order_status/<int:order_id>', methods=['POST'])
+@app.route('/update_order_status/<order_id>', methods=['POST'])
 def update_order_status(order_id):
     status = request.form.get('stat')
     if not status:
         return redirect(url_for('seller_order_list'))
     
     try:
-        # Update order status in Firestore
-        firestore_db.update_order(str(order_id), {'status': status})
+        # Update order status in Firestore (order_id is already a string)
+        firestore_db.update_order(order_id, {'status': status})
     except Exception as e:
         print(f"Error updating order status: {e}")
     
@@ -5272,7 +5272,7 @@ def update_order_status(order_id):
 
 
 # New: Seller can mark order as Preparing, then Finished Preparing (Prepared)
-@app.route('/seller/order/prepare/<int:order_id>', methods=['POST'])
+@app.route('/seller/order/prepare/<order_id>', methods=['POST'])
 def seller_mark_preparing(order_id):
     seller_email = session.get('email')
     if not seller_email:
@@ -5281,8 +5281,8 @@ def seller_mark_preparing(order_id):
     try:
         print(f"[PREPARE ORDER] Seller {seller_email} preparing order {order_id}")
         
-        # Get order from Firestore
-        order = firestore_db.get_order_by_id(str(order_id))
+        # Get order from Firestore (order_id is already a string)
+        order = firestore_db.get_order_by_id(order_id)
         
         if not order:
             print(f"[PREPARE ORDER] Order {order_id} not found")
@@ -5301,7 +5301,7 @@ def seller_mark_preparing(order_id):
         
         # Update order status to Preparing
         print(f"[PREPARE ORDER] Updating order {order_id} to Preparing")
-        success = firestore_db.update_order(str(order_id), {'status': 'Preparing'})
+        success = firestore_db.update_order(order_id, {'status': 'Preparing'})
         
         if not success:
             print(f"[PREPARE ORDER] Failed to update order in database")
@@ -5341,7 +5341,7 @@ def seller_mark_preparing(order_id):
         return jsonify({'success': False, 'error': str(err)}), 500
 
 
-@app.route('/seller/order/finish_preparing/<int:order_id>', methods=['POST'])
+@app.route('/seller/order/finish_preparing/<order_id>', methods=['POST'])
 def seller_finish_preparing(order_id):
     seller_email = session.get('email')
     if not seller_email:
@@ -5350,8 +5350,8 @@ def seller_finish_preparing(order_id):
     try:
         print(f"[FINISH ORDER] Seller {seller_email} finishing order {order_id}")
         
-        # Get order from Firestore
-        order = firestore_db.get_order_by_id(str(order_id))
+        # Get order from Firestore (order_id is already a string)
+        order = firestore_db.get_order_by_id(order_id)
         
         if not order:
             print(f"[FINISH ORDER] Order {order_id} not found")
@@ -5370,7 +5370,7 @@ def seller_finish_preparing(order_id):
         
         # Update status to Prepared
         print(f"[FINISH ORDER] Updating order {order_id} to Prepared")
-        success = firestore_db.update_order(str(order_id), {'status': 'Prepared'})
+        success = firestore_db.update_order(order_id, {'status': 'Prepared'})
         
         if not success:
             print(f"[FINISH ORDER] Failed to update order in database")
@@ -5430,7 +5430,7 @@ def rider_prepared_orders():
         return render_template('rider_prepared_orders.html', orders=[])
 
 
-@app.route('/rider/order/accept/<int:order_id>', methods=['POST'])
+@app.route('/rider/order/accept/<order_id>', methods=['POST'])
 def rider_accept_order(order_id):
     """Accept an order for delivery - changes status to 'Shipping'"""
     rider_email = session.get('email')
@@ -5438,8 +5438,8 @@ def rider_accept_order(order_id):
         return jsonify({'success': False, 'error': 'Not authorized'}), 401
 
     try:
-        # Get order from Firestore
-        order = firestore_db.get_order_by_id(str(order_id))
+        # Get order from Firestore (order_id is already a string)
+        order = firestore_db.get_order_by_id(order_id)
         
         if not order or order.get('status') != 'Prepared' or order.get('rider_email'):
             return jsonify({'success': False, 'error': 'Order not available'}), 404
@@ -5447,7 +5447,7 @@ def rider_accept_order(order_id):
         customer_email = order.get('email')
         
         # Update order status to Shipping and assign rider
-        firestore_db.update_order(str(order_id), {
+        firestore_db.update_order(order_id, {
             'status': 'Shipping',
             'rider_email': rider_email
         })
@@ -5480,7 +5480,7 @@ def rider_accept_order(order_id):
         print(f"Error: {err}")
         return jsonify({'success': False, 'error': str(err)}), 500
 
-@app.route('/rider/order/complete/<int:order_id>', methods=['POST'])
+@app.route('/rider/order/complete/<order_id>', methods=['POST'])
 def rider_complete_order(order_id):
     """Complete delivery - changes status to 'Delivered' and records earnings"""
     rider_email = session.get('email')
@@ -5488,8 +5488,8 @@ def rider_complete_order(order_id):
         return jsonify({'success': False, 'error': 'Not authorized'}), 401
 
     try:
-        # Get order from Firestore
-        order = firestore_db.get_order_by_id(str(order_id))
+        # Get order from Firestore (order_id is already a string)
+        order = firestore_db.get_order_by_id(order_id)
         
         if not order or order.get('rider_email') != rider_email:
             return jsonify({'success': False, 'error': 'Order not found or unauthorized'}), 404
@@ -5501,12 +5501,12 @@ def rider_complete_order(order_id):
         rider_earnings = commission + shipping_fee
         
         # Update order to Delivered
-        firestore_db.update_order(str(order_id), {'status': 'Delivered'})
+        firestore_db.update_order(order_id, {'status': 'Delivered'})
         
         # Create rider earnings record
         earnings_data = {
             'rider_email': rider_email,
-            'order_id': str(order_id),
+            'order_id': order_id,
             'commission': commission,
             'shipping_fee': shipping_fee,
             'total_earned': rider_earnings,
@@ -5548,7 +5548,7 @@ def rider_complete_order(order_id):
         print(f"Error: {err}")
         return jsonify({'success': False, 'error': str(err)}), 500
 
-@app.route('/rider/order/cancel/<int:order_id>', methods=['POST'])
+@app.route('/rider/order/cancel/<order_id>', methods=['POST'])
 def rider_cancel_order(order_id):
     """Cancel a delivery - changes status from 'Shipping' back to 'Prepared'"""
     rider_email = session.get('email')
@@ -5556,14 +5556,14 @@ def rider_cancel_order(order_id):
         return jsonify({'success': False, 'error': 'Not authorized'}), 401
 
     try:
-        # Get order from Firestore
-        order = firestore_db.get_order_by_id(str(order_id))
+        # Get order from Firestore (order_id is already a string)
+        order = firestore_db.get_order_by_id(order_id)
         
         if not order or order.get('rider_email') != rider_email or order.get('status') != 'Shipping':
             return jsonify({'success': False, 'error': 'Order not found or not in Shipping status'}), 404
         
         # Return order to Prepared status (available for other riders)
-        firestore_db.update_order(str(order_id), {
+        firestore_db.update_order(order_id, {
             'status': 'Prepared',
             'rider_email': None
         })
@@ -5573,7 +5573,7 @@ def rider_cancel_order(order_id):
         print(f"Error: {err}")
         return jsonify({'success': False, 'error': str(err)}), 500
 
-@app.route('/rider/order/deliver/<int:order_id>', methods=['POST'])
+@app.route('/rider/order/deliver/<order_id>', methods=['POST'])
 def rider_deliver_order(order_id):
     """Legacy endpoint - redirect to accept"""
     return rider_accept_order(order_id)
@@ -5592,8 +5592,8 @@ def update_order_received_status():
         return jsonify({'success': False, 'error': 'Invalid status'}), 400
 
     try:
-        # Update order status to 'Received' in Firestore
-        firestore_db.update_order(str(order_id), {'status': status})
+        # Update order status to 'Received' in Firestore (order_id is already a string)
+        firestore_db.update_order(order_id, {'status': status})
         
         # Get the product from Firestore
         product = firestore_db.get_product_by_id(str(product_id))
