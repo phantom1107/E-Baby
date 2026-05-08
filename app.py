@@ -4859,17 +4859,24 @@ def checkout():
         product = firestore_db.get_product_by_id(str(item.get('product_id', '')))
         
         # Handle image URL
+        image_url = None
         if product:
             if 'image_urls' in product and product['image_urls']:
                 if isinstance(product['image_urls'], list) and len(product['image_urls']) > 0:
-                    item['image'] = product['image_urls'][0]
+                    image_url = product['image_urls'][0]
                 elif isinstance(product['image_urls'], str):
-                    item['image'] = product['image_urls']
+                    image_url = product['image_urls']
             elif 'image' in product:
-                item['image'] = product['image']
+                image_url = product['image']
         
-        if not item.get('image'):
-            item['image'] = '/static/images/defaults/product-default.png'
+        # Check if it's a Cloudinary URL or local path
+        if image_url:
+            if image_url.startswith('http://') or image_url.startswith('https://') or image_url.startswith('//'):
+                item['image'] = image_url
+            else:
+                item['image'] = url_for('static', filename=f'uploads/{image_url}')
+        else:
+            item['image'] = url_for('static', filename='images/defaults/product-default.png')
     
     # Calculate pricing breakdown
     subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 1)) for item in checkout_items)
@@ -5142,10 +5149,16 @@ def orders():
         
         # Fix image URLs - handle Cloudinary vs local paths
         image_url = order.get('image', '')
-        if image_url and not image_url.startswith('http'):
-            # It's a local path, prepend static/uploads
-            order['image'] = url_for('static', filename=f'uploads/{image_url}')
-        # Otherwise keep the Cloudinary URL as is
+        if image_url:
+            if image_url.startswith('http://') or image_url.startswith('https://') or image_url.startswith('//'):
+                # It's a Cloudinary URL, keep as is
+                order['image'] = image_url
+            else:
+                # It's a local path
+                order['image'] = url_for('static', filename=f'uploads/{image_url}')
+        else:
+            # No image, use default
+            order['image'] = url_for('static', filename='images/defaults/product-default.png')
     
     return render_template('orders.html', orders=user_orders)
 
