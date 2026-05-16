@@ -936,6 +936,10 @@ def homepage():
             # Ensure price is float
             product['price'] = float(product.get('price', 0))
             
+            # Calculate total sales
+            product_id = product.get('id', '')
+            product['total_sales'] = firestore_db.get_product_total_sales(product_id) if product_id else 0
+            
             # Fix image URL handling
             if 'image_urls' in product and product['image_urls']:
                 # If it's a list, take the first image
@@ -2516,6 +2520,9 @@ def product_details(product_id):
         # Get seller information from Firestore
         seller_email = product.get('seller_email')
         seller_data = firestore_db.get_user_by_email(seller_email) if seller_email else None
+
+        # Calculate total sales
+        product['total_sales'] = firestore_db.get_product_total_sales(product_id)
 
         # Create seller object
         seller = {
@@ -4269,14 +4276,26 @@ def cart():
     # Fetch cart items from Firestore
     cart_items = firestore_db.get_cart(user_email)
     
-    # Fix image URLs for cart items
+    # Enrich cart items with seller name and fix image URLs
     for item in cart_items:
+        # Fix image URLs
         image_url = item.get('image', '')
-        # If image URL starts with http, it's already a full URL (Cloudinary)
         if image_url and not image_url.startswith('http'):
-            # It's a local path, prepend static/uploads
             item['image'] = url_for('static', filename=f'uploads/{image_url}')
-        # Otherwise keep the Cloudinary URL as is
+        
+        # Add seller name if not present
+        if 'seller_name' not in item or not item['seller_name']:
+            seller_email = item.get('seller_email', '')
+            if seller_email:
+                seller_data = firestore_db.get_user_by_email(seller_email)
+                if seller_data:
+                    first_name = seller_data.get('first_name', '')
+                    last_name = seller_data.get('last_name', '')
+                    item['seller_name'] = f"{first_name} {last_name}".strip() or "Unknown Seller"
+                else:
+                    item['seller_name'] = "Unknown Seller"
+            else:
+                item['seller_name'] = "Unknown Seller"
 
     # Calculate pricing breakdown
     subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 0)) for item in cart_items)
@@ -4404,6 +4423,15 @@ def add_to_cart():
             seller_email = data.get('seller_email') or ''
             print(f"Inserting new item. seller_email={seller_email}")
             
+            # Get seller name
+            seller_name = "Unknown Seller"
+            if seller_email:
+                seller_data = firestore_db.get_user_by_email(seller_email)
+                if seller_data:
+                    first_name = seller_data.get('first_name', '')
+                    last_name = seller_data.get('last_name', '')
+                    seller_name = f"{first_name} {last_name}".strip() or "Unknown Seller"
+            
             cart_item = {
                 'product_id': product_id,
                 'name': data['name'],
@@ -4412,7 +4440,8 @@ def add_to_cart():
                 'color': color_value,
                 'size': size_value,
                 'quantity': new_quantity,
-                'seller_email': seller_email
+                'seller_email': seller_email,
+                'seller_name': seller_name
             }
             
             firestore_db.add_to_cart(user_email, cart_item)

@@ -95,6 +95,20 @@ def get_user_by_id(user_id: str) -> Optional[Dict]:
         return None
 
 
+def get_product_total_sales(product_id: str) -> int:
+    """Calculate total sales (quantity sold) for a product from Received orders"""
+    try:
+        query = db.collection(COLLECTIONS['orders']).where("product_id", "==", product_id).where("status", "==", "Received")
+        total_sold = 0
+        for doc in query.stream():
+            order_data = doc.to_dict()
+            total_sold += int(order_data.get('quantity', 0))
+        return total_sold
+    except Exception as e:
+        print(f"Error calculating product sales: {e}")
+        return 0
+
+
 def create_user(user_data: Dict) -> str:
     """Create new user, returns document ID"""
     try:

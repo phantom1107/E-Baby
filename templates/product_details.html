@@ -262,6 +262,9 @@
                                 {% else %}
                                     <i class="fas fa-times-circle"></i> Out of Stock
                                 {% endif %}
+                                <span style="margin-left: 15px; color: #7C3AED;">
+                                    <i class="fas fa-shopping-cart"></i> {{ product.total_sales or 0 }} sold
+                                </span>
                             </div>
                         </div>
 
