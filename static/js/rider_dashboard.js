@@ -1384,7 +1384,7 @@ function closeAcceptDeliveryModal() {
 }
 
 /**
- * Accept delivery via AJAX - Changes status to "Shipping"
+ * Accept delivery via AJAX - Changes status to "Shipping" with location
  */
 function acceptDelivery(button, orderId) {
   if (!button || !orderId) return;
@@ -1392,62 +1392,168 @@ function acceptDelivery(button, orderId) {
   // Disable button and show loading state
   button.disabled = true;
   const originalHTML = button.innerHTML;
-  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accepting...';
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
 
-  fetch(`/rider/order/accept/${orderId}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        // Remove the order card from the UI
-        const orderCard = button.closest(".order-card");
-        if (orderCard) {
-          orderCard.style.transition = "all 0.3s ease";
-          orderCard.style.opacity = "0.5";
-          orderCard.style.pointerEvents = "none";
+  // Get rider's current location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const riderLat = position.coords.latitude;
+        const riderLng = position.coords.longitude;
+        
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accepting...';
 
-          setTimeout(() => {
-            orderCard.remove();
+        fetch(`/rider/order/accept/${orderId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            rider_lat: riderLat,
+            rider_lng: riderLng
+          })
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Remove the order card from the UI
+              const orderCard = button.closest(".order-card");
+              if (orderCard) {
+                orderCard.style.transition = "all 0.3s ease";
+                orderCard.style.opacity = "0.5";
+                orderCard.style.pointerEvents = "none";
 
-            // Check if there are any orders left
-            const container =
-              button.closest(".orders-grid") ||
-              button.closest(".prepared-orders-container");
-            if (container) {
-              const remainingCards = container.querySelectorAll(".order-card");
-              if (remainingCards.length === 0) {
-                // Show empty state or reload
+                setTimeout(() => {
+                  orderCard.remove();
+
+                  // Check if there are any orders left
+                  const container =
+                    button.closest(".orders-grid") ||
+                    button.closest(".prepared-orders-container");
+                  if (container) {
+                    const remainingCards = container.querySelectorAll(".order-card");
+                    if (remainingCards.length === 0) {
+                      // Show empty state or reload
+                      location.reload();
+                    }
+                  }
+                }, 300);
+              }
+
+              const distanceMsg = data.distance_km > 0 
+                ? ` Distance: ${data.distance_km.toFixed(2)} km. Earnings: ₱${data.total_earnings.toFixed(2)}`
+                : '';
+              showSuccessMessage(
+                `Order accepted!${distanceMsg} It will now appear in 'My Deliveries' as 'Shipping'.`
+              );
+
+              // Refresh orders list and switch to deliveries tab
+              setTimeout(() => {
+                refreshOrders();
+                showSection('deliveries');
+              }, 1000);
+            } else {
+              showErrorMessage(data.error || "Failed to accept delivery");
+              // Re-enable button
+              button.disabled = false;
+              button.innerHTML = originalHTML;
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showErrorMessage("An error occurred while accepting the delivery");
+            // Re-enable button
+            button.disabled = false;
+            button.innerHTML = originalHTML;
+          });
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        // Accept without location if permission denied
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accepting...';
+        
+        fetch(`/rider/order/accept/${orderId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              const orderCard = button.closest(".order-card");
+              if (orderCard) {
+                orderCard.style.transition = "all 0.3s ease";
+                orderCard.style.opacity = "0.5";
+                orderCard.style.pointerEvents = "none";
+                setTimeout(() => {
+                  orderCard.remove();
+                  const container = button.closest(".orders-grid") || button.closest(".prepared-orders-container");
+                  if (container && container.querySelectorAll(".order-card").length === 0) {
+                    location.reload();
+                  }
+                }, 300);
+              }
+              showSuccessMessage("Order accepted! (Location unavailable)");
+              setTimeout(() => {
+                refreshOrders();
+                showSection('deliveries');
+              }, 1000);
+            } else {
+              showErrorMessage(data.error || "Failed to accept delivery");
+              button.disabled = false;
+              button.innerHTML = originalHTML;
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            showErrorMessage("An error occurred while accepting the delivery");
+            button.disabled = false;
+            button.innerHTML = originalHTML;
+          });
+      }
+    );
+  } else {
+    // Browser doesn't support geolocation, accept without location
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accepting...';
+    
+    fetch(`/rider/order/accept/${orderId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          const orderCard = button.closest(".order-card");
+          if (orderCard) {
+            orderCard.style.transition = "all 0.3s ease";
+            orderCard.style.opacity = "0.5";
+            orderCard.style.pointerEvents = "none";
+            setTimeout(() => {
+              orderCard.remove();
+              const container = button.closest(".orders-grid") || button.closest(".prepared-orders-container");
+              if (container && container.querySelectorAll(".order-card").length === 0) {
                 location.reload();
               }
-            }
-          }, 300);
+            }, 300);
+          }
+          showSuccessMessage("Order accepted! (Location unavailable)");
+          setTimeout(() => {
+            refreshOrders();
+            showSection('deliveries');
+          }, 1000);
+        } else {
+          showErrorMessage(data.error || "Failed to accept delivery");
+          button.disabled = false;
+          button.innerHTML = originalHTML;
         }
-
-        showSuccessMessage(
-          "Order accepted! It will now appear in 'My Deliveries' as 'Shipping'."
-        );
-
-        // Refresh orders list and switch to deliveries tab
-        setTimeout(() => {
-          refreshOrders();
-          showSection('deliveries');
-        }, 1000);
-      } else {
-        showErrorMessage(data.error || "Failed to accept delivery");
-        // Re-enable button
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showErrorMessage("An error occurred while accepting the delivery");
         button.disabled = false;
-        button.innerHTML = originalHTML;
-      }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      showErrorMessage("An error occurred while accepting the delivery");
-      // Re-enable button
-      button.disabled = false;
       button.innerHTML = originalHTML;
     });
 }

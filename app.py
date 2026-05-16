@@ -5527,12 +5527,17 @@ def rider_delivery_photos():
 
 @app.route('/rider/order/accept/<order_id>', methods=['POST'])
 def rider_accept_order(order_id):
-    """Accept an order for delivery - changes status to 'Shipping'"""
+    """Accept an order for delivery - changes status to 'Shipping' with distance-based commission"""
     rider_email = session.get('email')
     if not rider_email:
         return jsonify({'success': False, 'error': 'Not authorized'}), 401
 
     try:
+        # Get location data from request
+        data = request.get_json() or {}
+        rider_lat = data.get('rider_lat')
+        rider_lng = data.get('rider_lng')
+        
         # Get order from Firestore (order_id is already a string)
         order = firestore_db.get_order_by_id(order_id)
         
@@ -5540,12 +5545,50 @@ def rider_accept_order(order_id):
             return jsonify({'success': False, 'error': 'Order not available'}), 404
         
         customer_email = order.get('email')
+        delivery_address = order.get('delivery_address', '')
         
-        # Update order status to Shipping and assign rider
-        firestore_db.update_order(order_id, {
+        # Calculate distance-based commission if location provided
+        distance_km = 0
+        distance_commission = 0
+        shipping_fee = 38.0
+        total_earnings = shipping_fee
+        
+        if rider_lat and rider_lng and delivery_address:
+            try:
+                from geopy.geocoders import Nominatim
+                from geopy.distance import geodesic
+                
+                # Geocode delivery address
+                geolocator = Nominatim(user_agent="e-baby-app")
+                location = geolocator.geocode(delivery_address)
+                
+                if location:
+                    # Calculate distance
+                    rider_coords = (rider_lat, rider_lng)
+                    delivery_coords = (location.latitude, location.longitude)
+                    distance_km = geodesic(rider_coords, delivery_coords).kilometers
+                    
+                    # Calculate commission: ₱10 per 3km
+                    distance_commission = (distance_km / 3) * 10
+                    total_earnings = shipping_fee + distance_commission
+            except Exception as geo_err:
+                print(f"Geocoding error: {geo_err}")
+        
+        # Update order status to Shipping and assign rider with distance data
+        update_data = {
             'status': 'Shipping',
-            'rider_email': rider_email
-        })
+            'rider_email': rider_email,
+            'delivery_distance_km': distance_km,
+            'distance_commission': distance_commission,
+            'rider_total_earnings': total_earnings,
+            'accepted_at': firestore.SERVER_TIMESTAMP
+        }
+        
+        if rider_lat and rider_lng:
+            update_data['rider_location_lat'] = rider_lat
+            update_data['rider_location_lng'] = rider_lng
+        
+        firestore_db.update_order(order_id, update_data)
         
         # Send email to customer notifying rider has accepted
         try:
@@ -5559,6 +5602,7 @@ def rider_accept_order(order_id):
                         <h2 style="color: #333;">Order Update</h2>
                         <p style="color: #666; font-size: 14px;">Your order #<strong>{order_id}</strong> is now out for delivery!</p>
                         <p style="color: #666; font-size: 14px;">Our rider {rider_email} will be at your doorstep soon.</p>
+                        {f'<p style="color: #666; font-size: 14px;">Delivery distance: <strong>{distance_km:.2f} km</strong></p>' if distance_km > 0 else ''}
                         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
                             <p style="color: #999; font-size: 12px;">E-Baby Services</p>
                         </div>
@@ -5570,7 +5614,12 @@ def rider_accept_order(order_id):
         except Exception as email_err:
             print(f"Error sending email: {email_err}")
         
-        return jsonify({'success': True, 'message': 'Order accepted'})
+        return jsonify({
+            'success': True, 
+            'message': 'Order accepted',
+            'distance_km': distance_km,
+            'total_earnings': total_earnings
+        })
     except Exception as err:
         print(f"Error: {err}")
         return jsonify({'success': False, 'error': str(err)}), 500
@@ -5600,11 +5649,11 @@ def rider_complete_order(order_id):
             # Mobile app already uploaded to Cloudinary
             delivery_photo_url = request.json.get('delivery_photo_url')
         
-        # Calculate rider commission
-        order_total = order.get('total', 0)
-        commission = (order_total / 2000) * 5
-        shipping_fee = order.get('shipping', 0)
-        rider_earnings = commission + shipping_fee
+        # Get distance-based commission from order data
+        distance_km = order.get('delivery_distance_km', 0)
+        distance_commission = order.get('distance_commission', 0)
+        shipping_fee = 38.0
+        rider_earnings = order.get('rider_total_earnings', shipping_fee + distance_commission)
         
         # Update order to Delivered with photo
         update_data = {'status': 'Delivered'}
@@ -5614,13 +5663,15 @@ def rider_complete_order(order_id):
         
         firestore_db.update_order(order_id, update_data)
         
-        # Create rider earnings record
+        # Create rider earnings record with distance-based commission
         earnings_data = {
             'rider_email': rider_email,
             'order_id': order_id,
-            'commission': commission,
+            'distance_km': distance_km,
+            'distance_commission': distance_commission,
             'shipping_fee': shipping_fee,
             'total_earned': rider_earnings,
+            'status': 'Completed',
             'created_at': datetime.now()
         }
         firestore_db.add_document('rider_earnings', earnings_data)
@@ -5638,6 +5689,7 @@ def rider_complete_order(order_id):
                     <div style="background-color: white; padding: 20px; border-radius: 8px;">
                         <h2 style="color: #333;">Order Delivered!</h2>
                         <p style="color: #666; font-size: 14px;">Your order #<strong>{order_id}</strong> has been successfully delivered.</p>
+                        {f'<p style="color: #666; font-size: 14px;">Delivery distance: <strong>{distance_km:.2f} km</strong></p>' if distance_km > 0 else ''}
                         <p style="color: #666; font-size: 14px;">Thank you for shopping with E-Baby Services! If you have any questions, please reply to this email.</p>
                         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
                             <p style="color: #999; font-size: 12px;">E-Baby Services</p>
@@ -5652,7 +5704,7 @@ def rider_complete_order(order_id):
         
         return jsonify({
             'success': True, 
-            'message': f'Delivery completed! Earnings: ₱{commission:.2f} (commission) + ₱{shipping_fee:.2f} (shipping) = ₱{rider_earnings:.2f}',
+            'message': f'Delivery completed! Earnings: ₱{shipping_fee:.2f} (base) + ₱{distance_commission:.2f} (distance) = ₱{rider_earnings:.2f}',
             'earnings': rider_earnings,
             'delivery_photo': delivery_photo_url
         })
