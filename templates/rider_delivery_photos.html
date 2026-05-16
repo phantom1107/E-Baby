@@ -1,0 +1,186 @@
+{% extends "rider_layout.html" %}
+
+{% block title %}Delivery Photos - E-Baby{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-camera"></i> Delivery Photos</h2>
+            <p class="text-muted mb-0">View proof of delivery for completed orders</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-success fs-6">{{ orders|length }} Deliveries</span>
+        </div>
+    </div>
+
+    {% if orders %}
+    <div class="row g-4">
+        {% for order in orders %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <!-- Delivery Photo -->
+                <div class="position-relative">
+                    <img src="{{ order.delivery_photo }}" 
+                         class="card-img-top" 
+                         alt="Delivery proof"
+                         style="height: 250px; object-fit: cover; cursor: pointer;"
+                         onclick="viewFullImage('{{ order.delivery_photo }}', '{{ order.id }}')">
+                    <div class="position-absolute top-0 end-0 m-2">
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle"></i> Delivered
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Order Info -->
+                    <div class="d-flex align-items-start mb-3">
+                        <img src="{{ order.image }}" 
+                             class="rounded me-3" 
+                             alt="{{ order.name }}"
+                             style="width: 60px; height: 60px; object-fit: cover;"
+                             onerror="this.src='/static/images/placeholder.png'">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ order.name }}</h6>
+                            <small class="text-muted">Order #{{ order.id[:8] }}</small>
+                            {% if order.color or order.size %}
+                            <div class="mt-1">
+                                {% if order.color %}
+                                <span class="badge bg-light text-dark">{{ order.color }}</span>
+                                {% endif %}
+                                {% if order.size %}
+                                <span class="badge bg-light text-dark">{{ order.size }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Customer Info -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-user text-muted me-2"></i>
+                            <small class="text-muted">{{ order.email }}</small>
+                        </div>
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-map-marker-alt text-muted me-2 mt-1"></i>
+                            <small class="text-muted">{{ order.delivery_address }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Date -->
+                    <div class="mb-3">
+                        <i class="fas fa-calendar-check text-success me-2"></i>
+                        <small class="text-muted">
+                            Delivered: 
+                            {% if order.delivery_photo_timestamp %}
+                                {{ order.delivery_photo_timestamp.strftime('%b %d, %Y %I:%M %p') }}
+                            {% else %}
+                                {{ order.created_at.strftime('%b %d, %Y') }}
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <!-- Earnings -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <span class="text-muted">Your Earnings:</span>
+                        <span class="fw-bold text-success fs-5">
+                            ₱{{ "%.2f"|format((order.subtotal or 0) / 2000 * 10 + 38) }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary flex-grow-1" 
+                                onclick="viewFullImage('{{ order.delivery_photo }}', '{{ order.id }}')">
+                            <i class="fas fa-search-plus"></i> View Photo
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" 
+                                onclick="downloadImage('{{ order.delivery_photo }}', '{{ order.id }}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-camera fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No Delivery Photos Yet</h4>
+        <p class="text-muted">Complete deliveries to see proof of delivery photos here</p>
+        <a href="{{ url_for('rider_my_deliveries') }}" class="btn btn-primary mt-3">
+            <i class="fas fa-truck"></i> View My Deliveries
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Full Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delivery Proof - Order #<span id="modalOrderId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-0">
+                <img id="modalImage" src="" class="img-fluid" alt="Delivery proof">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadModalImage()">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-img-top {
+    transition: opacity 0.2s;
+}
+
+.card-img-top:hover {
+    opacity: 0.9;
+}
+</style>
+
+<script>
+let currentImageUrl = '';
+
+function viewFullImage(imageUrl, orderId) {
+    currentImageUrl = imageUrl;
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('modalOrderId').textContent = orderId.substring(0, 8);
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
+
+function downloadImage(imageUrl, orderId) {
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = `delivery_${orderId}.jpg`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function downloadModalImage() {
+    const orderId = document.getElementById('modalOrderId').textContent;
+    downloadImage(currentImageUrl, orderId);
+}
+</script>
+{% endblock %}

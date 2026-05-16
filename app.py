@@ -5108,17 +5108,8 @@ def confirm_order():
                 order_id = firestore_db.create_order(order_data)
                 print(f"Order created: {order_id}")
 
-                # Reduce stock from product_variants
-                new_stock = max(0, current_stock - order_quantity)
-                print(f"Updating variant stock: {current_stock} - {order_quantity} = {new_stock}")
-                
-                # Update the variant with new stock
-                if variants:
-                    for idx, var in enumerate(variants):
-                        if var.get('color') == color_value and var.get('size') == size_value:
-                            var['stock'] = new_stock
-                            break
-                    firestore_db.update_product_variant(str(item.get('product_id', item['id'])), variants)
+                # Stock will be deducted when seller prepares the order (status='Preparing')
+                # This prevents stock from being locked for orders that may be cancelled
                 
                 successful_orders += 1
                 
@@ -5341,6 +5332,41 @@ def seller_mark_preparing(order_id):
         
         customer_email = order.get('email')
         
+        # Deduct stock when seller prepares the order
+        try:
+            product_id = order.get('product_id')
+            order_quantity = order.get('quantity', 1)
+            color_value = order.get('color', '')
+            size_value = order.get('size', '')
+            
+            if product_id:
+                print(f"[PREPARE ORDER] Deducting stock for product {product_id}")
+                product = firestore_db.get_product_by_id(product_id)
+                
+                if product:
+                    variants = product.get('variants', [])
+                    
+                    # Find matching variant
+                    current_stock = 0
+                    variant_index = -1
+                    for idx, var in enumerate(variants):
+                        if var.get('color') == color_value and var.get('size') == size_value:
+                            current_stock = var.get('stock', 0)
+                            variant_index = idx
+                            break
+                    
+                    if variant_index >= 0:
+                        # Deduct stock
+                        new_stock = max(0, current_stock - order_quantity)
+                        variants[variant_index]['stock'] = new_stock
+                        firestore_db.update_product_variant(product_id, variants)
+                        print(f"[PREPARE ORDER] Stock updated: {current_stock} - {order_quantity} = {new_stock}")
+                    else:
+                        print(f"[PREPARE ORDER] Warning: Variant not found for color={color_value}, size={size_value}")
+        except Exception as stock_err:
+            print(f"[PREPARE ORDER] Error deducting stock: {stock_err}")
+            # Continue even if stock deduction fails
+        
         # Update order status to Preparing
         print(f"[PREPARE ORDER] Updating order {order_id} to Preparing")
         success = firestore_db.update_order(order_id, {'status': 'Preparing'})
@@ -5470,6 +5496,33 @@ def rider_prepared_orders():
     except Exception as err:
         print(f"Error: {err}")
         return render_template('rider_prepared_orders.html', orders=[])
+
+
+@app.route('/rider_delivery_photos')
+def rider_delivery_photos():
+    """View all delivery photos for completed deliveries"""
+    rider_email = session.get('email')
+    if not rider_email:
+        return redirect(url_for('login'))
+    
+    try:
+        # Get all delivered orders with photos for this rider
+        all_orders = firestore_db.get_orders_by_rider(rider_email)
+        delivered_orders = [
+            order for order in all_orders 
+            if order.get('status') == 'Delivered' and order.get('delivery_photo')
+        ]
+        
+        # Sort by delivery date (newest first)
+        delivered_orders.sort(
+            key=lambda x: x.get('delivery_photo_timestamp', x.get('created_at', datetime.min)),
+            reverse=True
+        )
+        
+        return render_template('rider_delivery_photos.html', orders=delivered_orders)
+    except Exception as err:
+        print(f"Error loading delivery photos: {err}")
+        return render_template('rider_delivery_photos.html', orders=[])
 
 
 @app.route('/rider/order/accept/<order_id>', methods=['POST'])
