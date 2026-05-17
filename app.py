@@ -595,29 +595,34 @@ def register():
         return render_template('auth.html', error="Passwords do not match!")
 
     # Handle documents for all user types (Buyer, Seller, Rider)
-    document_filename = None
-    bir_filename = None
-    
-    # ID document is now required for all user types
+    # ID document is required for all user types
     document = request.files.get('document_id')
     
     if not document or document.filename == '':
         return render_template('auth.html', error="Please upload a valid ID document.")
     
-    # Save the document
+    # Save the document temporarily
     document_filename = secure_filename(document.filename)
     requirements_folder = os.path.join(app.root_path, 'static', 'requirements')
     os.makedirs(requirements_folder, exist_ok=True)
-    document.save(os.path.join(requirements_folder, document_filename))
+    document_path = os.path.join(requirements_folder, document_filename)
+    document.save(document_path)
     
-    # Only require BIR document for sellers
-    if user_type == 'Seller':
-        bir = request.files.get('bir')
-        if not bir or bir.filename == '':
-            return render_template('auth.html', error="Please upload a BIR document.")
-        
-        bir_filename = secure_filename(bir.filename)
-        bir.save(os.path.join(requirements_folder, bir_filename))
+    # Upload to Cloudinary immediately if enabled
+    document_url = document_filename  # Fallback to filename
+    if CLOUDINARY_ENABLED:
+        try:
+            upload_result = cloudinary.uploader.upload(
+                document_path,
+                folder='registration_documents',
+                resource_type='auto'
+            )
+            document_url = upload_result.get('secure_url')
+            # Delete local file after successful upload
+            os.remove(document_path)
+        except Exception as e:
+            print(f"Cloudinary upload error: {e}")
+            # Keep local file if upload fails
 
     # Store registration data in session
     session['registration_data'] = {
@@ -627,8 +632,7 @@ def register():
         'address': address,
         'password': password,
         'user_type': user_type,
-        'document_id': document_filename,
-        'bir': bir_filename
+        'document_id': document_url
     }
 
     # Generate and send OTP
@@ -675,38 +679,8 @@ def otp_verification():
             registration_data = session.get('registration_data')
             if registration_data:
                 try:
-                    # Upload documents to Cloudinary if enabled
+                    # Document URL is already uploaded to Cloudinary in register()
                     document_url = registration_data['document_id']
-                    bir_url = registration_data.get('bir')
-                    
-                    if CLOUDINARY_ENABLED:
-                        if registration_data.get('document_id'):
-                            doc_path = os.path.join(app.root_path, 'static', 'requirements', registration_data['document_id'])
-                            if os.path.exists(doc_path):
-                                try:
-                                    upload_result = cloudinary.uploader.upload(
-                                        doc_path,
-                                        folder='registration_documents',
-                                        resource_type='auto'
-                                    )
-                                    document_url = upload_result.get('secure_url')
-                                    os.remove(doc_path)
-                                except Exception as e:
-                                    print(f"Cloudinary upload error for document: {e}")
-                        
-                        if registration_data.get('bir'):
-                            bir_path = os.path.join(app.root_path, 'static', 'requirements', registration_data['bir'])
-                            if os.path.exists(bir_path):
-                                try:
-                                    upload_result = cloudinary.uploader.upload(
-                                        bir_path,
-                                        folder='registration_documents',
-                                        resource_type='auto'
-                                    )
-                                    bir_url = upload_result.get('secure_url')
-                                    os.remove(bir_path)
-                                except Exception as e:
-                                    print(f"Cloudinary upload error for BIR: {e}")
                     
                     # Create request in appropriate collection
                     request_data = {
@@ -723,8 +697,6 @@ def otp_verification():
                     
                     # Create request based on user type (only once)
                     if registration_data['user_type'] == 'Seller':
-                        if bir_url:
-                            request_data['bir'] = bir_url
                         firestore_db.create_seller_request(request_data)
                     elif registration_data['user_type'] == 'Rider':
                         firestore_db.create_rider_request(request_data)
