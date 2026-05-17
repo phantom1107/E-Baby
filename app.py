@@ -675,6 +675,39 @@ def otp_verification():
             registration_data = session.get('registration_data')
             if registration_data:
                 try:
+                    # Upload documents to Cloudinary if enabled
+                    document_url = registration_data['document_id']
+                    bir_url = registration_data.get('bir')
+                    
+                    if CLOUDINARY_ENABLED:
+                        if registration_data.get('document_id'):
+                            doc_path = os.path.join(app.root_path, 'static', 'requirements', registration_data['document_id'])
+                            if os.path.exists(doc_path):
+                                try:
+                                    upload_result = cloudinary.uploader.upload(
+                                        doc_path,
+                                        folder='registration_documents',
+                                        resource_type='auto'
+                                    )
+                                    document_url = upload_result.get('secure_url')
+                                    os.remove(doc_path)
+                                except Exception as e:
+                                    print(f"Cloudinary upload error for document: {e}")
+                        
+                        if registration_data.get('bir'):
+                            bir_path = os.path.join(app.root_path, 'static', 'requirements', registration_data['bir'])
+                            if os.path.exists(bir_path):
+                                try:
+                                    upload_result = cloudinary.uploader.upload(
+                                        bir_path,
+                                        folder='registration_documents',
+                                        resource_type='auto'
+                                    )
+                                    bir_url = upload_result.get('secure_url')
+                                    os.remove(bir_path)
+                                except Exception as e:
+                                    print(f"Cloudinary upload error for BIR: {e}")
+                    
                     # Create request in appropriate collection
                     request_data = {
                         'first_name': registration_data['first_name'],
@@ -684,29 +717,28 @@ def otp_verification():
                         'address': registration_data['address'],
                         'password': registration_data['password'],
                         'user_type': registration_data['user_type'],
-                        'document_id': registration_data['document_id'],
+                        'document_id': document_url,
                         'status': 'Pending'
                     }
                     
+                    # Create request based on user type (only once)
                     if registration_data['user_type'] == 'Seller':
-                        if registration_data['bir']:
-                            request_data['bir'] = registration_data['bir']
+                        if bir_url:
+                            request_data['bir'] = bir_url
                         firestore_db.create_seller_request(request_data)
-                        response_data = {'success': True, 'message': 'Your account is pending approval by the admin.'}
                     elif registration_data['user_type'] == 'Rider':
                         firestore_db.create_rider_request(request_data)
-                        response_data = {'success': True, 'message': 'Your account is pending approval by the admin.'}
-                    else:  # Buyer
-                        firestore_db.create_rider_request(request_data) if registration_data['user_type'] == 'Rider' else None
-                        firestore_db.create_buyer_request(request_data) if registration_data['user_type'] == 'Buyer' else None
-                        if registration_data['user_type'] == 'Buyer':
-                            firestore_db.create_buyer_request(request_data)
-                        response_data = {'success': True, 'message': 'Your account is pending approval by the admin.'}
+                    elif registration_data['user_type'] == 'Buyer':
+                        firestore_db.create_buyer_request(request_data)
+                    
+                    response_data = {'success': True, 'message': 'Your account is pending approval by the admin.'}
                     
                     # Clear the registration data from the session
                     session.pop('registration_data', None)
+                    session.pop('otp', None)
 
                 except Exception as err:
+                    print(f"Registration error: {err}")
                     response_data = {'success': False, 'error': f"Error: {err}"}
                     return jsonify(response_data)
 
