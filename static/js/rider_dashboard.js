@@ -434,9 +434,13 @@ function initializeEventListeners() {
   // Navigation items
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", function (e) {
-      e.preventDefault();
+      // Only prevent default if it has a data-section attribute
       const section = this.getAttribute("data-section");
-      showSection(section);
+      if (section) {
+        e.preventDefault();
+        showSection(section);
+      }
+      // Otherwise let the link work normally (for Delivery Photos)
     });
   });
 

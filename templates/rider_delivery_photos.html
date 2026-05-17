@@ -27,11 +27,12 @@
             <div class="card h-100 shadow-sm">
                 <!-- Delivery Photo -->
                 <div class="position-relative">
-                    <img src="{{ order.delivery_photo }}" 
+                    <img src="{{ order.delivery_photo if order.delivery_photo else 'https://via.placeholder.com/250' }}" 
                          class="card-img-top" 
                          alt="Delivery proof"
                          style="height: 250px; object-fit: cover; cursor: pointer;"
-                         onclick="viewFullImage('{{ order.delivery_photo }}', '{{ order.id }}')">
+                         onclick="viewFullImage('{{ order.delivery_photo }}', '{{ order.id }}')"
+                         onerror="this.src='https://via.placeholder.com/250'">
                     <div class="position-absolute top-0 end-0 m-2">
                         <span class="badge bg-success">
                             <i class="fas fa-check-circle"></i> Delivered
@@ -42,11 +43,11 @@
                 <div class="card-body">
                     <!-- Order Info -->
                     <div class="d-flex align-items-start mb-3">
-                        <img src="{{ order.image }}" 
+                        <img src="{{ order.image if order.image else 'https://via.placeholder.com/60' }}" 
                              class="rounded me-3" 
                              alt="{{ order.name }}"
                              style="width: 60px; height: 60px; object-fit: cover;"
-                             onerror="this.src='/static/images/placeholder.png'">
+                             onerror="this.src='https://via.placeholder.com/60'">
                         <div class="flex-grow-1">
                             <h6 class="mb-1">{{ order.name }}</h6>
                             <small class="text-muted">Order #{{ order.id[:8] }}</small>
@@ -92,7 +93,13 @@
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                         <span class="text-muted">Your Earnings:</span>
                         <span class="fw-bold text-success fs-5">
-                            ₱{{ "%.2f"|format((order.subtotal or 0) / 2000 * 10 + 38) }}
+                            {% if order.rider_total_earnings %}
+                                ₱{{ "%.2f"|format(order.rider_total_earnings) }}
+                            {% elif order.distance_commission %}
+                                ₱{{ "%.2f"|format(38 + order.distance_commission) }}
+                            {% else %}
+                                ₱38.00
+                            {% endif %}
                         </span>
                     </div>
                 </div>

@@ -1751,117 +1751,111 @@ def admin_dashboard():
 def rider_dashboard():
     user_email = session.get('email')
     
-    connection = get_db_connection()
-    cursor = connection.cursor(dictionary=True)
-    
-    # Get rider's total deliveries (completed orders assigned to them)
-    cursor.execute("""
-        SELECT COUNT(*) as total_deliveries
-        FROM orders 
-        WHERE rider_email = %s AND status = 'Received'
-    """, (user_email,))
-    result = cursor.fetchone()
-    total_deliveries = result['total_deliveries'] if result else 0
-    
-    # Get pending orders (all prepared orders available for pickup)
-    cursor.execute("""
-        SELECT COUNT(*) as pending_orders
-        FROM orders 
-        WHERE status = 'Prepared'
-    """)
-    result = cursor.fetchone()
-    pending_orders = result['pending_orders'] if result else 0
-    
-    # Get total earnings from rider_earnings table
-    cursor.execute("""
-        SELECT COALESCE(SUM(amount), 0) as total_earnings
-        FROM rider_earnings
-        WHERE rider_email = %s AND status = 'Completed'
-    """, (user_email,))
-    earnings_result = cursor.fetchone()
-    total_earnings = float(earnings_result['total_earnings']) if earnings_result else 0
-    
-    # Customer rating (placeholder - could be added later)
-    customer_rating = 5.0
-    
-    # Get available orders (orders that are 'Prepared' - ready for pickup)
-    cursor.execute("""
-        SELECT *, seller_email
-        FROM orders
-        WHERE status = 'Prepared'
-        ORDER BY date ASC
-    """)
-    orders = cursor.fetchall()
-    
-    # Get rider's current deliveries (orders in 'Shipping' status)
-    cursor.execute("""
-        SELECT o.id as order_id, o.name as product_name, o.email as customer_name,
-               'Store Location' as pickup_location, o.delivery_address,
-               o.status, o.image, o.date,
-               CASE 
-                 WHEN o.total_price >= 1500 THEN 20
-                 ELSE 10
-               END as earnings
-        FROM orders o
-        WHERE o.rider_email = %s AND o.status = 'Shipping'
-        ORDER BY o.date DESC
-    """, (user_email,))
-    my_deliveries = cursor.fetchall()
-    
-    # Get rider's recent completed deliveries (last 5)
-    cursor.execute("""
-        SELECT o.id as order_id, o.email as customer_name, 
-               'Store Location' as pickup_location, o.delivery_address,
-               o.status, re.amount as earnings, o.date
-        FROM orders o
-        LEFT JOIN rider_earnings re ON o.id = re.order_id
-        WHERE o.rider_email = %s AND o.status = 'Received'
-        ORDER BY o.date DESC
-        LIMIT 5
-    """, (user_email,))
-    recent_deliveries = cursor.fetchall()
-    
-    # Calculate earnings breakdown by period
-    cursor.execute("""
-        SELECT DATE(re.date) as earn_date, SUM(re.amount) as daily_earnings
-        FROM rider_earnings re
-        WHERE re.rider_email = %s AND DATE(re.date) = CURDATE()
-    """, (user_email,))
-    today_result = cursor.fetchone()
-    today_earnings = float(today_result['daily_earnings']) if today_result and today_result['daily_earnings'] else 0
-    
-    cursor.execute("""
-        SELECT SUM(re.amount) as week_earnings
-        FROM rider_earnings re
-        WHERE re.rider_email = %s 
-        AND re.date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-    """, (user_email,))
-    week_result = cursor.fetchone()
-    week_earnings = float(week_result['week_earnings']) if week_result and week_result['week_earnings'] else 0
-    
-    cursor.execute("""
-        SELECT SUM(re.amount) as month_earnings
-        FROM rider_earnings re
-        WHERE re.rider_email = %s 
-        AND YEAR(re.date) = YEAR(NOW())
-        AND MONTH(re.date) = MONTH(NOW())
-    """, (user_email,))
-    month_result = cursor.fetchone()
-    month_earnings = float(month_result['month_earnings']) if month_result and month_result['month_earnings'] else 0
-    
-    # Earnings history (actual earnings from rider_earnings table)
-    cursor.execute("""
-        SELECT o.id as order_id, re.date, re.amount
-        FROM rider_earnings re
-        JOIN orders o ON o.id = re.order_id
-        WHERE re.rider_email = %s
-        ORDER BY re.date DESC
-        LIMIT 10
-    """, (user_email,))
-    earnings_history = cursor.fetchall()
-    
-    cursor.close()
-    connection.close()
+    try:
+        # Get rider's total deliveries (completed orders assigned to them)
+        all_orders = firestore_db.get_orders_by_rider(user_email)
+        total_deliveries = len([o for o in all_orders if o.get('status') == 'Received'])
+        
+        # Get pending orders (all prepared orders available for pickup)
+        all_prepared = firestore_db.get_all_orders()
+        pending_orders = len([o for o in all_prepared if o.get('status') == 'Prepared'])
+        
+        # Get total earnings from orders
+        total_earnings = sum([
+            float(o.get('rider_total_earnings', 0)) 
+            for o in all_orders 
+            if o.get('status') == 'Received'
+        ])
+        
+        # Customer rating (placeholder)
+        customer_rating = 5.0
+        
+        # Get available orders (orders that are 'Prepared' - ready for pickup)
+        orders = [o for o in all_prepared if o.get('status') == 'Prepared']
+        orders.sort(key=lambda x: x.get('created_at', datetime.min))
+        
+        # Get rider's current deliveries (orders in 'Shipping' status)
+        my_deliveries = []
+        for o in all_orders:
+            if o.get('status') == 'Shipping':
+                earnings = float(o.get('rider_total_earnings', 38))
+                my_deliveries.append({
+                    'order_id': o.get('id'),
+                    'product_name': o.get('name'),
+                    'customer_name': o.get('email'),
+                    'pickup_location': 'Store Location',
+                    'delivery_address': o.get('delivery_address'),
+                    'status': o.get('status'),
+                    'image': o.get('image'),
+                    'date': o.get('created_at'),
+                    'earnings': earnings,
+                    'color': o.get('color'),
+                    'size': o.get('size'),
+                    'category': o.get('category', 'General')
+                })
+        my_deliveries.sort(key=lambda x: x.get('date', datetime.min), reverse=True)
+        
+        # Get rider's recent completed deliveries (last 5)
+        recent_deliveries = []
+        completed = [o for o in all_orders if o.get('status') == 'Received']
+        completed.sort(key=lambda x: x.get('created_at', datetime.min), reverse=True)
+        for o in completed[:5]:
+            earnings = float(o.get('rider_total_earnings', 38))
+            recent_deliveries.append({
+                'order_id': o.get('id'),
+                'customer_name': o.get('email'),
+                'pickup_location': 'Store Location',
+                'delivery_address': o.get('delivery_address'),
+                'status': o.get('status'),
+                'earnings': earnings,
+                'date': o.get('created_at')
+            })
+        
+        # Calculate earnings breakdown by period
+        today = datetime.now().date()
+        today_earnings = sum([
+            float(o.get('rider_total_earnings', 0))
+            for o in all_orders
+            if o.get('status') == 'Received' and o.get('created_at', datetime.min).date() == today
+        ])
+        
+        week_ago = datetime.now() - timedelta(days=7)
+        week_earnings = sum([
+            float(o.get('rider_total_earnings', 0))
+            for o in all_orders
+            if o.get('status') == 'Received' and o.get('created_at', datetime.min) >= week_ago
+        ])
+        
+        month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_earnings = sum([
+            float(o.get('rider_total_earnings', 0))
+            for o in all_orders
+            if o.get('status') == 'Received' and o.get('created_at', datetime.min) >= month_start
+        ])
+        
+        # Earnings history (last 10 completed deliveries)
+        earnings_history = []
+        for o in completed[:10]:
+            earnings_history.append({
+                'order_id': o.get('id'),
+                'date': o.get('created_at', datetime.now()).strftime('%b %d, %Y'),
+                'amount': float(o.get('rider_total_earnings', 38))
+            })
+        
+    except Exception as e:
+        print(f"Error loading rider dashboard: {e}")
+        # Return empty data on error
+        total_deliveries = 0
+        pending_orders = 0
+        total_earnings = 0
+        customer_rating = 5.0
+        orders = []
+        my_deliveries = []
+        recent_deliveries = []
+        today_earnings = 0
+        week_earnings = 0
+        month_earnings = 0
+        earnings_history = []
     
     return render_template('rider_dashboard.html',
                          total_deliveries=total_deliveries,
@@ -1934,39 +1928,34 @@ def get_rider_earnings():
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     
     try:
-        # Get all rider earnings from Firestore
-        earnings_docs = firestore_db.get_documents('rider_earnings')
-        
-        # Filter by rider email
-        rider_earnings = [doc for doc in earnings_docs if doc.get('rider_email') == rider_email]
+        # Get all orders for this rider
+        all_orders = firestore_db.get_orders_by_rider(rider_email)
+        completed_orders = [o for o in all_orders if o.get('status') == 'Received']
         
         # Initialize data structures
-        daily_earnings = {}
-        weekly_earnings = {}
-        monthly_earnings = {}
-        
-        from datetime import datetime
         from collections import defaultdict
-        
         daily_dict = defaultdict(float)
         weekly_dict = defaultdict(float)
         monthly_dict = defaultdict(float)
         
-        # Process earnings
-        for earning in rider_earnings:
-            if 'created_at' in earning:
-                timestamp = earning['created_at']
+        # Process earnings from completed orders
+        for order in completed_orders:
+            created_at = order.get('created_at')
+            if created_at:
                 # Handle Firestore timestamp
-                if hasattr(timestamp, 'date'):
-                    date_obj = timestamp.date()
+                if hasattr(created_at, 'date'):
+                    date_obj = created_at.date()
                 else:
-                    date_obj = datetime.strptime(str(timestamp), '%Y-%m-%d %H:%M:%S').date()
+                    try:
+                        date_obj = datetime.strptime(str(created_at), '%Y-%m-%d %H:%M:%S').date()
+                    except:
+                        date_obj = datetime.now().date()
                 
                 date_str = str(date_obj)
                 week_str = date_obj.strftime('%Y-W%U')
                 month_str = date_obj.strftime('%Y-%m')
                 
-                amount = earning.get('total_earned', 0)
+                amount = float(order.get('rider_total_earnings', 38))
                 
                 daily_dict[date_str] += amount
                 weekly_dict[week_str] += amount
@@ -5508,10 +5497,26 @@ def rider_delivery_photos():
     try:
         # Get all delivered orders with photos for this rider
         all_orders = firestore_db.get_orders_by_rider(rider_email)
-        delivered_orders = [
-            order for order in all_orders 
-            if order.get('status') == 'Delivered' and order.get('delivery_photo')
-        ]
+        delivered_orders = []
+        
+        for order in all_orders:
+            if order.get('status') == 'Delivered' and order.get('delivery_photo'):
+                # Fix Cloudinary URLs
+                if order.get('image'):
+                    img = order['image']
+                    if img.startswith('//'):
+                        order['image'] = 'https:' + img
+                    elif not img.startswith('http'):
+                        order['image'] = 'https://' + img
+                
+                if order.get('delivery_photo'):
+                    photo = order['delivery_photo']
+                    if photo.startswith('//'):
+                        order['delivery_photo'] = 'https:' + photo
+                    elif not photo.startswith('http'):
+                        order['delivery_photo'] = 'https://' + photo
+                
+                delivered_orders.append(order)
         
         # Sort by delivery date (newest first)
         delivered_orders.sort(
