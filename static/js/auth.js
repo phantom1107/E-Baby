@@ -229,7 +229,6 @@ function setupUserTypeHandling() {
             const nextButton = document.querySelector('.next-btn');
             const submitBtn = document.getElementById('register-submit-btn');
             const documentId = document.getElementById('document_id');
-            const bir = document.getElementById('bir');
             const documentTitle = document.getElementById('document-title');
             const termsCheckbox = document.getElementById('terms_checkbox');
             
@@ -239,21 +238,18 @@ function setupUserTypeHandling() {
                 if (nextButton) nextButton.style.display = 'block';
                 if (submitBtn) submitBtn.style.display = 'none';
                 if (documentId) documentId.required = true;
-                if (bir) bir.required = true;
                 if (documentTitle) documentTitle.textContent = 'Required Seller Documents';
                 if (termsCheckbox) termsCheckbox.required = true;
             } else if (this.value === 'Rider') {
                 if (nextButton) nextButton.style.display = 'block';
                 if (submitBtn) submitBtn.style.display = 'none';
                 if (documentId) documentId.required = true;
-                if (bir) bir.required = false;
                 if (documentTitle) documentTitle.textContent = 'Required Rider Documents';
                 if (termsCheckbox) termsCheckbox.required = true;
             } else if (this.value === 'Buyer') {
                 if (nextButton) nextButton.style.display = 'block';
                 if (submitBtn) submitBtn.style.display = 'none';
                 if (documentId) documentId.required = true;
-                if (bir) bir.required = false;
                 if (documentTitle) documentTitle.textContent = 'Required Buyer Documents';
                 if (termsCheckbox) termsCheckbox.required = true;
             }
@@ -269,7 +265,6 @@ function setupUserTypeHandling() {
 // Document upload handling
 function showDocumentUpload() {
     const userType = document.getElementById('user_type').value;
-    const birSection = document.getElementById('bir-section');
     const basicInfo = document.getElementById('basic-info');
     const documentUpload = document.getElementById('document-upload');
     const termsCheckbox = document.getElementById('terms_checkbox');
@@ -284,14 +279,6 @@ function showDocumentUpload() {
         return;
     } else if (termsHint) {
         termsHint.style.display = 'none';
-    }
-
-    if (userType === 'Seller') {
-        if (birSection) birSection.style.display = 'block';
-        if (document.getElementById('bir')) document.getElementById('bir').required = true;
-    } else if (userType === 'Rider') {
-        if (birSection) birSection.style.display = 'none';
-        if (document.getElementById('bir')) document.getElementById('bir').required = false;
     }
     
     // Animate transition
@@ -416,7 +403,7 @@ function setupFormValidation() {
             }
             
             // Additional validation for sellers and riders
-            if (userType === 'Seller' || userType === 'Rider') {
+            if (userType === 'Seller' || userType === 'Rider' || userType === 'Buyer') {
                 const documentId = document.getElementById('document_id');
                 if (!documentId || !documentId.files || documentId.files.length === 0) {
                     e.preventDefault();
@@ -424,16 +411,6 @@ function setupFormValidation() {
                     // auto-open documents step if user tried to submit from basic info
                     showDocumentUpload();
                     return;
-                }
-
-                if (userType === 'Seller') {
-                    const bir = document.getElementById('bir');
-                    if (!bir || !bir.files || bir.files.length === 0) {
-                        e.preventDefault();
-                        showNotification('Please upload a BIR document', 'error');
-                        showDocumentUpload();
-                        return;
-                    }
                 }
             }
         });
