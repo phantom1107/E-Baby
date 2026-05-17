@@ -4898,15 +4898,22 @@ def checkout():
     
     # Calculate pricing breakdown
     subtotal = sum(float(item.get('price', 0)) * int(item.get('quantity', 1)) for item in checkout_items)
-    shipping_fee = 38.00
+    
+    # Delivery fee - base rate (will be updated with distance when rider accepts)
+    delivery_fee = 38.00
+    
+    # Tax is 2.5% of subtotal + delivery fee
     tax_rate = 0.025
-    tax = subtotal * tax_rate
-    total_price = subtotal + shipping_fee + tax
+    taxable_amount = subtotal + delivery_fee
+    tax = taxable_amount * tax_rate
+    
+    # Total = subtotal + delivery + tax
+    total_price = subtotal + delivery_fee + tax
     
     return render_template('checkout.html', 
                          cart_items=checkout_items, 
                          subtotal=subtotal,
-                         shipping_fee=shipping_fee,
+                         shipping_fee=delivery_fee,
                          tax=tax,
                          total_price=total_price)
 
@@ -4984,19 +4991,22 @@ def confirm_order():
         # Get current date/time
         order_date = datetime.now()
         
-        # Calculate order totals (subtotal, shipping, tax, total)
+        # Calculate order totals
         order_subtotal = sum(float(item['price']) * int(item['quantity']) for item in items)
-        shipping_fee = 38.00  # Fixed shipping fee
-        tax_rate = 0.025  # 2.5% tax
-        order_tax = order_subtotal * tax_rate
-        order_total = order_subtotal + shipping_fee + order_tax
+        
+        # Delivery fee - base rate (will be updated when rider accepts with distance)
+        delivery_fee = 38.00
+        
+        # Tax is 2.5% of (subtotal + delivery)
+        tax_rate = 0.025
+        taxable_amount = order_subtotal + delivery_fee
+        order_tax = taxable_amount * tax_rate
+        
+        # Total = subtotal + delivery + tax
+        order_total = order_subtotal + delivery_fee + order_tax
 
         successful_orders = 0
         failed_items = []
-        
-        # Calculate rider commission based on total order amount: for every 2000, add 5 pesos
-        # Formula: (total_price / 2000) * 5
-        rider_commission_total = (order_total / 2000.0) * 5.0
 
         # Insert each item as a separate order
         for item in items:
@@ -5062,21 +5072,18 @@ def confirm_order():
                 # Calculate item subtotal
                 item_subtotal = float(item['price']) * int(order_quantity)
                 
-                # Calculate proportional shipping and tax for this item
-                item_shipping = (item_subtotal / order_subtotal) * shipping_fee if order_subtotal > 0 else 0
+                # Calculate proportional delivery and tax for this item
+                item_delivery = (item_subtotal / order_subtotal) * delivery_fee if order_subtotal > 0 else 0
                 item_tax = (item_subtotal / order_subtotal) * order_tax if order_subtotal > 0 else 0
-                item_total = item_subtotal + item_tax  # No shipping added here - goes to rider separately
-
-                # Calculate proportional commission for this item
-                item_commission = (item_subtotal / order_subtotal) * rider_commission_total if order_subtotal > 0 else 0
+                item_total = item_subtotal + item_delivery + item_tax
                 
                 # Create order record in Firestore
                 order_data = {
                     'email': user_email,
                     'name': item['name'],
-                    'total': item_total,
+                    'total_price': item_total,
                     'subtotal': item_subtotal,
-                    'shipping': item_shipping,
+                    'delivery_fee': item_delivery,
                     'tax': item_tax,
                     'quantity': order_quantity,
                     'image': product_image,
@@ -5089,8 +5096,10 @@ def confirm_order():
                     'product_id': str(item.get('product_id', item['id'])),
                     'color': color_value,
                     'size': size_value,
-                    'commission': item_commission,
-                    'commission_rate': 5.0
+                    # Rider earnings will be calculated when rider accepts (base 38 + distance commission)
+                    'rider_total_earnings': 0,
+                    'delivery_distance_km': 0,
+                    'distance_commission': 0
                 }
                 
                 # Add order to Firestore and get the ID
