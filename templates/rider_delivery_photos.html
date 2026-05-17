@@ -1,8 +1,14 @@
-{% extends "rider_layout.html" %}
-
-{% block title %}Delivery Photos - E-Baby{% endblock %}
-
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Photos - E-Baby</title>
+    <link rel="icon" type="image/png" href="/static/images/logo/E-Baby Tab Icon Logo.png" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/rider_dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
 <div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -183,4 +189,5 @@ function downloadModalImage() {
     downloadImage(currentImageUrl, orderId);
 }
 </script>
-{% endblock %}
+</body>
+</html>
