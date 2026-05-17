@@ -578,10 +578,14 @@ def register():
         if firestore_db.check_user_exists(email):
             return render_template('auth.html', error="Email already registered! Please use another email.")
         
-        # Also check pending requests
+        # Check ALL pending requests (seller, rider, buyer)
         seller_req = firestore_db.get_all_pending_requests('seller')
-        if any(r.get('email') == email for r in seller_req):
-            return render_template('auth.html', error="Email already registered! Please use another email.")
+        rider_req = firestore_db.get_all_pending_requests('rider')
+        buyer_req = firestore_db.get_all_pending_requests('buyer')
+        
+        all_pending = seller_req + rider_req + buyer_req
+        if any(r.get('email') == email for r in all_pending):
+            return render_template('auth.html', error="Email already has a pending registration request!")
 
     except Exception as err:
         flash(f"Error checking email: {err}", 'error')
@@ -3537,37 +3541,25 @@ def view_rider_document(filename):
         return redirect(url_for('rider_requests_dashboard'))
 
 
-@app.route('/view_request_documents/<int:request_id>')
+@app.route('/view_request_documents/<request_id>')
 def view_request_documents(request_id):
-    """Render a small page showing the documents attached to a seller or rider request.
-
-    This endpoint is opened by admin JS via window.open(). It looks up the request
-    in seller_requests and rider_requests and shows links to the stored files.
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute('SELECT * FROM seller_requests WHERE id = %s', (request_id,))
-    seller = cursor.fetchone()
-
-    cursor.execute('SELECT * FROM rider_requests WHERE id = %s', (request_id,))
-    rider = cursor.fetchone()
+    """Render a small page showing the documents attached to a seller or rider request."""
     
-    cursor.execute('SELECT * FROM buyer_requests WHERE id = %s', (request_id,))
-    buyer = cursor.fetchone()
-
-    cursor.close()
-    conn.close()
-
+    # Try to find the request in Firestore
+    seller = firestore_db.get_request_by_id(request_id, 'seller')
     if seller:
         return render_template('view_request_documents.html', item=seller, source='seller')
+    
+    rider = firestore_db.get_request_by_id(request_id, 'rider')
     if rider:
         return render_template('view_request_documents.html', item=rider, source='rider')
+    
+    buyer = firestore_db.get_request_by_id(request_id, 'buyer')
     if buyer:
         return render_template('view_request_documents.html', item=buyer, source='buyer')
 
     flash('Request not found', 'error')
-    return redirect(url_for('register_requests'))
+    return redirect(url_for('admin_dashboard'))
 
 
 @app.route('/approve_request/<request_id>', methods=['POST'])
