@@ -2053,3 +2053,4 @@ window.filterThreadsByUserType = filterThreadsByUserType;
 window.loadAvailableUsers = loadAvailableUsers;
 window.createThreadId = createThreadId;
 window.filterThreadsByUserType = filterThreadsByUserType;
+}
