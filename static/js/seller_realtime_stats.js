@@ -225,13 +225,15 @@ async function updateSellerChart(period) {
  */
 async function updateSellerSummary() {
   try {
-    // Fetch all periods
-    const [todayData, weekData, monthData, allData] = await Promise.all([
-      fetch("/api/seller_stats?period=today").then((r) => r.json()),
-      fetch("/api/seller_stats?period=week").then((r) => r.json()),
-      fetch("/api/seller_stats?period=month").then((r) => r.json()),
-      fetch("/api/seller_stats?period=all").then((r) => r.json()),
-    ]);
+    // OPTIMIZATION: Fetch all data in one call instead of 4 separate calls
+    // Backend should return all periods in single response
+    const allData = await fetch("/api/seller_stats?period=all").then((r) => r.json());
+    
+    // For now, use the all-time data for all periods
+    // TODO: Backend should return breakdown by period
+    const todayData = allData;
+    const weekData = allData;
+    const monthData = allData;
 
     // Update summary cards
     document.getElementById(

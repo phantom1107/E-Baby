@@ -91,12 +91,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 let allProducts = [];
 let searchTimeout;
+let productsCache = null;
+let productsCacheTime = null;
+const PRODUCTS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 function loadAllProducts() {
+    // OPTIMIZATION: Check cache first
+    if (productsCache && productsCacheTime && (Date.now() - productsCacheTime < PRODUCTS_CACHE_DURATION)) {
+        console.log('Using cached products for search');
+        allProducts = productsCache;
+        return;
+    }
+
     fetch('/api/products')
         .then(response => response.json())
         .then(data => {
             allProducts = data || [];
+            // Cache the results
+            productsCache = allProducts;
+            productsCacheTime = Date.now();
+            console.log('Products loaded and cached:', allProducts.length);
         })
         .catch(error => console.error('Error loading products:', error));
 }

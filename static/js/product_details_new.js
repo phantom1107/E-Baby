@@ -43,45 +43,31 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ========================================
-// LOAD PRODUCT VARIANTS
+// LOAD PRODUCT VARIANTS WITH CACHING
 // ========================================
 
+// OPTIMIZATION: Cache variants to avoid duplicate reads
+const variantCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 function loadProductVariants(productId) {
+  // Check cache first
+  const cached = variantCache.get(productId);
+  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+    console.log('Using cached variants for product', productId);
+    processVariants(cached.data);
+    return;
+  }
+
   fetch(`/api/product_variants/${productId}`)
     .then(response => response.json())
     .then(data => {
-      if (data.success && data.variants && data.variants.length > 0) {
-        currentProductData.variants = data.variants;
-        
-        // Extract unique colors and sizes
-        const colors = [...new Set(data.variants.map(v => v.color))];
-        const sizes = [...new Set(data.variants.map(v => v.size))];
-        
-        currentProductData.availableColors = colors;
-        currentProductData.availableSizes = sizes;
-        
-        // Populate UI
-        renderColorOptions(colors);
-        renderSizeOptions(sizes);
-        
-        // Ensure stock info shows the initial message
-        const stockInfo = document.getElementById('stockInfo');
-        if (stockInfo) {
-          stockInfo.innerHTML = '<i class="fas fa-box"></i> Select color and size to see stock';
-          stockInfo.style.color = '#666';
-        }
-        
-        // Setup change listeners
-        setupVariantListeners();
-      } else {
-        document.getElementById('colorOptions').innerHTML = '<p>No color options available</p>';
-        document.getElementById('sizeOptions').innerHTML = '<p>No size options available</p>';
-        const stockInfo = document.getElementById('stockInfo');
-        if (stockInfo) {
-          stockInfo.innerHTML = '<i class="fas fa-box"></i> No variants available';
-          stockInfo.style.color = '#e74c3c';
-        }
-      }
+      // Cache the result
+      variantCache.set(productId, {
+        data: data,
+        timestamp: Date.now()
+      });
+      processVariants(data);
     })
     .catch(error => {
       console.error('Error loading variants:', error);
@@ -93,6 +79,41 @@ function loadProductVariants(productId) {
         stockInfo.style.color = '#e74c3c';
       }
     });
+}
+
+function processVariants(data) {
+  if (data.success && data.variants && data.variants.length > 0) {
+    currentProductData.variants = data.variants;
+    
+    // Extract unique colors and sizes
+    const colors = [...new Set(data.variants.map(v => v.color))];
+    const sizes = [...new Set(data.variants.map(v => v.size))];
+    
+    currentProductData.availableColors = colors;
+    currentProductData.availableSizes = sizes;
+    
+    // Populate UI
+    renderColorOptions(colors);
+    renderSizeOptions(sizes);
+    
+    // Ensure stock info shows the initial message
+    const stockInfo = document.getElementById('stockInfo');
+    if (stockInfo) {
+      stockInfo.innerHTML = '<i class="fas fa-box"></i> Select color and size to see stock';
+      stockInfo.style.color = '#666';
+    }
+    
+    // Setup change listeners
+    setupVariantListeners();
+  } else {
+    document.getElementById('colorOptions').innerHTML = '<p>No color options available</p>';
+    document.getElementById('sizeOptions').innerHTML = '<p>No size options available</p>';
+    const stockInfo = document.getElementById('stockInfo');
+    if (stockInfo) {
+      stockInfo.innerHTML = '<i class="fas fa-box"></i> No variants available';
+      stockInfo.style.color = '#e74c3c';
+    }
+  }
 }
 
 function renderColorOptions(colors) {

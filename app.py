@@ -944,9 +944,9 @@ def homepage():
             # Ensure price is float
             product['price'] = float(product.get('price', 0))
             
-            # Calculate total sales
-            product_id = product.get('id', '')
-            product['total_sales'] = firestore_db.get_product_total_sales(product_id) if product_id else 0
+            # OPTIMIZATION: Use sales field from product document instead of calculating
+            # Sales should be updated when order status changes to 'Received'
+            product['total_sales'] = product.get('sales', 0)
             
             # Fix image URL handling
             if 'image_urls' in product and product['image_urls']:

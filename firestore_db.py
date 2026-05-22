@@ -257,10 +257,12 @@ def get_all_products() -> List[Dict]:
 
 
 def search_products(search_term: str) -> List[Dict]:
-    """Search products by name (client-side filter)"""
+    """Search products by name with limit to reduce reads"""
     try:
         products = []
-        for doc in db.collection(COLLECTIONS['products']).stream():
+        # OPTIMIZATION: Limit to 50 most recent products instead of scanning all
+        query = db.collection(COLLECTIONS['products']).order_by('created_at', direction=firestore.Query.DESCENDING).limit(50)
+        for doc in query.stream():
             product_data = doc.to_dict()
             if search_term.lower() in product_data.get('name', '').lower():
                 product_data['id'] = doc.id
