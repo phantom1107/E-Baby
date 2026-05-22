@@ -81,6 +81,29 @@ def get_user_by_email(email: str) -> Optional[Dict]:
         return None
 
 
+def get_users_by_emails(emails: List[str]) -> Dict[str, Dict]:
+    """Batch fetch users by emails - OPTIMIZED to reduce reads"""
+    try:
+        users_cache = {}
+        if not emails:
+            return users_cache
+        
+        # Firestore 'in' queries support up to 10 items at a time
+        # Split into chunks of 10
+        for i in range(0, len(emails), 10):
+            chunk = emails[i:i+10]
+            docs = db.collection(COLLECTIONS['users']).where("email", "in", chunk).stream()
+            for doc in docs:
+                user_data = doc.to_dict()
+                user_data['id'] = doc.id
+                users_cache[user_data['email']] = user_data
+        
+        return users_cache
+    except Exception as e:
+        print(f"Error batch fetching users: {e}")
+        return {}
+
+
 def get_user_by_id(user_id: str) -> Optional[Dict]:
     """Get user by document ID"""
     try:

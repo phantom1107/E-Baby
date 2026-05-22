@@ -591,7 +591,7 @@
                     <div class="user-cell">
                       <div class="user-avatar">
                         {% if user.profile_pic %}
-                        <img src="{{ user.profile_pic }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="{{ user.profile_pic | fix_image_url }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/static/images/defaults/default_profile.jpg'">
                         {% else %}
                         <i class="fas fa-user"></i>
                         {% endif %}
@@ -783,15 +783,10 @@
                   <div class="product-card">
                     <!-- Product Image -->
                     <div class="product-image-container">
-                      {% if p.image and p.image != 'None' %} {% if
-                      p.image.startswith('/static/') %}
-                      <img src="{{ p.image }}" alt="{{ p.name }}" />
+                      {% set product_image = (p.image_urls[0] if p.image_urls and p.image_urls is iterable and p.image_urls|length > 0 else (p.image_url if p.image_url else (p.image if p.image else ''))) %}
+                      {% if product_image and product_image != 'None' %}
+                      <img src="{{ product_image | fix_image_url }}" alt="{{ p.name }}" onerror="this.src='/static/images/defaults/product-default.png'" />
                       {% else %}
-                      <img
-                        src="/static/uploads/{{ p.image }}"
-                        alt="{{ p.name }}"
-                      />
-                      {% endif %} {% else %}
                       <div class="product-placeholder">
                         <i class="fas fa-box"></i>
                       </div>
@@ -808,7 +803,7 @@
                           >₱{{ "%.2f"|format(p.price) }}</span
                         >
                         <span class="product-quantity">
-                          <i class="fas fa-cubes"></i> {{ p.quantity }}
+                          <i class="fas fa-cubes"></i> {{ p.stock or p.quantity or 0 }}
                         </span>
                       </div>
 
@@ -821,10 +816,9 @@
                           data-product-name="{{ p.name }}"
                           data-product-category="{{ p.category }}"
                           data-product-price="{{ p.price }}"
-                          data-product-quantity="{{ p.quantity }}"
-                          data-product-image="{{ p.image or '' }}"
-                          data-product-size="{{ p.size or '' }}"
-                          data-product-color="{{ p.color or '' }}"
+                          data-product-quantity="{{ p.stock or p.quantity or 0 }}"
+                          data-product-image="{{ product_image | fix_image_url }}"
+                          data-product-variants="{{ p.variants | tojson if p.variants else '[]' }}"
                           data-product-description="{{ p.description or '' }}"
                           data-product-created="{{ p.created_at or '' }}"
                         >

@@ -578,14 +578,10 @@
             {% if products %} {% for product in products %}
             <div class="product-card">
               <div class="product-image">
-                {% set image_url = product.get('image_url') or product.get('image') or 'defaults/placeholder.png' %}
                 <img
-                  {% if image_url.startswith('http') %}
-                    src="{{ image_url }}"
-                  {% else %}
-                    src="{{ url_for('static', filename='uploads/' ~ image_url) }}"
-                  {% endif %}
+                  src="{{ (product.get('image_url') or product.get('image')) | fix_image_url }}"
                   alt="{{ product.name }}"
+                  onerror="this.src='/static/images/defaults/product-default.png'"
                 />
                 <div class="product-actions">
                   <button
@@ -603,7 +599,7 @@
                     data-product-description="{{ product.description }}"
                     data-product-price="{{ product.price }}"
                     data-product-category="{{ product.category }}"
-                    data-product-image="{{ product.image }}"
+                    data-product-image="{{ (product.get('image_url') or product.get('image')) | fix_image_url }}"
                     onclick="openEditModalFromButton(this)"
                   >
                     <i class="fas fa-edit"></i>

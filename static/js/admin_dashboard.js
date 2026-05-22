@@ -1734,13 +1734,21 @@ function showProductDetails(button) {
       price: button.getAttribute("data-product-price") || "0",
       quantity: button.getAttribute("data-product-quantity") || "0",
       image: button.getAttribute("data-product-image") || "",
-      size: button.getAttribute("data-product-size") || "N/A",
-      color: button.getAttribute("data-product-color") || "N/A",
+      variants: button.getAttribute("data-product-variants") || "[]",
       description:
         button.getAttribute("data-product-description") ||
         "No description available",
       created_at: button.getAttribute("data-product-created") || "",
     };
+
+    // Parse variants
+    let variants = [];
+    try {
+      variants = JSON.parse(product.variants);
+    } catch (e) {
+      console.error("Error parsing variants:", e);
+      variants = [];
+    }
 
     // Populate modal with product data
     document.getElementById("productDetailsName").textContent = product.name;
@@ -1752,8 +1760,21 @@ function showProductDetails(button) {
     document.getElementById("productDetailsQuantity").textContent =
       product.quantity;
     document.getElementById("productDetailsProductId").textContent = product.id;
-    document.getElementById("productDetailsSize").textContent = product.size;
-    document.getElementById("productDetailsColor").textContent = product.color;
+    
+    // Display variants instead of single size/color
+    if (variants && variants.length > 0) {
+      const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+      const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
+      
+      document.getElementById("productDetailsSize").textContent = 
+        sizes.length > 0 ? sizes.join(", ") : "N/A";
+      document.getElementById("productDetailsColor").textContent = 
+        colors.length > 0 ? colors.join(", ") : "N/A";
+    } else {
+      document.getElementById("productDetailsSize").textContent = "N/A";
+      document.getElementById("productDetailsColor").textContent = "N/A";
+    }
+    
     document.getElementById("productDetailsDescription").textContent =
       product.description;
 
@@ -1780,24 +1801,11 @@ function showProductDetails(button) {
         product.image !== "" &&
         product.image !== "null"
       ) {
-        // Handle image URL properly
-        let imageSrc;
-        if (product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('//')) {
-          // Cloudinary or external URL - use as-is
-          imageSrc = product.image;
-        } else if (product.image.startsWith('/static/')) {
-          // Already has /static/ prefix - use as-is
-          imageSrc = product.image;
-        } else if (product.image.startsWith('/')) {
-          // Has leading slash but no /static/ - add /static/uploads/
-          imageSrc = '/static/uploads' + product.image;
-        } else {
-          // No leading slash - add full prefix
-          imageSrc = '/static/uploads/' + product.image;
-        }
-        
-        console.log("Setting image to:", imageSrc);
-        imageElement.src = imageSrc;
+        console.log("Setting image to:", product.image);
+        imageElement.src = product.image;
+        imageElement.onerror = function() {
+          this.src = '/static/images/defaults/product-default.png';
+        };
         imageElement.style.background = "transparent";
         imageElement.style.display = "block";
         imageElement.onerror = function () {

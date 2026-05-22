@@ -74,6 +74,40 @@ os.makedirs(app.config['BANNERS_FOLDER'], exist_ok=True)
 
 mail = Mail(app)
 
+# ===== IMAGE URL HELPER =====
+@app.template_filter('fix_image_url')
+def fix_image_url(image_path):
+    """
+    Fix image URL to handle various formats:
+    - Cloudinary URLs (http/https)
+    - Protocol-relative URLs (//)
+    - Absolute paths (/)
+    - Relative paths
+    """
+    if not image_path:
+        return '/static/images/defaults/product-default.png'
+    
+    image_str = str(image_path).strip()
+    
+    # Already a full URL (Cloudinary)
+    if image_str.startswith('http://') or image_str.startswith('https://'):
+        return image_str
+    
+    # Protocol-relative URL (//res.cloudinary.com/...)
+    if image_str.startswith('//'):
+        return 'https:' + image_str
+    
+    # Absolute path from static folder
+    if image_str.startswith('/static/'):
+        return image_str
+    
+    # Absolute path
+    if image_str.startswith('/'):
+        return image_str
+    
+    # Relative path - assume it's in uploads folder
+    return '/static/uploads/' + image_str
+
 # ===== REGISTER BLUEPRINTS =====
 from routes import register_blueprints
 register_blueprints(app)
@@ -2728,7 +2762,7 @@ def migrate_product_variants(product_id):
 
 @app.route('/search')
 def search():
-    """Search for products by name or category"""
+    """Search for products by name or category - OPTIMIZED"""
     query = request.args.get('query', '').strip()
     
     if not query:
@@ -2738,6 +2772,18 @@ def search():
     try:
         # Search products in Firestore
         products = firestore_db.search_products(query)
+        
+        # OPTIMIZATION: Collect unique seller emails first
+        seller_emails = set()
+        for product in products:
+            seller_email = product.get('seller_email')
+            if seller_email:
+                seller_emails.add(seller_email)
+        
+        # OPTIMIZATION: Batch fetch all sellers at once
+        sellers_cache = {}
+        if seller_emails:
+            sellers_cache = firestore_db.get_users_by_emails(list(seller_emails))
         
         # Enrich products with seller information and calculate stock
         for product in products:
@@ -2766,15 +2812,14 @@ def search():
                 elif isinstance(product['image_urls'], str):
                     product['image'] = product['image_urls']
             
-            # Get seller information
+            # OPTIMIZATION: Get seller information from cache
             seller_email = product.get('seller_email')
-            if seller_email:
-                seller_data = firestore_db.get_user_by_email(seller_email)
-                if seller_data:
-                    product['first_name'] = seller_data.get('first_name', '')
-                    product['last_name'] = seller_data.get('last_name', '')
-                    product['seller_name'] = f"{seller_data.get('first_name', '')} {seller_data.get('last_name', '')}"
-                    product['profile_pic'] = seller_data.get('profile_pic')
+            if seller_email and seller_email in sellers_cache:
+                seller_data = sellers_cache[seller_email]
+                product['first_name'] = seller_data.get('first_name', '')
+                product['last_name'] = seller_data.get('last_name', '')
+                product['seller_name'] = f"{seller_data.get('first_name', '')} {seller_data.get('last_name', '')}"
+                product['profile_pic'] = seller_data.get('profile_pic')
         
         return render_template('search_results.html', query=query, products=products)
     

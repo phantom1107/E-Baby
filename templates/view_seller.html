@@ -156,7 +156,7 @@
                             <span class="product-category-badge">{{ product.category }}</span>
                             {% endif %}
                             {% if product.image %}
-                            <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.src='/static/images/defaults/product-default.png'">
+                            <img src="{{ product.image | fix_image_url }}" alt="{{ product.name }}" onerror="this.src='/static/images/defaults/product-default.png'">
                             {% else %}
                             <img src="/static/images/defaults/product-default.png" alt="{{ product.name }}">
                             {% endif %}

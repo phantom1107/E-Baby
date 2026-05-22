@@ -187,7 +187,7 @@
               <!-- Product Image Section -->
               <div class="order-product-image">
                 <img
-                  src="{% if order.image and order.image.startswith('/') %}{{ order.image }}{% elif order.image %}/static/uploads/{{ order.image }}{% else %}/static/images/defaults/product-default.png{% endif %}"
+                  src="{{ order.image | fix_image_url }}"
                   alt="{{ order.name }}"
                   class="product-image"
                   onerror="this.src='/static/images/defaults/product-default.png'"
@@ -384,7 +384,7 @@
                 <div class="details-grid">
                   <div class="details-column">
                     <img
-                      src="{% if order.image and order.image.startswith('/') %}{{ order.image }}{% elif order.image %}/static/uploads/{{ order.image }}{% else %}/static/images/defaults/product-default.png{% endif %}"
+                      src="{{ order.image | fix_image_url }}"
                       alt="{{ order.name }}"
                       class="modal-product-image"
                       onerror="this.src='/static/images/defaults/product-default.png'"

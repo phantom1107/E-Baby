@@ -162,7 +162,7 @@
                   <div class="product-item" id="item-{{ item.id }}" data-product-id="{{ item.product_id }}" data-color="{{ item.color or '' }}" data-size="{{ item.size or '' }}" data-quantity="{{ item.quantity }}">
                     <div class="product-image-wrapper">
                       <img
-                        src="{% if item.image and item.image.startswith('/') %}{{ item.image }}{% elif item.image %}/static/uploads/{{ item.image }}{% else %}/static/images/defaults/product-default.png{% endif %}"
+                        src="{{ item.image | fix_image_url }}"
                         alt="{{ item.name }}"
                         class="product-image"
                         onerror="this.src='/static/images/defaults/product-default.png'"

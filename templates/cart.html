@@ -163,7 +163,7 @@
                 <!-- Image -->
                 <div class="item-card-image">
                   <img
-                    src="{{ item['image'] }}"
+                    src="{{ item['image'] | fix_image_url }}"
                     alt="{{ item['name'] }}"
                     class="product-img"
                     onerror="this.src='/static/images/defaults/product-default.png'"
