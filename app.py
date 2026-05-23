@@ -1773,12 +1773,25 @@ def admin_dashboard():
     pending_registrations = seller_requests + rider_requests + buyer_requests
     pending_requests = len(pending_registrations)
     
-    # Get all sellers with their products
+    # Get all sellers with their products - OPTIMIZED: Batch fetch all products once
     sellers = [u for u in all_users if u.get('user_type') == 'Seller']
     sellers.sort(key=lambda x: x.get('id', ''), reverse=True)
+    
+    # Fetch all products in one query instead of per-seller
+    all_products = firestore_db.get_all_products()
+    
+    # Group products by seller email
+    products_by_seller = {}
+    for product in all_products:
+        seller_email = product.get('seller_email', '')
+        if seller_email not in products_by_seller:
+            products_by_seller[seller_email] = []
+        products_by_seller[seller_email].append(product)
+    
+    # Assign products to each seller
     for s in sellers:
-        # Get products for this seller from Firestore
-        s['products'] = firestore_db.get_products_by_seller(s.get('email', ''))
+        seller_email = s.get('email', '')
+        s['products'] = products_by_seller.get(seller_email, [])
     
     return render_template('admin_dashboard.html', 
                          total_buyers=total_buyers, 
@@ -1794,13 +1807,15 @@ def rider_dashboard():
     user_email = session.get('email')
     
     try:
-        # Get rider's total deliveries (completed orders assigned to them)
-        all_orders = firestore_db.get_orders_by_rider(user_email)
+        # OPTIMIZED: Fetch all orders once instead of multiple queries
+        all_orders_list = firestore_db.get_all_orders()
+        
+        # Filter rider's orders
+        all_orders = [o for o in all_orders_list if o.get('rider_email') == user_email]
         total_deliveries = len([o for o in all_orders if o.get('status') == 'Received'])
         
         # Get pending orders (all prepared orders available for pickup)
-        all_prepared = firestore_db.get_all_orders()
-        pending_orders = len([o for o in all_prepared if o.get('status') == 'Prepared'])
+        pending_orders = len([o for o in all_orders_list if o.get('status') == 'Prepared'])
         
         # Get total earnings from orders
         total_earnings = sum([
@@ -1813,7 +1828,7 @@ def rider_dashboard():
         customer_rating = 5.0
         
         # Get available orders (orders that are 'Prepared' - ready for pickup)
-        orders = [o for o in all_prepared if o.get('status') == 'Prepared']
+        orders = [o for o in all_orders_list if o.get('status') == 'Prepared']
         orders.sort(key=lambda x: x.get('created_at', datetime.min))
         
         # Get rider's current deliveries (orders in 'Shipping' status)
